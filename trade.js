@@ -59,8 +59,8 @@ const tryTrade = function () {
             if (trySymbol.realTrade) {
                 console.debug(`started on ${buyState.signalStrength ? 'Strong' : ''} ${buyState.signal} Signal
 Indicators status 
-    Startet On ${buyState.indicatorsStatus()}
-    Now        ${trySymbol.indicatorsStatus()}\n`)
+    Startet On ${buyState.checkStatus()}
+    Now        ${trySymbol.checkStatus()}\n`)
             }
         }
 

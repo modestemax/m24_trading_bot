@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const updateIndicator = (() => {
+const checkIndicators = (() => {
     let symbolsData = {};
     return (sdata) => {
         let {symbol} = sdata;
@@ -21,16 +21,18 @@ const updateIndicator = (() => {
 
         if (lastSymbolData.indicators.ema10.length > 4) {
             _.extend(lastSymbolData, _.omit(sdata, 'indicators'));
-            lastSymbolData.indicatorsStatus = getIndicatorStatus(lastSymbolData)
-            lastSymbolData.indicatorsStatus();
+            lastSymbolData.checkStatus = getIndicatorStatusChecker(lastSymbolData)
+            lastSymbolData.checkStatus();
             return lastSymbolData;
         }
-
+        if (lastSymbolData.trading) {
+            return lastSymbolData
+        }
     }
 })();
 
-function getIndicatorStatus(symbolData) {
-    const ADX_REF = 20, RSI_REF = 30;
+function getIndicatorStatusChecker(symbolData) {
+    const ADX_REF = 30, RSI_REF = 30;
     return function () {
         let {indicators, symbol} = symbolData;
         indicators.buy = 0;
@@ -45,9 +47,9 @@ function getIndicatorStatus(symbolData) {
         indicators.ema_distance = distance(_.last(ema10), _.last(ema20));
 
         indicators.buy += indicators.ema_ok
-            && indicators.ema10_trend === 1
-            && indicators.ema_distance > 1 ? 1 : 0;
-        indicators.buy += indicators.ema_crossing_up ? 1 : 0;
+        && indicators.ema10_trend === 1
+        && (indicators.ema_distance > 1 || indicators.ema_crossing_up) ? 1 : 0;
+        // indicators.buy += indicators.ema_crossing_up ? 1 : 0;
 
         //adx
         let {adx, adx_trend, adx_minus_di, adx_plus_di} = indicators;
@@ -67,26 +69,30 @@ function getIndicatorStatus(symbolData) {
         let rsi_cur = _.last(rsi);
 
         indicators.buy += rsi_cur < RSI_REF ? 1 : 0;
-
-        if (indicators.buy >= 2) {
+        symbolData.buy = indicators.buy >= 2;
+        if (symbolData.buy) {
             // console.debug(indicators.adx.slice(-2))
             console.debug(symbol, ' buy: ' + indicators.buy,
                 'Ema Distance', indicators.ema_distance,
+                'Ema Cross UP', indicators.ema_crossing_up,
                 'DI Distance', indicators.adx_di_distance,
-                'original signal: ', symbolData.signal)
+                'Original Signal: ', symbolData.signal)
         }
     }
 
 }
 
 function distance(pointA, pointB) {
-    return ((pointA - pointB) / pointB * 100).toFixed(2)
+    return +((pointA - pointB) / pointB * 100).toFixed(2)
 }
 
 appEmitter.on('tv:signals', (data) => {
     _.each(data, (symbolData) => {
-        let newData = updateIndicator(symbolData);
-        // setImmediate(() => appEmitter.emit('analyse:try_trade', newData));
+        let trySymbol = checkIndicators(symbolData);
+        if (trySymbol) {
+            trySymbol.trading = true
+            setImmediate(() => appEmitter.emit('analyse:try_trade', trySymbol));
+        }
     })
 
 });
