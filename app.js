@@ -1,5 +1,5 @@
-require('./events')
+require('./events');
 require('./trading_view');
-require('./analyse')
+require('./analyse');
 require('./trade');
 require('./exchange');

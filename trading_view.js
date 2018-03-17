@@ -42,6 +42,7 @@ const beautify = (data) => {
                 volume: d[5],
                 signal: signal(d[6]),
                 signalStrength: strength(d[6]),
+                signalString: signalString(d[6]),
                 exchange: d[7].toLowerCase(),
                 description: d[8],
                 indicators: {
@@ -75,6 +76,11 @@ const beautify = (data) => {
                         return 0
                 }
             }
+
+            function signalString(int) {
+
+                return (strength(int) === 1 ? 'Strong ' : '') + signal(int)
+            }
         }
     ).groupBy('symbol').mapValues(([v]) => v).value()
 }
@@ -103,12 +109,10 @@ function getSignals({data = params()} = {}) {
     })
 }
 
-let timeframe= process.env.TIMEFRAME||15;
+let timeframe = process.env.TIMEFRAME || 15;
 getSignals({data: params({timeframe})});
 
-console.debug('trading on ' + 15 + ' trimeframe');
-
-
+console.debug('trading on ' + timeframe + ' trimeframe');
 
 
 // const params = (timeframe) => {

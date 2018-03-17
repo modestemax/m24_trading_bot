@@ -1,3 +1,6 @@
+const _ = require('lodash');
+require('./exchanges/binance');
+
 appEmitter.on('exchange:buy', symbolData => {
     let exchange = loadExchange(symbolData.exchange);
     exchange.buy(symbolData)
@@ -20,3 +23,8 @@ function loadExchange(exchange) {
         sell: async (data) => ({price: data.close}),
     }
 }
+
+appEmitter.on('binance:tickers', tickers => {
+    //debugger
+    appEmitter.emit('exchange:tickers', 'binance',tickers);
+})

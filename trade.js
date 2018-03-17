@@ -16,11 +16,12 @@ const tryTrade = function () {
         let {symbol} = symbolData;
         let trySymbol = tryingSymbols[symbol];
         if (!trySymbol) {
-            trySymbol = tryingSymbols[symbol] = {start: symbolData};
+            trySymbol = tryingSymbols[symbol] = {start: _.clone(symbolData)};
             trySymbol.startedAt = new Date();
             trySymbol.buyPrice = symbolData.close;
             trySymbol.gainOrLoss = 0;
-            trySymbol.realTrade = realSymbols[symbol];
+            // trySymbol.realTrade = realSymbols[symbol];
+            trySymbol.realTrade = true;
         }
 
         let lastPrice = symbolData.close;
@@ -39,43 +40,46 @@ const tryTrade = function () {
 
         _.extend(trySymbol, symbolData);
 
-        if (!trySymbol.realTrade) {
-            if (trySymbol.gainOrLoss < -2) {
-                delete tryingSymbols[symbol];
-                console.debug('leaving ' + symbol);
-                return
-            }
-            if (trySymbol.gainOrLoss > 2) {
-                realSymbols[symbol] = true;
-                delete tryingSymbols[symbol];
-                console.debug('going real trade ' + symbol);
-                return;
-            }
-        }
-        if (trySymbol.gainOrLoss > .50 || trySymbol.realTrade) {
-            let buyState = trySymbol.start;
-            console.debug(`${trySymbol.realTrade ? '\n-->' : ''} ${symbol} buy when ${buyState.changePercent} now ${symbolData.changePercent} in [${trySymbol.duration}] Change ${trySymbol.gainOrLoss} Max Change ${trySymbol.maxGainOrLoss}`)
-
-            if (trySymbol.realTrade) {
-                console.debug(`started on ${buyState.signalStrength ? 'Strong' : ''} ${buyState.signal} Signal
-Indicators status 
-    Startet On ${buyState.checkStatus()}
-    Now        ${trySymbol.checkStatus()}\n`)
-            }
-        }
-
-        if (trySymbol.gainOrLoss < trySymbol.maxGainOrLoss - 2 && trySymbol.realTrade) {
-            //stop real trade on stop loss
-            (function (trySymbol) {
-                setInterval(() => {
-                    console.debug(`${trySymbol.symbol} Ended with ${trySymbol.gainOrLoss}
-started on ${trySymbol.start.signalStrength ? 'Strong' : ''} ${trySymbol.start.signal} Signal\n`)
-                }, 20e3)
-            })(trySymbol);
-
+        // if (!trySymbol.realTrade) {
+        if (trySymbol.gainOrLoss < -2) {
             delete tryingSymbols[symbol];
-            delete realSymbols[symbol];
+            console.debug('leaving ' + symbol);
+            return
         }
+        // if (trySymbol.gainOrLoss > 2) {
+        //     realSymbols[symbol] = true;
+        //     delete tryingSymbols[symbol];
+        //     console.debug('going real trade ' + symbol);
+        //     return;
+        // }
+        // }
+        // if (trySymbol.gainOrLoss > .50 || trySymbol.realTrade) {
+        let buyState = trySymbol.start;
+        console.debug(`\n-->${symbol}` ,
+            `buy when ${buyState.signalString } ${buyState.changePercent}%`,
+            `now ${symbolData.signalString } ${symbolData.changePercent}%`,
+            `in [${trySymbol.duration}] Change ${trySymbol.gainOrLoss}`,
+            `Max Change ${trySymbol.maxGainOrLoss}`)
+
+//         if (trySymbol.realTrade) {
+//             console.debug(`started on ${buyState.signalString }`,
+//                 `\nIndicators status\n
+// Startet On ${buyState.checkStatus({toString: true})}
+// Now        ${trySymbol.checkStatus({toString:true})}\n`)
+//         }
+        // }
+
+        // if (trySymbol.gainOrLoss < trySymbol.maxGainOrLoss - 2 && trySymbol.realTrade) {
+        //     //stop real trade on stop loss
+        //     (function (trySymbol) {
+        //         setInterval(() => {
+        //             console.debug(`${trySymbol.symbol} Ended with ${trySymbol.gainOrLoss} started on ${trySymbol.start.signalString  }\n`)
+        //         }, 20e3)
+        //     })(trySymbol);
+        //
+        //     delete tryingSymbols[symbol];
+        //     delete realSymbols[symbol];
+        // }
     }
 }();
 //
