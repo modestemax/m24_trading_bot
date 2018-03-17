@@ -1,6 +1,7 @@
 const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
+const timeframe = env.TIMEFRAME;
 
 const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
     "filter": [
@@ -95,7 +96,7 @@ function getSignals({data = params()} = {}) {
                 if (jsonData.data && !jsonData.error) {
                     console.debug('trading view ok');
                     let beautifyData = beautify(jsonData.data);
-                    return setImmediate(() => appEmitter.emit('tv:signals', {markets:beautifyData}))
+                    return setImmediate(() => appEmitter.emit('tv:signals', {markets: beautifyData}))
                 }
                 err = jsonData.error;
             }
@@ -104,12 +105,12 @@ function getSignals({data = params()} = {}) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
             console.log('ex:', ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), 1e3);
+            setTimeout(() => getSignals.apply(null, args), 2e3);
         }
     })
 }
 
-let timeframe = env.TIMEFRAME |;
+
 getSignals({data: params({timeframe})});
 
 console.debug('trading on ' + timeframe + ' trimeframe');

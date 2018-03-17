@@ -7,12 +7,12 @@ const STOP_LOSS = -1;
 const TRAILING_CHANGE_PERCENT = .3;
 const TRADE_RATIO = .2;
 
-const getTradeRatio = () => {
+const getTradeRatio = function () {
     const ratios = {};
     return function ({symbol}) {
         return ratios[symbol] || TRADE_RATIO
     }
-}
+}();
 
 function listenToEvents() {
     const tradings = {};

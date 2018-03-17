@@ -5,8 +5,8 @@ const exchangeId =env. EXCHANGE;
 const STOP_LOSS_BUY_PERCENT = .35;
 let btcAmountToTrade =env. AMOUNT_TO_TRADE;//todo
 
-loadExchange().then(function (exchange) {
-    const internalExchangeEmitter = {exchange};
+loadExchange(exchangeId).then(function (exchange) {
+    const {internalExchangeEmitter} = exchange;
     let tickersEvents = {};
     appEmitter.on('trade:buy', ({symbol, ratio}) => {
         if (!tickersEvents[symbol]) {
@@ -60,6 +60,6 @@ loadExchange().then(function (exchange) {
 });
 
 
-function loadExchange(exchange) {
-    return require('./exchanges/' + exchange)();
+async function  loadExchange(exchange) {
+    return require('./exchanges/' + exchange);
 }
