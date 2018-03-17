@@ -124,14 +124,15 @@ appEmitter.on('exchange:tickers', (exchange, tickers) => {
     //debugger
     allTickers[exchange] = allTickers[exchange] || {};
     _.extend(allTickers[exchange], tickers);
-})
+});
 appEmitter.on('tv:signals', (data) => {
+    const CHANGE_24H = 2;
     _.each(data, (symbolData) => {
         let {exchange, symbol} = symbolData;
         let tickers = allTickers[exchange];
         if (tickers) {
             let ticker = tickers[symbol];
-            if (ticker && ticker.priceChangePercent > 5) {
+            if (ticker && ticker.priceChangePercent > CHANGE_24H) {
                 let trySymbol = checkIndicators(symbolData);
                 if (trySymbol && !trySymbol.trading) {
                     trySymbol.trading = true;
