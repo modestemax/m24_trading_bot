@@ -1,3 +1,4 @@
+const debug = require('debug')('trading_view');
 const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
@@ -94,7 +95,7 @@ function getSignals({data = params()} = {}) {
             if (!err) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
-                    console.debug('trading view ok');
+                    debug('trading view ok');
                     let beautifyData = beautify(jsonData.data);
                     return setImmediate(() => appEmitter.emit('tv:signals', {markets: beautifyData}))
                 }
@@ -113,7 +114,7 @@ function getSignals({data = params()} = {}) {
 
 getSignals({data: params({timeframe})});
 
-console.debug('trading on ' + timeframe + ' trimeframe');
+debug('trading on ' + timeframe + ' trimeframe');
 
 
 // const params = (timeframe) => {

@@ -1,3 +1,4 @@
+const debug = require('debug')('binance');
 const _ = require('lodash');
 const EventEmitter = require('events');
 const internalExchangeEmitter = new EventEmitter();
@@ -136,7 +137,7 @@ function reConnect(ws, connect, arg) {
 
 function dispatchTickers(tickers24h) {
     let tickers = _(tickers24h).filter((t) => /btc$/i.test(t.symbol)).groupBy('symbol').mapValues(t => _.extend(_.head(t), {exchange: 'binance'})).value();
-    console.debug('binance -> allTickers BTC OK ', _.keys(tickers).length);
+    debug('binance -> allTickers BTC OK ', _.keys(tickers).length);
     internalExchangeEmitter.emit('tickers', {tickers});
 }
 

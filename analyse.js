@@ -1,8 +1,11 @@
+const debug = require('debug')('analyse');
 const _ = require('lodash');
 const sorted = require('is-sorted');
+const {getChangePercent, updatePrice} = require('./utils');
 
 const isGoodToBuy = function () {
     let markets = {};
+    const MAX_LENGTH = 10;
     return function (market) {
         let {symbol} = market;
         let prevMarket = markets[symbol];
@@ -14,7 +17,7 @@ const isGoodToBuy = function () {
                 let newValue = _.last(indValues);
 
                 if (lastValue !== newValue) {
-                    prevIndicators[indKey] = prevIndicators[indKey].concat(indValues).slice(-10)
+                    prevIndicators[indKey] = prevIndicators[indKey].concat(indValues).slice(-MAX_LENGTH)
                     prevMarket.indicators[indKey + '_trendingUp'] = lastValue < newValue;
                     prevMarket.indicators[indKey + '_trendingDown'] = lastValue > newValue;
                 }
@@ -34,7 +37,7 @@ const isGoodToBuy = function () {
 
 const getIndicatorStatusChecker = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 2;
+        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 5;
     return function (market) {
         let {indicators, symbol} = market;
         indicators.buy = 0;
@@ -106,7 +109,10 @@ const getIndicatorStatusChecker = function () {
 
         function isSorted(list, reverse) {
             let slist = _.slice(list, -MIN_LENGTH);
+            let trendingUp = getChangePercent(_.head(list), _.last(list));
+            trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
             return sorted(slist, reverse ? (a, b) => b - a : void 0)
+                || trendingUp;
         }
 
     }
@@ -134,7 +140,6 @@ function listenToEvents() {
                     setImmediate(() => appEmitter.emit('analyse:try_trade', {market}));
                 }
             }
-
         })
 
     });

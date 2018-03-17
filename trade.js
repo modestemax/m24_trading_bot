@@ -1,3 +1,4 @@
+const debug = require('debug')('trade');
 const _ = require('lodash');
 const moment = require('moment');
 
