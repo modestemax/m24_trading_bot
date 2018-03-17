@@ -95,7 +95,7 @@ function getSignals({data = params()} = {}) {
                 if (jsonData.data && !jsonData.error) {
                     console.debug('trading view ok');
                     let beautifyData = beautify(jsonData.data);
-                    return setImmediate(() => appEmitter.emit('tv:signals', beautifyData))
+                    return setImmediate(() => appEmitter.emit('tv:signals', {markets:beautifyData}))
                 }
                 err = jsonData.error;
             }
@@ -109,7 +109,7 @@ function getSignals({data = params()} = {}) {
     })
 }
 
-let timeframe = process.env.TIMEFRAME || 15;
+let timeframe = env.TIMEFRAME |;
 getSignals({data: params({timeframe})});
 
 console.debug('trading on ' + timeframe + ' trimeframe');

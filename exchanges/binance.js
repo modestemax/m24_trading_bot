@@ -1,19 +1,19 @@
 const _ = require('lodash');
+const EventEmitter = require('events');
+const internalExchangeEmitter = new EventEmitter();
 
-const apijson = process.env.HOME + '/.api.json';
-const api = require(apijson);
 
-let APIKEY = api.api_key;
-let SECRET = api.secret;
+let {APIKEY, SECRET} = env;
 
 
 const binance = require('binance');
 const binanceWS = new binance.BinanceWS();
 const streams = binanceWS.streams;
+const symbolsWS = {};
 
 const binanceRest = createBinanceRest();
 
-createWS(null, binanceRest);
+createDefaultWSListeners({binanceRest});
 
 
 function createBinanceRest() {
@@ -28,7 +28,7 @@ function createBinanceRest() {
          * Optional, default is false. Binance's API returns objects with lots of one letter keys.  By
          * default those keys will be replaced with more descriptive, longer ones.
          */
-        handleDrift: false
+        handleDrift: true
         /* Optional, default is false.  If turned on, the library will attempt to handle any drift of
          * your clock on it's own.  If a request fails due to drift, it'll attempt a fix by requesting
          * binance's server time, calculating the difference with your own clock, and then reattempting
@@ -38,14 +38,14 @@ function createBinanceRest() {
 }
 
 
-function createWS(ws, binanceRest) {
+function createDefaultWSListeners({ws, binanceRest}) {
     let args = arguments;
     let tickers24hOk;
 
     ws && ws.close();
-    binanceWS.onUserData(binanceRest, (res) => {
-        debugger
-    }, /*[interval]*/);
+    // binanceWS.onUserData(binanceRest, (res) => {
+    //     debugger
+    // }, /*[interval]*/);
 
     ws = binanceWS.onCombinedStream(
         [
@@ -79,7 +79,7 @@ function createWS(ws, binanceRest) {
                 //     break;
                 case streams.allTickers():
                     // console.log('allTickers OK ', streamEvent.data.length);
-                    changeTickers(streamEvent.data);
+                    dispatchTickers(streamEvent.data);
                     // getPrice({symbol: 'ethbtc'});
                     break;
             }
@@ -93,23 +93,51 @@ function createWS(ws, binanceRest) {
     //         createWS.apply(null,args)
     //     }, 10e3)
     // });
-    ws.on('close', () => {
-        createWS.apply(null, args)
-    });
-    ws.on('error', () => {
-        createWS.apply(null, args)
-    });
 
-    // setTimeout(() => ws.close(), 10e3)
+    reConnect(ws, createDefaultWSListeners, args);
 
     return ws;
 }
 
+function symbolWS({ws, symbol}) {
+    let args = arguments;
+    ws && ws.close();
+    if (symbolsWS[symbol]) {
+        symbolsWS[symbol].close();
+        delete symbolsWS[symbol];
+    }
+    ws = symbolsWS[symbol] = binanceWS.onCombinedStream([streams.ticker(symbol), streams.trade(symbol)],
+        (streamEvent) => {
+            switch (streamEvent.stream) {
 
-function changeTickers(tickers24h) {
-    let btickers = _(tickers24h).filter((t) => /btc$/i.test(t.symbol)).groupBy('symbol').mapValues(t => _.extend(_.head(t), {exchange: 'binance'})).value();
-    console.debug('binance -> allTickers BTC OK ', _.keys(btickers).length);
-    appEmitter.emit('binance:tickers', btickers);
+                case streams.ticker(symbol):
+                    internalExchangeEmitter.emit('ticker', {ticker: streamEvent.data});
+                    break;
+                case streams.trade(symbol):
+                    internalExchangeEmitter.emit('trade', {trade: streamEvent.data});
+                    break;
+            }
+        }
+    );
+    reConnect(ws, symbolWS, args);
+
+    return ws;
+}
+
+function reConnect(ws, connect, arg) {
+
+    ws.on('close', () => {
+        connect.apply(null, args)
+    });
+    ws.on('error', () => {
+        connect.apply(null, args)
+    });
+}
+
+function dispatchTickers(tickers24h) {
+    let tickers = _(tickers24h).filter((t) => /btc$/i.test(t.symbol)).groupBy('symbol').mapValues(t => _.extend(_.head(t), {exchange: 'binance'})).value();
+    console.debug('binance -> allTickers BTC OK ', _.keys(tickers).length);
+    internalExchangeEmitter.emit('tickers', {tickers});
 }
 
 
@@ -164,3 +192,20 @@ function changeTickers(tickers24h) {
 //         binanceBusy = false;
 //     }
 // }
+
+
+module.exports = {
+    internalExchangeEmitter,
+    addTicker({symbol}) {
+        symbolWS({symbol})
+    },
+    async stopLossBuy({symbol, amount, stopPrice}) {
+    },
+    async sellMarket({symbol}) {
+
+    },
+    async cancelOrders({symbol}) {
+    },
+    async putStopLoss({symbol, stopPrice}) {
+    }
+}

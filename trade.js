@@ -1,26 +1,40 @@
 const _ = require('lodash');
 const moment = require('moment');
 
+const {getChangePercent, updatePrice} = require('./utils');
+
 const STOP_LOSS = -1;
 const TRAILING_CHANGE_PERCENT = .3;
+const TRADE_RATIO = .2;
 
+const getTradeRatio = () => {
+    const ratios = {};
+    return function ({symbol}) {
+        return ratios[symbol] || TRADE_RATIO
+    }
+}
 
 function listenToEvents() {
     const tradings = {};
-    appEmitter.on('analyse:try_trade', ({symbol}) => {
+    appEmitter.on('analyse:try_trade', ({market}) => {
+        let {symbol} = market;
         if (!tradings[symbol]) {
             tradings[symbol] = true;
-            appEmitter.once('exchange:buy_ok:' + symbol, ({err, order}) => {
-                if (err) {
-                    delete tradings[symbol];
-                } else {
-                    tradings[symbol] = order;
-                }
-            });
-            appEmitter.emit('trade:buy', {symbol});
+            appEmitter.emit('trade:buy', {symbol, ratio: getTradeRatio({symbol})});
         }
     });
 
+    appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
+        if (error) {
+            delete tradings[symbol];
+        } else {
+            tradings[symbol] = order;
+        }
+    });
+
+    appEmitter.on('exchange:sell_ok', ({symbol, order}) => {
+        delete tradings[symbol];
+    });
     appEmitter.on('exchange:ticker', ({ticker}) => {
         let {symbol} = ticker;
         let long = tradings[symbol];
@@ -29,7 +43,7 @@ function listenToEvents() {
         }
     });
 
-    appEmitter.on('exchange:stop_loss', ({stopLossOrder}) => {
+    appEmitter.on('exchange:stop_loss_updated', ({stopLossOrder}) => {
         let {symbol} = stopLossOrder;
         let long = tradings[symbol];
         if (_.isObject(long)) {
@@ -38,14 +52,6 @@ function listenToEvents() {
     });
 }
 
-function getChangePercent(buyPrice, sellPrice) {
-    let gain = (sellPrice - buyPrice) / buyPrice * 100;
-    return +(gain.toFixed(2));
-}
-
-function updatePrice({price, percent}) {
-    return price * (1 + percent / 100)
-}
 
 function trade({long, ticker}) {
     putStopLoss({long});
@@ -77,3 +83,6 @@ function updateTrailingStopLoss({long}) {
         long.prevMaxGain = long.maxGain;
     }
 }
+
+
+listenToEvents();

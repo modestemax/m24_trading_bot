@@ -120,18 +120,18 @@ function distance(pointA, pointB) {
 function listenToEvents() {
 
     const allTickers = {}
-    appEmitter.on('exchange:tickers', (tickers) => {
+    appEmitter.on('exchange:tickers', ({tickers}) => {
         //debugger
         _.extend(allTickers, tickers);
     });
-    appEmitter.on('tv:signals', (markets) => {
+    appEmitter.on('tv:signals', ({markets}) => {
         const CHANGE_24H_FOR_TRADE = 2;
         _.each(markets, (market) => {
             let {symbol} = market;
             let ticker = allTickers[symbol];
             if (ticker && ticker.priceChangePercent > CHANGE_24H_FOR_TRADE) {
                 if (isGoodToBuy(market)) {
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', market));
+                    setImmediate(() => appEmitter.emit('analyse:try_trade', {market}));
                 }
             }
 
