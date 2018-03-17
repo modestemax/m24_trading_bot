@@ -34,7 +34,7 @@ const checkIndicators = (() => {
 })();
 
 function getIndicatorStatusChecker(symbolData) {
-    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .5,
+    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
         ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 2;
     return function () {
         let {indicators, symbol} = symbolData;
