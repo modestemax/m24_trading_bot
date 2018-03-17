@@ -102,9 +102,9 @@ function getSignals({data = params()} = {}) {
             throw err;
         } catch (ex) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-            console.log(ex)
+            console.log('ex:', ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), 2e3);
+            setTimeout(() => getSignals.apply(null, args), 1e3);
         }
     })
 }

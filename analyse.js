@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const sorted = require('is-sorted')
+const sorted = require('is-sorted');
 
 const checkIndicators = (() => {
     let symbolsData = {};
@@ -106,8 +106,8 @@ function getIndicatorStatusChecker(symbolData) {
         }
 
         function isSorted(list, reverse) {
-            let slist = _.slice(list, -MIN_LENGTH)
-            return reverse ? sorted(_.reverse(slist)) : sorted(list)
+            let slist = _.slice(list, -MIN_LENGTH);
+            return sorted(slist, reverse ? (a, b) => b - a : void 0)
         }
 
     }
