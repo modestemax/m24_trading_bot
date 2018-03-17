@@ -14,7 +14,7 @@ const checkIndicators = (() => {
                 let newValue = _.last(indValues);
 
                 if (lastValue !== newValue) {
-                    oldIndicators[indKey] = oldIndicators[indKey].concat(indValues).slice(-5)
+                    oldIndicators[indKey] = oldIndicators[indKey].concat(indValues).slice(-10)
                     lastSymbolData.indicators[indKey + '_trendingUp'] = lastValue < newValue;
                     lastSymbolData.indicators[indKey + '_trendingDown'] = lastValue > newValue;
                 }
@@ -23,9 +23,9 @@ const checkIndicators = (() => {
         }
 
         // if (lastSymbolData.indicators.ema10.length > 4) {
-            _.extend(lastSymbolData, _.omit(sdata, 'indicators'));
-            lastSymbolData.checkStatus = getIndicatorStatusChecker(lastSymbolData)
-            lastSymbolData.checkStatus();
+        _.extend(lastSymbolData, _.omit(sdata, 'indicators'));
+        lastSymbolData.checkStatus = getIndicatorStatusChecker(lastSymbolData)
+        lastSymbolData.checkStatus();
         // }
         if (lastSymbolData.buy || lastSymbolData.trading) {
             return lastSymbolData
@@ -35,7 +35,7 @@ const checkIndicators = (() => {
 
 function getIndicatorStatusChecker(symbolData) {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .5,
-        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2;
+        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 2;
     return function () {
         let {indicators, symbol} = symbolData;
         indicators.buy = 0;
@@ -58,6 +58,8 @@ function getIndicatorStatusChecker(symbolData) {
         function checkEmaStatus() {
             let {ema10, ema20} = indicators;
 
+            if (_.min([ema10.length, ema20.length]) < MIN_LENGTH) return;
+
             let [ema10_pre, ema10_cur] = ema10.slice(-2);
             let [ema20_pre, ema20_cur] = ema20.slice(-2);
 
@@ -68,40 +70,45 @@ function getIndicatorStatusChecker(symbolData) {
 
             indicators.ema_ok = ema10_cur > ema20_cur
                 && indicators.ema10_trendingUp
-                && sorted(indicators.ema10)
+                && isSorted(indicators.ema10)
                 && indicators.ema20_trendingUp
-                && sorted(indicators.ema20)
+                && isSorted(indicators.ema20)
                 && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up);
 
             indicators.buy += +indicators.ema_ok;
         }
 
         function checkAdxStatus() {
-            let {adx, adx_trendingUp, adx_minus_di, adx_plus_di} = indicators;
+            let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
             let [minus_di_pre, minus_di_cur] = adx_minus_di.slice(-2);
             let [plus_di_pre, plus_di_cur] = adx_plus_di.slice(-2);
+
+            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) < MIN_LENGTH) return;
+
             indicators.adx_di_distance = distance(plus_di_cur, minus_di_cur);
             indicators.adx_ok = _.last(adx) > ADX_REF
                 && plus_di_cur > minus_di_cur
                 && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
-                && indicators.adx_plus_di_trendingUp
-                && indicators.adx_minus_di_trendingDown
-                && indicators.adx_trendingUp
-                && sorted(indicators.adx)
-                && sorted(indicators.adx_plus_di)
-                && sorted(indicators.adx_minus_di.reverse())
+                && adx_plus_di_trendingUp
+                && adx_minus_di_trendingDown
+                && adx_trendingUp
+                && isSorted(indicators.adx)
+                && isSorted(indicators.adx_plus_di)
+                && isSorted(indicators.adx_minus_di, true)
 
             indicators.buy += +indicators.adx_ok;
         }
 
         function checkRsiStatus() {
-//rsi
             let {rsi} = indicators;
             let rsi_cur = _.last(rsi);
-
             indicators.buy += +(rsi_cur < RSI_REF);
         }
 
+        function isSorted(list, reverse) {
+            let slist = _.slice(list, -MIN_LENGTH)
+            return reverse ? sorted(_.reverse(slist)) : sorted(list)
+        }
 
     }
 
