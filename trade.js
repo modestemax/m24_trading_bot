@@ -1,132 +1,79 @@
 const _ = require('lodash');
 const moment = require('moment');
 
-
-appEmitter.on('analyse:try_trade', (symbolData) => {
-
-    tryTrade({symbolData})
-
-});
+const STOP_LOSS = -1;
+const TRAILING_CHANGE_PERCENT = .3;
 
 
-const tryTrade = function () {
-    let tryingSymbols = {}, realSymbols = {};
-    return function ({symbolData}) {
-        // console.log('\n=========================\n');
-        let {symbol} = symbolData;
-        let trySymbol = tryingSymbols[symbol];
-        if (!trySymbol) {
-            trySymbol = tryingSymbols[symbol] = {start: _.clone(symbolData)};
-            trySymbol.startedAt = new Date();
-            trySymbol.buyPrice = symbolData.close;
-            trySymbol.gainOrLoss = 0;
-            // trySymbol.realTrade = realSymbols[symbol];
-            trySymbol.realTrade = true;
+function listenToEvents() {
+    const tradings = {};
+    appEmitter.on('analyse:try_trade', ({symbol}) => {
+        if (!tradings[symbol]) {
+            tradings[symbol] = true;
+            appEmitter.once('exchange:buy_ok:' + symbol, ({err, order}) => {
+                if (err) {
+                    delete tradings[symbol];
+                } else {
+                    tradings[symbol] = order;
+                }
+            });
+            appEmitter.emit('trade:buy', {symbol});
         }
+    });
 
-        let lastPrice = symbolData.close;
-        let buyPrice = trySymbol.buyPrice;
-        let buyTime = trySymbol.startedAt.getTime();
-        let now = new Date().getTime();
-        trySymbol.duration = moment.duration(now - buyTime).humanize();
-        trySymbol.changeDuration = trySymbol.changeDuration || trySymbol.duration;
-        trySymbol.maxGainOrLoss = trySymbol.maxGainOrLoss || trySymbol.gainOrLoss;
-
-        if (lastPrice !== buyPrice) {
-            trySymbol.gainOrLoss = getChangePercent(buyPrice, lastPrice);
-            trySymbol.maxGainOrLoss = Math.max(trySymbol.maxGainOrLoss, trySymbol.gainOrLoss)
-            trySymbol.changeDuration = moment.duration(now - buyTime).humanize();
+    appEmitter.on('exchange:ticker', ({ticker}) => {
+        let {symbol} = ticker;
+        let long = tradings[symbol];
+        if (_.isObject(long)) {
+            trade({long, ticker})
         }
+    });
 
-        _.extend(trySymbol, symbolData);
-
-        // if (!trySymbol.realTrade) {
-        if (trySymbol.gainOrLoss < -2) {
-            delete tryingSymbols[symbol];
-            console.debug('leaving ' + symbol);
-            return
+    appEmitter.on('exchange:stop_loss', ({stopLossOrder}) => {
+        let {symbol} = stopLossOrder;
+        let long = tradings[symbol];
+        if (_.isObject(long)) {
+            long.stopLossPrice = stopLossOrder.stopPrice;
         }
-        // if (trySymbol.gainOrLoss > 2) {
-        //     realSymbols[symbol] = true;
-        //     delete tryingSymbols[symbol];
-        //     console.debug('going real trade ' + symbol);
-        //     return;
-        // }
-        // }
-        // if (trySymbol.gainOrLoss > .50 || trySymbol.realTrade) {
-        let buyState = trySymbol.start;
-        console.debug(`\n-->${symbol}` ,
-            `buy when ${buyState.signalString } ${buyState.changePercent}%`,
-            `now ${symbolData.signalString } ${symbolData.changePercent}%`,
-            `in [${trySymbol.duration}] Change ${trySymbol.gainOrLoss}`,
-            `Max Change ${trySymbol.maxGainOrLoss}`)
-
-//         if (trySymbol.realTrade) {
-//             console.debug(`started on ${buyState.signalString }`,
-//                 `\nIndicators status\n
-// Startet On ${buyState.checkStatus({toString: true})}
-// Now        ${trySymbol.checkStatus({toString:true})}\n`)
-//         }
-        // }
-
-        // if (trySymbol.gainOrLoss < trySymbol.maxGainOrLoss - 2 && trySymbol.realTrade) {
-        //     //stop real trade on stop loss
-        //     (function (trySymbol) {
-        //         setInterval(() => {
-        //             console.debug(`${trySymbol.symbol} Ended with ${trySymbol.gainOrLoss} started on ${trySymbol.start.signalString  }\n`)
-        //         }, 20e3)
-        //     })(trySymbol);
-        //
-        //     delete tryingSymbols[symbol];
-        //     delete realSymbols[symbol];
-        // }
-    }
-}();
-//
-//
-// function tradeBuy({lastData, newData}) {
-//     if (!(lastData.tradeStarted || lastData.tradeStarting)) {
-//         lastData.tradeStarting = true;
-//         // appEmitter.once('exchange:bought:' + newData.symbol, (buyOrder) => {
-//         lastData.tradeStarted = true;
-//         lastData.trade = _.extend({time: new Date()/*, buyOrder*/}, newData);
-//         // });
-//         // appEmitter.emit('exchange:buy', newData)
-//     } else if (lastData.tradeStarted) {
-//         let lastPrice = newData.close;
-//         let buyPrice = lastData.trade.close;
-//         if (lastPrice !== buyPrice) {
-//             let buyTime = lastData.trade.time.getTime();
-//             let now = new Date().getTime();
-//             let gainOrLoss = getChangePercent(buyPrice, lastPrice);
-//             let duration = moment.duration(now - buyTime).humanize();
-//             _.extend(lastData, newData);
-//             _.extend(lastData.trade, {gainOrLoss, duration});
-//             // stopLossOrTakeProfit(symbolData);
-//         }
-//     }
-// }
-//
-// function tradeSell({lastData, newData}) {
-//     if (lastData.tradeStarted && !(lastData.tradeEnded || lastData.tradeEnding)) {
-//         lastData.tradeEnding = true
-//         // appEmitter.once('exchange:sold:' + lastData.symbol, (sellOrder) => {
-//         let now = new Date().getTime();
-//         lastData.tradeEnded = true;
-//         let buyPrice = lastData.trade.close;
-//         let buyTime = lastData.trade.time.getTime();
-//         let sellPrice = sellOrder.price;
-//         let gainOrLoss = getChangePercent(buyPrice, sellPrice, {buyTime});
-//         let duration = moment.duration(now - buyTime).humanize();
-//         _.extend(lastData, newData);
-//         _.extend(lastData.trade, {gainOrLoss, duration/*, sellOrder*/});
-//         console.debug(`${lastData.symbol} buy when ${lastData.trade.changePercent} now ${newData.changePercent} in [${lastData.trade.duration}] finished at ${lastData.trade.gainOrLoss}`)
-//         // });
-//         // appEmitter.emit('exchange:sell', newData)
-//     }
-// }
+    });
+}
 
 function getChangePercent(buyPrice, sellPrice) {
     let gain = (sellPrice - buyPrice) / buyPrice * 100;
     return +(gain.toFixed(2));
+}
+
+function updatePrice({price, percent}) {
+    return price * (1 + percent / 100)
+}
+
+function trade({long, ticker}) {
+    putStopLoss({long});
+    long.gainOrLoss = long.gainOrLoss || 0;
+    long.maxGain = long.maxGain || long.gainOrLoss;
+    long.tradeDuration = moment.duration(new Date().getTime() - long.transactionTime).humanize();
+    long.gainOrLoss = getChangePercent(long.price, ticker.price);
+    long.maxGain = _.max([long.maxGain, long.gainOrLoss]);
+    updateTrailingStopLoss({long})
+}
+
+function putStopLoss({long}) {
+    if (!long.hasStopLoss) {
+        long.hasStopLoss = true;
+        appEmitter.emit('trade:put_stop_loss', {
+            long,
+            stopPrice: updatePrice({price: long.price, percent: STOP_LOSS})
+        })
+    }
+}
+
+function updateTrailingStopLoss({long}) {
+    long.prevMaxGain = long.prevMaxGain || 0;
+    if (long.stopLossPrice) {
+        let change = long.maxGain - long.prevMaxGain;
+        if (change >= TRAILING_CHANGE_PERCENT) {
+            appEmitter.emit('trade:update_stop_loss', {long, stopPrice: long.stopLossPrice + change})
+        }
+        long.prevMaxGain = long.maxGain;
+    }
 }

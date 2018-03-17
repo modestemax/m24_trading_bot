@@ -1,59 +1,58 @@
 const _ = require('lodash');
 const sorted = require('is-sorted');
 
-const checkIndicators = (() => {
-    let symbolsData = {};
-    return (sdata) => {
-        let {symbol} = sdata;
-        let lastSymbolData = symbolsData[symbol];
-        if (!lastSymbolData) {
-            lastSymbolData = symbolsData[symbol] = sdata;
+const isGoodToBuy = function () {
+    let markets = {};
+    return function (market) {
+        let {symbol} = market;
+        let prevMarket = markets[symbol];
+        if (!prevMarket) {
+            prevMarket = markets[symbol] = market;
         } else {
-            lastSymbolData.indicators = _.reduce(sdata.indicators, (oldIndicators, indValues, indKey) => {
-                let lastValue = _.last(oldIndicators[indKey]);
+            prevMarket.indicators = _.reduce(market.indicators, (prevIndicators, indValues, indKey) => {
+                let lastValue = _.last(prevIndicators[indKey]);
                 let newValue = _.last(indValues);
 
                 if (lastValue !== newValue) {
-                    oldIndicators[indKey] = oldIndicators[indKey].concat(indValues).slice(-10)
-                    lastSymbolData.indicators[indKey + '_trendingUp'] = lastValue < newValue;
-                    lastSymbolData.indicators[indKey + '_trendingDown'] = lastValue > newValue;
+                    prevIndicators[indKey] = prevIndicators[indKey].concat(indValues).slice(-10)
+                    prevMarket.indicators[indKey + '_trendingUp'] = lastValue < newValue;
+                    prevMarket.indicators[indKey + '_trendingDown'] = lastValue > newValue;
                 }
-                return oldIndicators;
-            }, lastSymbolData.indicators);
+                return prevIndicators;
+            }, prevMarket.indicators);
         }
 
         // if (lastSymbolData.indicators.ema10.length > 4) {
-        _.extend(lastSymbolData, _.omit(sdata, 'indicators'));
-        lastSymbolData.checkStatus = getIndicatorStatusChecker(lastSymbolData)
-        lastSymbolData.checkStatus();
+        _.extend(prevMarket, _.omit(market, 'indicators'));
+        getIndicatorStatusChecker(prevMarket)
         // }
-        if (lastSymbolData.buy || lastSymbolData.trading) {
-            return lastSymbolData
+        if (prevMarket.buy) {
+            return prevMarket
         }
     }
-})();
+}();
 
-function getIndicatorStatusChecker(symbolData) {
+const getIndicatorStatusChecker = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
         ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 2;
-    return function () {
-        let {indicators, symbol} = symbolData;
+    return function (market) {
+        let {indicators, symbol} = market;
         indicators.buy = 0;
 
         checkEmaStatus();
         checkAdxStatus();
         checkRsiStatus();
 
-        symbolData.buy = indicators.buy >= BUY_POSITION;
+        market.buy = indicators.buy >= BUY_POSITION;
 
-        if (symbolData.buy && 0) {
-            // console.debug(indicators.adx.slice(-2))
-            console.debug(symbol, ' buy: ' + indicators.buy,
-                'Ema Distance', indicators.ema_distance,
-                'Ema Cross UP', indicators.ema_crossing_up,
-                'DI Distance', indicators.adx_di_distance,
-                'Original Signal: ', symbolData.signalString)
-        }
+        // if (market.buy && 0) {
+        //     // console.debug(indicators.adx.slice(-2))
+        //     console.debug(symbol, ' buy: ' + indicators.buy,
+        //         'Ema Distance', indicators.ema_distance,
+        //         'Ema Cross UP', indicators.ema_crossing_up,
+        //         'DI Distance', indicators.adx_di_distance,
+        //         'Original Signal: ', market.signalString)
+        // }
 
         function checkEmaStatus() {
             let {ema10, ema20} = indicators;
@@ -112,53 +111,33 @@ function getIndicatorStatusChecker(symbolData) {
 
     }
 
-}
+}();
 
 function distance(pointA, pointB) {
     return +((pointA - pointB) / pointB * 100).toFixed(2)
 }
 
+function listenToEvents() {
 
-const allTickers = {}
-appEmitter.on('exchange:tickers', (exchange, tickers) => {
-    //debugger
-    allTickers[exchange] = allTickers[exchange] || {};
-    _.extend(allTickers[exchange], tickers);
-});
-appEmitter.on('tv:signals', (data) => {
-    const CHANGE_24H = 2;
-    _.each(data, (symbolData) => {
-        let {exchange, symbol} = symbolData;
-        let tickers = allTickers[exchange];
-        if (tickers) {
-            let ticker = tickers[symbol];
-            if (ticker && ticker.priceChangePercent > CHANGE_24H) {
-                let trySymbol = checkIndicators(symbolData);
-                if (trySymbol && !trySymbol.trading) {
-                    trySymbol.trading = true;
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', trySymbol));
+    const allTickers = {}
+    appEmitter.on('exchange:tickers', (tickers) => {
+        //debugger
+        _.extend(allTickers, tickers);
+    });
+    appEmitter.on('tv:signals', (markets) => {
+        const CHANGE_24H_FOR_TRADE = 2;
+        _.each(markets, (market) => {
+            let {symbol} = market;
+            let ticker = allTickers[symbol];
+            if (ticker && ticker.priceChangePercent > CHANGE_24H_FOR_TRADE) {
+                if (isGoodToBuy(market)) {
+                    setImmediate(() => appEmitter.emit('analyse:try_trade', market));
                 }
             }
-        }
 
-    })
+        })
 
-});
+    });
+}
 
-appEmitter.on('tv:signals', (data) => {
-    _.each(data, (symbolData) => {
-        let trySymbol = checkIndicators(symbolData);
-        if (trySymbol) {
-            if (trySymbol.trading) {
-                if (trySymbol.indicators.buy) {
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', trySymbol));
-                } else {
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', trySymbol));
-                    debugger
-                    console.debug('<--' + trySymbol.symbol)
-                }
-            }
-        }
-
-    })
-});
+listenToEvents();
