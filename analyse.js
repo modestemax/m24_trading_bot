@@ -3,7 +3,7 @@ const _ = require('lodash');
 const sorted = require('is-sorted');
 const {getChangePercent, updatePrice} = require('./utils');
 
-const isGoodToBuy = function () {
+const goodToBuy = function () {
     let markets = {};
     const MAX_LENGTH = 10;
     return function (market) {
@@ -47,6 +47,7 @@ const getIndicatorStatusChecker = function () {
         checkRsiStatus();
 
         market.buy = indicators.buy >= BUY_POSITION;
+        // market.buy = true || indicators.buy >= BUY_POSITION;
 
         // if (market.buy && 0) {
         //     // console.debug(indicators.adx.slice(-2))
@@ -78,6 +79,7 @@ const getIndicatorStatusChecker = function () {
                 && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up);
 
             indicators.buy += +indicators.ema_ok;
+
         }
 
         function checkAdxStatus() {
@@ -125,24 +127,46 @@ function distance(pointA, pointB) {
 
 function listenToEvents() {
 
-    const allTickers = {}
-    appEmitter.on('exchange:tickers', ({tickers}) => {
+    const tickers = {};
+    let longTimeframeMarkets = {};
+    appEmitter.on('exchange:ticker', ({ticker}) => {
         //debugger
-        _.extend(allTickers, tickers);
+        addTickerData({symbol: ticker.symbol, prop: 'ticker', data: ticker});
+        checkSignal(tickers[ticker.symbol])
+    });
+    appEmitter.on('tv:signals_long_timeframe', ({markets}) => {
+        _.forEach(markets, market => {
+            addTickerData({symbol: market.symbol, prop: 'longSignal', data: market});
+            checkSignal(tickers[market.symbol])
+        });
     });
     appEmitter.on('tv:signals', ({markets}) => {
-        const CHANGE_24H_FOR_TRADE = 2;
-        _.each(markets, (market) => {
-            let {symbol} = market;
-            let ticker = allTickers[symbol];
-            if (ticker && ticker.priceChangePercent > CHANGE_24H_FOR_TRADE) {
-                if (isGoodToBuy(market)) {
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', {market}));
+        _.forEach(markets, market => {
+            addTickerData({symbol: market.symbol, prop: 'signal', data: market});
+            checkSignal(tickers[market.symbol])
+        });
+    });
+
+    function addTickerData({symbol, prop, data}) {
+        let tickerData = tickers[symbol] = tickers[symbol] || {};
+        tickerData[prop] = data;
+    }
+
+    function checkSignal({ticker, signal, longSignal}) {
+        setImmediate(() => {
+            const CHANGE_24H_FOR_TRADE = 2;
+            const CHANGE_LONG_TIMEFRAME_FOR_TRADE = 2;
+            if (ticker && signal && longSignal) {
+                if (ticker.percentage > CHANGE_24H_FOR_TRADE && longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE) {
+                    let marketBuy = goodToBuy(signal);
+                    if (marketBuy) {
+                        setImmediate(() => appEmitter.emit('analyse:try_trade', {market: marketBuy, ticker}));
+                    }
                 }
             }
         })
 
-    });
+    }
 }
 
 listenToEvents();

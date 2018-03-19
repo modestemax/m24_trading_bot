@@ -1,4 +1,4 @@
-const debug = require('debug')('trade');
+const debug = require('debug')('m24:trade');
 const _ = require('lodash');
 const moment = require('moment');
 
@@ -25,7 +25,8 @@ function listenToEvents() {
         }
     });
 
-    appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
+    appEmitter.on('exchange:buy_ok', ({error, order}) => {
+        let {symbol} = order;
         if (error) {
             delete tradings[symbol];
         } else {
@@ -38,51 +39,49 @@ function listenToEvents() {
     });
     appEmitter.on('exchange:ticker', ({ticker}) => {
         let {symbol} = ticker;
-        let long = tradings[symbol];
-        if (_.isObject(long)) {
-            trade({long, ticker})
+        let order = tradings[symbol];
+        if (_.isObject(order)) {
+            trade({order, ticker})
         }
     });
 
     appEmitter.on('exchange:stop_loss_updated', ({stopLossOrder}) => {
         let {symbol} = stopLossOrder;
-        let long = tradings[symbol];
-        if (_.isObject(long)) {
-            long.stopLossPrice = stopLossOrder.stopPrice;
+        let order = tradings[symbol];
+        if (_.isObject(order)) {
+            order.stopLossPrice = stopLossOrder.stopPrice;
         }
     });
 }
 
 
-function trade({long, ticker}) {
-    putStopLoss({long});
-    long.gainOrLoss = long.gainOrLoss || 0;
-    long.maxGain = long.maxGain || long.gainOrLoss;
-    long.tradeDuration = moment.duration(new Date().getTime() - long.transactionTime).humanize();
-    long.gainOrLoss = getChangePercent(long.price, ticker.price);
-    long.maxGain = _.max([long.maxGain, long.gainOrLoss]);
-    updateTrailingStopLoss({long})
+function trade({order, ticker}) {
+    putStopLoss({order});
+    order.gainOrLoss = order.gainOrLoss || 0;
+    order.maxGain = order.maxGain || order.gainOrLoss;
+    order.tradeDuration = moment.duration(new Date().getTime() - order.transactionTime).humanize();
+    order.gainOrLoss = getChangePercent(order.price, ticker.price);
+    order.maxGain = _.max([order.maxGain, order.gainOrLoss]);
+    updateTrailingStopLoss({order})
 }
 
-function putStopLoss({long}) {
-    if (!long.hasStopLoss) {
-        long.hasStopLoss = true;
-        appEmitter.emit('trade:put_stop_loss', {
-            long,
-            stopPrice: updatePrice({price: long.price, percent: STOP_LOSS})
-        })
+function putStopLoss({order}) {
+    if (!order.hasStopLoss) {
+        order.hasStopLoss = true;
+        let stopPrice = updatePrice({price: order.price, percent: STOP_LOSS});
+        appEmitter.emit('trade:put_stop_loss', {order, stopPrice})
     }
 }
 
-function updateTrailingStopLoss({long}) {
-    long.prevMaxGain = long.prevMaxGain || 0;
-    if (long.stopLossPrice) {
-        let change = long.maxGain - long.prevMaxGain;
+function updateTrailingStopLoss({order}) {
+    order.prevMaxGain = order.prevMaxGain || 0;
+    if (order.stopLossPrice) {
+        let change = order.maxGain - order.prevMaxGain;
         if (change >= TRAILING_CHANGE_PERCENT) {
-            appEmitter.emit('trade:update_stop_loss', {long, stopPrice: long.stopLossPrice + change})
+            appEmitter.emit('trade:put_stop_loss', {order, stopPrice: order.stopLossPrice + change})
         }
-        long.prevMaxGain = long.maxGain;
     }
+    order.prevMaxGain = order.maxGain;
 }
 
 

@@ -35,7 +35,7 @@ const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) 
 
 const beautify = (data) => {
     return _(data).map(({d}) => {
-            return {
+            return formalisesymbol({
                 symbol: d[0],
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
@@ -55,7 +55,15 @@ const beautify = (data) => {
                     "ema10": [d[13]],
                     "ema20": [d[14]]
                 }
-            };
+            });
+
+            function formalisesymbol(market) {
+                market.symbol = market.symbol.replace(/btc$/i, '/BTC');
+                market.symbol = market.symbol.replace(/usdt$/i, '/USDT');
+                market.symbol = market.symbol.replace(/bnb$/i, '/BNB');
+                market.symbol = market.symbol.replace(/eth$/i, '/ETH');
+                return market;
+            }
 
             function signal(int) {
                 switch (true) {
@@ -87,7 +95,7 @@ const beautify = (data) => {
     ).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
-function getSignals({data = params()} = {}) {
+function getSignals({data = params(), longTimeframe = false} = {}) {
     const args = arguments;
     const url = 'https://scanner.tradingview.com/crypto/scan';
     curl.postJSON(url, data, (err, res, data) => {
@@ -97,22 +105,36 @@ function getSignals({data = params()} = {}) {
                 if (jsonData.data && !jsonData.error) {
                     debug('trading view ok');
                     let beautifyData = beautify(jsonData.data);
-                    return setImmediate(() => appEmitter.emit('tv:signals', {markets: beautifyData}))
+                    if (longTimeframe) {
+                        return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
+                    } else {
+                        return setImmediate(() => appEmitter.emit('tv:signals', {markets: beautifyData}))
+                    }
                 }
                 err = jsonData.error;
             }
             throw err;
         } catch (ex) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-            console.log('ex:', ex)
+            console.log('trading_view exception:', longTimeframe, ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), 2e3);
+            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 11e3 : 2e3);
         }
     })
 }
 
 
 getSignals({data: params({timeframe})});
+
+switch (timeframe) {
+    case 15:
+        getSignals({data: params({timeframe: 60}), longTimeframe: true});
+        break;
+    case 60:
+        getSignals({data: params({timeframe: '1D'}), longTimeframe: true});
+        break;
+}
+
 
 debug('trading on ' + timeframe + ' trimeframe');
 
