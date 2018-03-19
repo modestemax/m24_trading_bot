@@ -6,13 +6,13 @@ const {getChangePercent, updatePrice} = require('./utils');
 
 const exchangeId = env.EXCHANGE;
 const STOP_LOSS_BUY_PERCENT = .35;
-let btcAmountToTrade = env.AMOUNT_TO_TRADE;//todo
+let totalAmount = env.AMOUNT_TO_TRADE;//todo
 
 loadExchange(exchangeId).then(function ({exchange, internal}) {
     let {exchangeEmitter} = internal
     appEmitter.on('trade:buy', ({symbol, ratio}) => {
 
-        internal.buyMarket(symbol, amount)
+        internal.buyMarket({symbol,ratio, totalAmount})
             .then(
                 (order) => appEmitter.emit('exchange:buy_ok', {order}),
                 (error) => appEmitter.emit('exchange:buy_ok', {error})
