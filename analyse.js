@@ -38,8 +38,8 @@ const goodToBuy = function () {
 const checkIndicatorStatus = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
         ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2,
-        MIN_LENGTH = 2
-        // MIN_LENGTH = 5
+        // MIN_LENGTH = 2
+        MIN_LENGTH = 5
     ;
     return function (market) {
         let {indicators, symbol} = market;
