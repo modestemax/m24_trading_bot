@@ -26,18 +26,21 @@ const goodToBuy = function () {
         }
 
         // if (lastSymbolData.indicators.ema10.length > 4) {
-        _.extend(prevMarket, _.omit(market, 'indicators'));
-        getIndicatorStatusChecker(prevMarket)
+        let lastMarket = _.extend(prevMarket, _.omit(market, 'indicators'));
+        checkIndicatorStatus(lastMarket);
         // }
-        if (prevMarket.buy) {
-            return prevMarket
+        if (lastMarket.buy) {
+            return lastMarket
         }
     }
 }();
 
-const getIndicatorStatusChecker = function () {
+const checkIndicatorStatus = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2, MIN_LENGTH = 5;
+        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2,
+        MIN_LENGTH = 2
+        // MIN_LENGTH = 5
+    ;
     return function (market) {
         let {indicators, symbol} = market;
         indicators.buy = 0;
@@ -47,7 +50,7 @@ const getIndicatorStatusChecker = function () {
         checkRsiStatus();
 
         market.buy = indicators.buy >= BUY_POSITION;
-        // market.buy = true || indicators.buy >= BUY_POSITION;
+        // market.buy = market.symbol == 'DLT/BTC' || indicators.buy >= BUY_POSITION;//todo for test
 
         // if (market.buy && 0) {
         //     // console.debug(indicators.adx.slice(-2))
@@ -65,18 +68,23 @@ const getIndicatorStatusChecker = function () {
 
             let [ema10_pre, ema10_cur] = ema10.slice(-2);
             let [ema20_pre, ema20_cur] = ema20.slice(-2);
+            let [ema10_0,] = ema10;
+            let [ema20_0,] = ema20;
 
             indicators.ema_crossing_up = ema10_pre <= ema20_pre && ema10_cur > ema20_cur;
             indicators.ema_crossing_down = ema10_pre >= ema20_pre && ema10_cur < ema20_cur;
             indicators.ema_crossing = indicators.ema_crossing_up || indicators.ema_crossing_down;
             indicators.ema_distance = distance(ema10_cur, ema20_cur);
+            indicators.ema_0_distance = distance(ema10_0, ema20_0);
 
             indicators.ema_ok = ema10_cur > ema20_cur
                 && indicators.ema10_trendingUp
                 && isSorted(indicators.ema10)
                 && indicators.ema20_trendingUp
                 && isSorted(indicators.ema20)
-                && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up);
+                // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
+                && indicators.ema_distance > EMA_DISTANCE_REF
+                && indicators.ema_distance >= indicators.ema_0_distance;
 
             indicators.buy += +indicators.ema_ok;
 
@@ -127,28 +135,26 @@ function distance(pointA, pointB) {
 
 function listenToEvents() {
 
-    const tickers = {};
-    let longTimeframeMarkets = {};
+    const symbolsDta = {};
     appEmitter.on('exchange:ticker', ({ticker}) => {
-        //debugger
-        addTickerData({symbol: ticker.symbol, prop: 'ticker', data: ticker});
-        checkSignal(tickers[ticker.symbol])
+        addSymbolData({symbol: ticker.symbol, prop: 'ticker', data: ticker});
+        // checkSignal(symbolsDta[ticker.symbol])
     });
     appEmitter.on('tv:signals_long_timeframe', ({markets}) => {
         _.forEach(markets, market => {
-            addTickerData({symbol: market.symbol, prop: 'longSignal', data: market});
-            checkSignal(tickers[market.symbol])
+            addSymbolData({symbol: market.symbol, prop: 'longSignal', data: market});
+            // checkSignal(symbolsDta[market.symbol])
         });
     });
     appEmitter.on('tv:signals', ({markets}) => {
         _.forEach(markets, market => {
-            addTickerData({symbol: market.symbol, prop: 'signal', data: market});
-            checkSignal(tickers[market.symbol])
+            addSymbolData({symbol: market.symbol, prop: 'signal', data: market});
+            checkSignal(symbolsDta[market.symbol])
         });
     });
 
-    function addTickerData({symbol, prop, data}) {
-        let tickerData = tickers[symbol] = tickers[symbol] || {};
+    function addSymbolData({symbol, prop, data}) {
+        let tickerData = symbolsDta[symbol] = symbolsDta[symbol] || {};
         tickerData[prop] = data;
     }
 

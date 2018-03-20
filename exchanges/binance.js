@@ -11,11 +11,11 @@ const client = Binance({apiKey: APIKEY, apiSecret: SECRET,});
 
 function tickers(exchange) {
     let symbols = _.keys(exchange.marketsById).filter(id => /btc$/i.test(id));
+    let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
     client.ws.ticker(symbols, ticker => {
-        exchange;
         let rawTicker = toRawTicker(ticker);
         exchangeEmitter.emit('ticker', {ticker: rawTicker});
-        // debug('ticker', ticker.symbol, rawTicker.lastPrice);
+        logTicker(ticker);
     });
 }
 
@@ -35,7 +35,34 @@ function toRawTicker(ticker) {
     })
 }
 
+
+function overrideExchange(exchange) {
+    exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
+        if (env.isProduction) {
+            return privatePostOrder.apply(exchange, args)
+        } else {
+            let order = await exchange.privatePostOrderTest.apply(exchange, args);
+            return _.extend(order, {
+                "symbol": args[0].symbol,
+                "orderId": _.uniq(),
+                "clientOrderId": args[0].newClientOrderId,
+                "transactTime": new Date().getTime(),
+                "price": args[0].stopPrice,
+                "stopLossPrice": args[0].stopPrice,
+                "origQty": args[0].quantity,
+                "executedQty": args[0].quantity,
+                "status": "FILLED",
+                "timeInForce": "GTC",
+                "type": args[0].type,
+                "side": args[0].side
+            })
+        }
+    })
+}
+
 module.exports = function (exchange) {
+    overrideExchange(exchange);
+
     tickers(exchange);
 
     return {
@@ -44,14 +71,24 @@ module.exports = function (exchange) {
         //     symbolWS({symbol})
         // },
 
-        async createStopLossOrder({symbol, amount, stopPrice}) {
-            return exchange.createOrder(symbol, 'STOP_LOSS', 'sell', amount, void 0, {stopPrice})
+        async createStopLossOrder({symbol, amount, orderId, stopPrice}) {
+             amount = exchange.amountToLots(symbol, amount);
+            return exchange.createOrder(symbol, 'STOP_LOSS', 'sell', amount, void 0, {
+                stopPrice,
+                newClientOrderId: orderId
+            })
         },
-        async editStopLossOrder({symbol, orderId, amount, stopPrice}) {
-            return exchange.editOrder(orderId, symbol, 'STOP_LOSS', 'sell', amount, void 0, {stopPrice})
+        async editStopLossOrder({symbol, stopLossOrderId, orderId, amount, stopPrice}) {
+            amount = exchange.amountToLots(symbol, amount);
+            return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS', 'sell', amount, void 0, {
+                stopPrice,
+                newClientOrderId: orderId
+            })
         },
-        async buyMarket({symbol, ratio, totalAmount}) {
-            let amount = exchange.amountToLots(symbol, totalAmount * ratio);
+        async buyMarket({symbol, lastPice, ratio, totalBTC}) {
+            let btc = totalBTC * ratio;
+
+            let amount = exchange.amountToLots(symbol, btc / lastPice);
             return exchange.createMarketBuyOrder(symbol, amount/*,{newClientOrderId:orderId}*/)
         },
         async sellMarket({symbol}) {

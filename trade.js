@@ -17,16 +17,16 @@ const getTradeRatio = function () {
 
 function listenToEvents() {
     const tradings = {};
-    appEmitter.on('analyse:try_trade', ({market}) => {
+    appEmitter.on('analyse:try_trade', ({market, ticker}) => {
         let {symbol} = market;
         if (!tradings[symbol]) {
             tradings[symbol] = true;
-            appEmitter.emit('trade:buy', {symbol, ratio: getTradeRatio({symbol})});
+            log(`${symbol} is good to buy, price: ${ticker.last}`);
+            // appEmitter.emit('trade:buy', {symbol, lastPice: ticker.bid, ratio: getTradeRatio({symbol})});
         }
     });
 
-    appEmitter.on('exchange:buy_ok', ({error, order}) => {
-        let {symbol} = order;
+    appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
         if (error) {
             delete tradings[symbol];
         } else {
@@ -46,10 +46,10 @@ function listenToEvents() {
     });
 
     appEmitter.on('exchange:stop_loss_updated', ({stopLossOrder}) => {
-        let {symbol} = stopLossOrder;
+        let {symbol, orderId: stopLossOrderId, stopPrice: stopLossPrice} = stopLossOrder;
         let order = tradings[symbol];
         if (_.isObject(order)) {
-            order.stopLossPrice = stopLossOrder.stopPrice;
+            _.extend(order, {stopLossOrderId, stopLossPrice});
         }
     });
 }
@@ -59,7 +59,7 @@ function trade({order, ticker}) {
     putStopLoss({order});
     order.gainOrLoss = order.gainOrLoss || 0;
     order.maxGain = order.maxGain || order.gainOrLoss;
-    order.tradeDuration = moment.duration(new Date().getTime() - order.transactionTime).humanize();
+    order.tradeDuration = moment.duration(new Date().getTime() - order.timestamp).humanize();
     order.gainOrLoss = getChangePercent(order.price, ticker.price);
     order.maxGain = _.max([order.maxGain, order.gainOrLoss]);
     updateTrailingStopLoss({order})
@@ -78,7 +78,7 @@ function updateTrailingStopLoss({order}) {
     if (order.stopLossPrice) {
         let change = order.maxGain - order.prevMaxGain;
         if (change >= TRAILING_CHANGE_PERCENT) {
-            appEmitter.emit('trade:put_stop_loss', {order, stopPrice: order.stopLossPrice + change})
+            appEmitter.emit('trade:edit_stop_loss', {order, stopPrice: order.stopLossPrice + change})
         }
     }
     order.prevMaxGain = order.maxGain;
