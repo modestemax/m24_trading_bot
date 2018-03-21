@@ -8,29 +8,35 @@ const goodToBuy = function () {
     const MAX_LENGTH = 10;
     return function (market) {
         let {symbol} = market;
-        let prevMarket = markets[symbol];
-        if (!prevMarket) {
-            prevMarket = markets[symbol] = market;
-        } else {
-            prevMarket.indicators = _.reduce(market.indicators, (prevIndicators, indValues, indKey) => {
-                let lastValue = _.last(prevIndicators[indKey]);
-                let newValue = _.last(indValues);
+        let prevMarket = markets[symbol] || market;
 
-                if (lastValue !== newValue) {
-                    prevIndicators[indKey] = prevIndicators[indKey].concat(indValues).slice(-MAX_LENGTH)
-                    prevMarket.indicators[indKey + '_trendingUp'] = lastValue < newValue;
-                    prevMarket.indicators[indKey + '_trendingDown'] = lastValue > newValue;
-                }
-                return prevIndicators;
-            }, prevMarket.indicators);
-        }
+        let lastMarket = markets[symbol] = _.extend(prevMarket, _.omit(market, 'indicators'));
+        prevMarket.indicators = _.reduce(market.indicators, (prevIndicators, indValue, indKey) => {
+            if (!_.isArray(prevIndicators[indKey])) {
+                prevIndicators[indKey] = [{value: prevIndicators[indKey], time: market.time}];
+            }
+            let {value: lastValue} = _.last(prevIndicators[indKey]);
+            let newValue = indValue;
 
-        // if (lastSymbolData.indicators.ema10.length > 4) {
-        let lastMarket = _.extend(prevMarket, _.omit(market, 'indicators'));
+            if (lastValue !== newValue) {
+                prevIndicators[indKey] = prevIndicators[indKey]
+                    .concat({
+                        value: indValue,
+                        time: market.time
+                    }).slice(-MAX_LENGTH);
+                prevMarket.indicators[indKey + '_trendingUp'] = lastValue < newValue;
+                prevMarket.indicators[indKey + '_trendingDown'] = lastValue > newValue;
+            }
+            return prevIndicators;
+        }, prevMarket.indicators);
+
         checkIndicatorStatus(lastMarket);
-        // }
-      //  if (lastMarket.indicators.ema_ok) {
-         if (lastMarket.buy) {
+
+        if (lastMarket.indicators.ema_ok) {
+            let angle = `${symbol} angle ${lastMarket.indicators.ema_angle.toFixed(2)}`;
+            log(angle, debug);
+        }
+        if (lastMarket.buy) {
             return lastMarket
         }
     }
@@ -67,17 +73,17 @@ const checkIndicatorStatus = function () {
 
             if (_.min([ema10.length, ema20.length]) < MIN_LENGTH) return;
 
-            let [ema10_pre, ema10_cur] = ema10.slice(-2);
-            let [ema20_pre, ema20_cur] = ema20.slice(-2);
-            let [ema10_0,] = ema10;
-            let [ema20_0,] = ema20;
+            let [{value: ema10_pre}, {value: ema10_cur}] = ema10.slice(-2);
+            let [{value: ema20_pre}, {value: ema20_cur}] = ema20.slice(-2);
+            let [{value: ema10_0},] = ema10;
+            let [{value: ema20_0},] = ema20;
 
             indicators.ema_crossing_up = ema10_pre <= ema20_pre && ema10_cur > ema20_cur;
             indicators.ema_crossing_down = ema10_pre >= ema20_pre && ema10_cur < ema20_cur;
             indicators.ema_crossing = indicators.ema_crossing_up || indicators.ema_crossing_down;
             indicators.ema_distance = distance(ema10_cur, ema20_cur);
             indicators.ema_0_distance = distance(ema10_0, ema20_0);
-
+            // indicators.ema_angle = getEmaAngle();
             indicators.ema_ok = ema10_cur > ema20_cur
                 && indicators.ema10_trendingUp
                 && isSorted(indicators.ema10)
@@ -89,6 +95,26 @@ const checkIndicatorStatus = function () {
 
             indicators.buy += +indicators.ema_ok;
 
+
+            function getEmaAngle() {
+                let ema10_0 = _.first(ema10);
+                let ema10_1 = _.last(ema10);
+                let ema20_0 = _.first(ema20);
+                let ema20_1 = _.last(ema20);
+                let ema10y = 10e8 * (ema10_1.value - ema10_0.value);
+                let ema10x = (1 / 1e3) * (ema10_1.time - ema10_0.time);
+                let ema20y = 10e8 * (ema20_1.value - ema20_0.value);
+                let ema20x = (1 / 1e3) * (ema20_1.time - ema20_0.time);
+                let ema10_angle = toDegre(Math.acos(ema10x / Math.sqrt(ema10x ** 2 + ema10y ** 2)))
+                let ema20_angle = toDegre(Math.acos(ema20x / Math.sqrt(ema20x ** 2 + ema20y ** 2)))
+                let ema_angle = ema10_angle - ema20_angle;
+                return ema_angle;
+
+                function toDegre(num) {
+                    return num * 180 / Math.PI
+                }
+            }
+
         }
 
         function checkAdxStatus() {
@@ -99,7 +125,7 @@ const checkIndicatorStatus = function () {
             let [minus_di_pre, minus_di_cur] = adx_minus_di.slice(-2);
             let [plus_di_pre, plus_di_cur] = adx_plus_di.slice(-2);
 
-            indicators.adx_di_distance = plus_di_cur- minus_di_cur;
+            indicators.adx_di_distance = plus_di_cur - minus_di_cur;
             indicators.adx_ok = _.last(adx) > ADX_REF
                 && plus_di_cur > minus_di_cur
                 && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
@@ -108,7 +134,7 @@ const checkIndicatorStatus = function () {
                 && adx_trendingUp
                 && isSorted(indicators.adx)
                 && isSorted(indicators.adx_plus_di)
-                && isSorted(indicators.adx_minus_di, true)
+                && isSorted(indicators.adx_minus_di, {reverse: true})
 
             indicators.buy += +indicators.adx_ok;
         }
@@ -119,7 +145,7 @@ const checkIndicatorStatus = function () {
             indicators.buy += +(rsi_cur < RSI_REF);
         }
 
-        function isSorted(list, reverse) {
+        function isSorted(list, {reverse}) {
             let slist = _.slice(list, -MIN_LENGTH);
             let trendingUp = getChangePercent(_.head(list), _.last(list));
             trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;

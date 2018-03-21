@@ -1,4 +1,4 @@
-const debug = require('debug')('env');
+const debug = require('debug');
 const _ = require('lodash');
 const log = require('log-to-file');
 
@@ -20,7 +20,8 @@ env.BTCQTY = env.isProduction ? env.BTCQTY : 1;
 
 global.debug = console.debug.bind(console);
 
-global.debug2 = _.throttle((msg) => debug(msg), 30e3);
-
-global.log = _.bind(log, null, _, `logs/${global.env.EXCHANGE}_${global.env.TIMEFRAME}_${new Date().toLocaleString()}.txt`);
+global.log = _.wrap(_.bind(log, null, _, `logs/${global.env.EXCHANGE}_${global.env.TIMEFRAME}_${new Date().toLocaleString()}.txt`), (log, txt, debug) => {
+    log(txt);
+    debug && debug(txt);
+});
 global.log('m24 started');

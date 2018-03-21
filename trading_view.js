@@ -3,6 +3,7 @@ const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
 
+const debug2 = _.throttle((msg) => debug(msg), 30e3);
 
 const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
     "filter": [
@@ -34,9 +35,11 @@ const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) 
 });
 
 const beautify = (data) => {
+    let time = new Date().getTime();
     return _(data).map(({d}) => {
             return formalisesymbol({
                 symbol: d[0],
+                time,
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
@@ -48,12 +51,12 @@ const beautify = (data) => {
                 exchange: d[7].toLowerCase(),
                 description: d[8],
                 indicators: {
-                    "adx": [d[9]],
-                    "adx_minus_di": [d[10]],
-                    "adx_plus_di": [d[11]],
-                    "rsi": [d[12]],
-                    "ema10": [d[13]],
-                    "ema20": [d[14]]
+                    "adx": d[9],
+                    "adx_minus_di": d[10],
+                    "adx_plus_di": d[11],
+                    "rsi": d[12],
+                    "ema10": d[13],
+                    "ema20": d[14]
                 }
             });
 
@@ -103,7 +106,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             if (!err) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
-                    debug2('trading view ok');
+                    debug2('trading view ok'+(longTimeframe?'long':''));
                     let beautifyData = beautify(jsonData.data);
                     if (longTimeframe) {
                         return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
