@@ -37,7 +37,25 @@ function toRawTicker(ticker) {
 
 
 function overrideExchange(exchange) {
+    let timeOuts = [];
+    const ORDERS_PER_SECOND = 10, SECOND = 1e3;
+
+    async function orderSync() {
+        let time = new Date().getTime();
+        if (timeOuts.length < ORDERS_PER_SECOND) {
+            timeOuts.push(time)
+        } else {
+            let runTime10 = _.last(timeOuts) - _.first(timeOuts);
+            if (runTime10 < SECOND) {
+                await exchange.sleep(SECOND - runTime10)
+            }
+            timeOuts.shift();
+            timeOuts.push(time);
+        }
+    }
+
     exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
+        await orderSync();
         if (env.isProduction) {
             return privatePostOrder.apply(exchange, args)
         } else {
@@ -57,6 +75,14 @@ function overrideExchange(exchange) {
                 "side": args[0].side
             })
         }
+    });
+    exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
+        await orderSync();
+        return privateDeleteOrder.apply(exchange, args)
+    });
+    exchange.privateGetOrder = _.wrap(exchange.privateGetOrder, async (privateGetOrder, ...args) => {
+        await orderSync();
+        return privateGetOrder.apply(exchange, args)
     })
 }
 
