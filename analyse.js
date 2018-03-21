@@ -44,7 +44,7 @@ const goodToBuy = function () {
 
 const checkIndicatorStatus = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 5, BUY_LEVEL = 3,
+        ADX_DI_DISTANCE_REF = 5, MIN_BUY_LEVEL = 3,
         // MIN_LENGTH = 2
         MIN_LENGTH = 5
     ;
@@ -57,7 +57,7 @@ const checkIndicatorStatus = function () {
         checkAdxStatus();
         checkRsiStatus();
 
-        market.buy = indicators.buyLevel >= BUY_LEVEL;
+        market.buy = indicators.buyLevel >= MIN_BUY_LEVEL;
         // market.buy = market.symbol == 'DLT/BTC' || indicators.buyLevel >= BUY_POSITION;//todo for test
 
         // if (market.buy && 0) {
