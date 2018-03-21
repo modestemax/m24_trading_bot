@@ -28,6 +28,8 @@ const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) 
         , "RSI" + timeframe
         , "EMA10" + timeframe
         , "EMA20" + timeframe
+        , "MACD.macd" + timeframe
+        , "MACD.signal" + timeframe
     ],
     "sort": {"sortBy": "change" + timeframe, "sortOrder": "desc"},
     "options": {"lang": "en"},
@@ -56,7 +58,9 @@ const beautify = (data) => {
                     "adx_plus_di": d[11],
                     "rsi": d[12],
                     "ema10": d[13],
-                    "ema20": d[14]
+                    "ema20": d[14],
+                    "macd": d[15],
+                    "macd_signal": d[16],
                 }
             });
 
@@ -106,7 +110,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             if (!err) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
-                    debug2('trading view ok'+(longTimeframe?'long':''));
+                    debug2('trading view ok' + (longTimeframe ? 'long' : ''));
                     let beautifyData = beautify(jsonData.data);
                     if (longTimeframe) {
                         return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))

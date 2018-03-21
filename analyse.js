@@ -32,10 +32,10 @@ const goodToBuy = function () {
 
         checkIndicatorStatus(lastMarket);
 
-        if (lastMarket.indicators.ema_ok) {
-            let angle = `${symbol} angle ${lastMarket.indicators.ema_angle.toFixed(2)}`;
-            log(angle, debug);
-        }
+        // if (lastMarket.indicators.ema_ok && lastMarket.indicators.ema_angle) {
+        //     let angle = `${symbol} angle ${lastMarket.indicators.ema_angle.toFixed(2)}`;
+        //     log(angle, debug);
+        // }
         if (lastMarket.buy) {
             return lastMarket
         }
@@ -43,8 +43,8 @@ const goodToBuy = function () {
 }();
 
 const checkIndicatorStatus = function () {
-    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 5, BUY_POSITION = 2,
+    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2,
+        ADX_DI_DISTANCE_REF = 5, BUY_LEVEL = 3,
         // MIN_LENGTH = 2
         MIN_LENGTH = 5
     ;
@@ -53,10 +53,11 @@ const checkIndicatorStatus = function () {
         indicators.buy = 0;
 
         checkEmaStatus();
+        checkMacdStatus();
         checkAdxStatus();
         checkRsiStatus();
 
-        market.buy = indicators.buy >= BUY_POSITION;
+        market.buy = indicators.buy >= BUY_LEVEL;
         // market.buy = market.symbol == 'DLT/BTC' || indicators.buy >= BUY_POSITION;//todo for test
 
         // if (market.buy && 0) {
@@ -86,9 +87,9 @@ const checkIndicatorStatus = function () {
             // indicators.ema_angle = getEmaAngle();
             indicators.ema_ok = ema10_cur > ema20_cur
                 && indicators.ema10_trendingUp
-                && isSorted(indicators.ema10)
+                && isSorted(values(indicators.ema10))
                 && indicators.ema20_trendingUp
-                && isSorted(indicators.ema20)
+                && isSorted(values(indicators.ema20))
                 // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
                 && indicators.ema_distance > EMA_DISTANCE_REF
                 && indicators.ema_distance >= indicators.ema_0_distance;
@@ -117,40 +118,74 @@ const checkIndicatorStatus = function () {
 
         }
 
+        function checkMacdStatus() {
+            let {macd, macd_signal} = indicators;
+
+            if (_.min([macd.length, macd_signal.length]) < MIN_LENGTH) return;
+
+            let [{value: macd_pre}, {value: macd_cur}] = macd.slice(-2);
+            let [{value: macd_signal_pre}, {value: macd_signal_cur}] = macd_signal.slice(-2);
+            let [{value: macd_0},] = macd;
+            let [{value: macd_signal_0},] = macd_signal;
+
+            indicators.macd_crossing_up = macd_pre <= macd_signal_pre && macd_cur > macd_signal_cur;
+            indicators.macd_crossing_down = macd_pre >= macd_signal_pre && macd_cur < macd_signal_cur;
+            indicators.macd_crossing = indicators.macd_crossing_up || indicators.macd_crossing_down;
+            indicators.macd_distance = distance(macd_cur, macd_signal_cur);
+            indicators.macd_0_distance = distance(macd_0, macd_signal_0);
+            // indicators.macd_angle = getmacdAngle();
+            indicators.macd_ok = macd_cur > macd_signal_cur
+                && indicators.macd_trendingUp
+                && isSorted(values(indicators.macd))
+                && indicators.macd_signal_trendingUp
+                && isSorted(values(indicators.macd_signal))
+                // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
+                && indicators.macd_distance > MACD_DISTANCE_REF
+                && indicators.macd_distance >= indicators.macd_0_distance;
+
+            indicators.buy += +indicators.macd_ok;
+
+
+        }
+
         function checkAdxStatus() {
             let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
 
             if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) < MIN_LENGTH) return;
 
-            let [minus_di_pre, minus_di_cur] = adx_minus_di.slice(-2);
-            let [plus_di_pre, plus_di_cur] = adx_plus_di.slice(-2);
+            let [{value: minus_di_pre}, {value: minus_di_cur}] = adx_minus_di.slice(-2);
+            let [{value: plus_di_pre}, {value: plus_di_cur}] = adx_plus_di.slice(-2);
 
             indicators.adx_di_distance = plus_di_cur - minus_di_cur;
-            indicators.adx_ok = _.last(adx) > ADX_REF
+            indicators.adx_ok = _.last(adx).value > ADX_REF
                 && plus_di_cur > minus_di_cur
                 && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
                 && adx_plus_di_trendingUp
                 && adx_minus_di_trendingDown
                 && adx_trendingUp
-                && isSorted(indicators.adx)
-                && isSorted(indicators.adx_plus_di)
-                && isSorted(indicators.adx_minus_di, {reverse: true})
+                && isSorted(values(indicators.adx))
+                && isSorted(values(indicators.adx_plus_di))
+                && isSorted(values(indicators.adx_minus_di), {reverse: true})
 
             indicators.buy += +indicators.adx_ok;
         }
 
         function checkRsiStatus() {
             let {rsi} = indicators;
-            let rsi_cur = _.last(rsi);
+            let {value: rsi_cur} = _.last(rsi);
             indicators.buy += +(rsi_cur < RSI_REF);
         }
 
-        function isSorted(list, {reverse}) {
+        function isSorted(list, {reverse = false} = {}) {
             let slist = _.slice(list, -MIN_LENGTH);
             let trendingUp = getChangePercent(_.head(list), _.last(list));
             trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
             return sorted(slist, reverse ? (a, b) => b - a : void 0)
                 || trendingUp;
+        }
+
+        function values(list) {
+            return _.map(list, l => l.value)
         }
 
     }
