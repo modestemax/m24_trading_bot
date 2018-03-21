@@ -50,19 +50,19 @@ const checkIndicatorStatus = function () {
     ;
     return function (market) {
         let {indicators, symbol} = market;
-        indicators.buy = 0;
+        indicators.buyLevel = 0;
 
         checkEmaStatus();
         checkMacdStatus();
         checkAdxStatus();
         checkRsiStatus();
 
-        market.buy = indicators.buy >= BUY_LEVEL;
-        // market.buy = market.symbol == 'DLT/BTC' || indicators.buy >= BUY_POSITION;//todo for test
+        market.buy = indicators.buyLevel >= BUY_LEVEL;
+        // market.buy = market.symbol == 'DLT/BTC' || indicators.buyLevel >= BUY_POSITION;//todo for test
 
         // if (market.buy && 0) {
         //     // console.debug(indicators.adx.slice(-2))
-        //     console.debug(symbol, ' buy: ' + indicators.buy,
+        //     console.debug(symbol, ' buy: ' + indicators.buyLevel,
         //         'Ema Distance', indicators.ema_distance,
         //         'Ema Cross UP', indicators.ema_crossing_up,
         //         'DI Distance', indicators.adx_di_distance,
@@ -94,7 +94,7 @@ const checkIndicatorStatus = function () {
                 && indicators.ema_distance > EMA_DISTANCE_REF
                 && indicators.ema_distance >= indicators.ema_0_distance;
 
-            indicators.buy += +indicators.ema_ok;
+            indicators.buyLevel += +indicators.ema_ok;
 
 
             function getEmaAngle() {
@@ -143,7 +143,7 @@ const checkIndicatorStatus = function () {
                 && indicators.macd_distance > MACD_DISTANCE_REF
                 && indicators.macd_distance >= indicators.macd_0_distance;
 
-            indicators.buy += +indicators.macd_ok;
+            indicators.buyLevel += +indicators.macd_ok;
 
 
         }
@@ -167,13 +167,13 @@ const checkIndicatorStatus = function () {
                 && isSorted(values(indicators.adx_plus_di))
                 && isSorted(values(indicators.adx_minus_di), {reverse: true})
 
-            indicators.buy += +indicators.adx_ok;
+            indicators.buyLevel += +indicators.adx_ok;
         }
 
         function checkRsiStatus() {
             let {rsi} = indicators;
             let {value: rsi_cur} = _.last(rsi);
-            indicators.buy += +(rsi_cur < RSI_REF);
+            indicators.buyLevel += +(rsi_cur < RSI_REF);
         }
 
         function isSorted(list, {reverse = false} = {}) {
