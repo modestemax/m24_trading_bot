@@ -29,7 +29,8 @@ const goodToBuy = function () {
         let lastMarket = _.extend(prevMarket, _.omit(market, 'indicators'));
         checkIndicatorStatus(lastMarket);
         // }
-        if (lastMarket.buy) {
+      //  if (lastMarket.indicators.ema_ok) {
+         if (lastMarket.buy) {
             return lastMarket
         }
     }
@@ -37,7 +38,7 @@ const goodToBuy = function () {
 
 const checkIndicatorStatus = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 1, BUY_POSITION = 2,
+        ADX_DI_DISTANCE_REF = 5, BUY_POSITION = 2,
         // MIN_LENGTH = 2
         MIN_LENGTH = 5
     ;
@@ -92,12 +93,13 @@ const checkIndicatorStatus = function () {
 
         function checkAdxStatus() {
             let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
-            let [minus_di_pre, minus_di_cur] = adx_minus_di.slice(-2);
-            let [plus_di_pre, plus_di_cur] = adx_plus_di.slice(-2);
 
             if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) < MIN_LENGTH) return;
 
-            indicators.adx_di_distance = distance(plus_di_cur, minus_di_cur);
+            let [minus_di_pre, minus_di_cur] = adx_minus_di.slice(-2);
+            let [plus_di_pre, plus_di_cur] = adx_plus_di.slice(-2);
+
+            indicators.adx_di_distance = plus_di_cur- minus_di_cur;
             indicators.adx_ok = _.last(adx) > ADX_REF
                 && plus_di_cur > minus_di_cur
                 && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
