@@ -71,25 +71,40 @@ module.exports = function (exchange) {
         //     symbolWS({symbol})
         // },
 
-        async createStopLossOrder({symbol, amount, orderId, stopPrice}) {
-             amount = exchange.amountToLots(symbol, amount);
-            return exchange.createOrder(symbol, 'STOP_LOSS', 'sell', amount, void 0, {
-                stopPrice,
-                newClientOrderId: orderId
-            })
-        },
-        async editStopLossOrder({symbol, stopLossOrderId, orderId, amount, stopPrice}) {
-            amount = exchange.amountToLots(symbol, amount);
-            return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS', 'sell', amount, void 0, {
-                stopPrice,
-                newClientOrderId: orderId
-            })
-        },
-        async buyMarket({symbol, lastPice, ratio, totalBTC}) {
-            let btc = totalBTC * ratio;
 
-            let amount = exchange.amountToLots(symbol, btc / lastPice);
-            return exchange.createMarketBuyOrder(symbol, amount/*,{newClientOrderId:orderId}*/)
+        async editStopLossOrder({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
+            amount = exchange.amountToLots(symbol, amount);
+            return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
+                stopPrice,
+                price: limitPrice,
+                newClientOrderId: symbol + '_m24',
+                timeInForce: 'GTC'
+            })
+        },
+
+        async createStopLossOrder({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) {
+            return await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
+                    stopPrice: stopLossStopPrice,
+                    price: stopLossLimitPrice,
+                    newClientOrderId: symbol + '_m24',
+                    timeInForce: 'GTC'
+                }
+            )
+        },
+        async buyMarket({symbol, stopLossStopPrice, stopLossLimitPrice, amount}) {
+            try {
+                amount = exchange.amountToLots(symbol, amount);
+                let order = await exchange.createMarketBuyOrder(symbol, amount/*,{newClientOrderId:orderId}*/)
+                order.stopLossOrder = await this.createStopLossOrder({
+                    symbol,
+                    amount: order.amount,
+                    stopLossStopPrice,
+                    stopLossLimitPrice
+                });
+                return order;
+            } catch (ex) {
+                throw  ex
+            }
         },
         async sellMarket({symbol}) {
 
