@@ -37,20 +37,20 @@ function toRawTicker(ticker) {
 
 
 function overrideExchange(exchange) {
-    let timeOuts = [];
+    let rateLimits = [];
     const ORDERS_PER_SECOND = 10, SECOND = 1e3;
 
     async function orderSync() {
         let time = new Date().getTime();
-        if (timeOuts.length < ORDERS_PER_SECOND) {
-            timeOuts.push(time)
+        if (rateLimits.length < ORDERS_PER_SECOND) {
+            rateLimits.push(time)
         } else {
-            let runTime10 = _.last(timeOuts) - _.first(timeOuts);
+            let runTime10 = _.last(rateLimits) - _.first(rateLimits);
             if (runTime10 < SECOND) {
                 await exchange.sleep(SECOND - runTime10)
             }
-            timeOuts.shift();
-            timeOuts.push(time);
+            rateLimits.shift();
+            rateLimits.push(time);
         }
     }
 
