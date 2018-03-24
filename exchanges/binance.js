@@ -25,8 +25,11 @@ async function userData() {
         //console.log(msg);
         if (msg.eventType === 'account') {
             //send balance
+            exchangeEmitter.emit('user_balance', msg.balances);
         } else if (msg.eventType === 'executionReport') {
-            if (/SELL/i.side && /CLODED/i.orderStatus) {
+            if (/SELL/i.test(msg.side) && /NEW/i.test(msg.orderStatus) && /STOP_LOSS_LIMIT/i.test(msg.orderType)) {
+                //new stoploss
+                exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: msg}));
                 debugger
             }
         }

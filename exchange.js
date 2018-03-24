@@ -57,8 +57,12 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
         beautyTicker.red = !beautyTicker.green;
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
     });
-    exchangeEmitter.on('user_balance', ({balance}) => {
-        appEmitter.emit('exchange:balance', {balance});
+
+    exchangeEmitter.on('user_balance', ({balances}) => {
+        appEmitter.emit('exchange:balance', {balances});
+    });
+    exchangeEmitter.on('stop_loss_updated', ({symbol, stopLossOrder}) => {
+        appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder});
     });
 });
 

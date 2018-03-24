@@ -72,7 +72,6 @@ function trade({order, ticker}) {
     order.gainOrLoss = order.gainOrLoss || 0;
     order.maxGain = order.maxGain || order.gainOrLoss;
     order.tradeDuration = moment.duration(new Date().getTime() - order.timestamp).humanize();
-    debugger;
     //it is a market buy, check the  order.price, it may be empty if so use ticker.last
     order.gainOrLoss = getChangePercent(order.price, ticker.last);
     order.maxGain = _.max([order.maxGain, order.gainOrLoss]);
