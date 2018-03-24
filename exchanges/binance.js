@@ -22,7 +22,7 @@ function tickers(exchange) {
 
 async function userData() {
     const clean = await client.ws.user(msg => {
-        //console.log(msg);
+        console.log(msg.eventType);
         if (msg.eventType === 'account') {
             //send balance
             exchangeEmitter.emit('user_balance', msg.balances);
