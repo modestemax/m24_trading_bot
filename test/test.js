@@ -23,9 +23,10 @@ loadExchange('binance').then(async ({exchange, info}) => {
         price = exchange.priceToPrecision(symbol, stopPrice);
         timeInForce = 'GTC';
         orderId = 'toto_tata1';
-        stopLossOrderId = _.find(orders, o => o.side === 'sell' && o.status === 'open' && o.type === 'stop_loss_limit').id;
+        stopLossOrderId = _.find(orders, o => o.side === 'sell' && o.status === 'open' && o.type === 'stop_loss_limit');
+        stopLossOrderId = stopLossOrderId && stopLossOrderId.id;
         if (price * amount > symbolInfo.filters[2].minNotional) {
-            // order = await   stoploss();
+            // order = await   putStoploss();
             // order=  await editStopLoss();
             order = await cancelOrder();
         }
@@ -38,7 +39,7 @@ loadExchange('binance').then(async ({exchange, info}) => {
     }
 
 
-    async function stoploss() {
+    async function putStoploss() {
         let order = await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
             stopPrice,
             price,

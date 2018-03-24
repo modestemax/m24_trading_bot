@@ -7,16 +7,31 @@ const exchangeEmitter = new EventEmitter();
 let {APIKEY, SECRET} = env;
 
 const Binance = require('binance-api-node').default
-const client = Binance({apiKey: APIKEY, apiSecret: SECRET,});
+const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
 
 function tickers(exchange) {
     let symbols = _.keys(exchange.marketsById).filter(id => /btc$/i.test(id));
     let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
-    client.ws.ticker(symbols, ticker => {
+    let clean = client.ws.ticker(symbols, ticker => {
         let rawTicker = toRawTicker(ticker);
         exchangeEmitter.emit('ticker', {ticker: rawTicker});
         logTicker(ticker);
     });
+    keepAlive(clean, () => tickers(exchange));
+}
+
+async function userData() {
+    const clean = await client.ws.user(msg => {
+        console.log(msg)
+    });
+    keepAlive(clean, userData);
+}
+
+function keepAlive(clean, start) {
+    setTimeout(() => {
+        clean();
+        start();
+    }, 60e3 * 50)
 }
 
 function toRawTicker(ticker) {
@@ -36,7 +51,7 @@ function toRawTicker(ticker) {
 }
 
 
-function overrideExchange(exchange) {
+function overrideExchange(exchange, exchangeInfo) {
     let rateLimits = [];
     const ORDERS_PER_SECOND = 10, SECOND = 1e3;
 
@@ -56,24 +71,38 @@ function overrideExchange(exchange) {
 
     exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
         await orderSync();
-        if (env.isProduction) {
-            return privatePostOrder.apply(exchange, args)
+        let {price, stopPrice, symbol, quantity} = args[0];
+        let symbolId = exchange.market(symbol).id;
+        let symbolInfo = exchangeInfo.symbols.find(s => s.symbol === symbolId);
+        let MIN_NOTIONAL = symbolInfo.filters[2].minNotional;
+
+        price = exchange.priceToPrecision(symbol, price);
+        stopPrice = exchange.priceToPrecision(symbol, stopPrice);
+        quantity = exchange.amountToLots(symbol, quantity);
+        // (quantity-minQty) % stepSize == 0
+        if (price * quantity > MIN_NOTIONAL) {
+            Object.assign(args[0], {price, stopPrice, quantity});
+            if (env.isProduction) {
+                return privatePostOrder.apply(exchange, args)
+            } else {
+                let order = await exchange.privatePostOrderTest.apply(exchange, args);
+                return _.extend(order, {
+                    "symbol": args[0].symbol,
+                    "orderId": _.uniq(),
+                    "clientOrderId": args[0].newClientOrderId,
+                    "transactTime": new Date().getTime(),
+                    "price": args[0].stopPrice,
+                    "stopLossPrice": args[0].stopPrice,
+                    "origQty": args[0].quantity,
+                    "executedQty": args[0].quantity,
+                    "status": "FILLED",
+                    "timeInForce": "GTC",
+                    "type": args[0].type,
+                    "side": args[0].side
+                })
+            }
         } else {
-            let order = await exchange.privatePostOrderTest.apply(exchange, args);
-            return _.extend(order, {
-                "symbol": args[0].symbol,
-                "orderId": _.uniq(),
-                "clientOrderId": args[0].newClientOrderId,
-                "transactTime": new Date().getTime(),
-                "price": args[0].stopPrice,
-                "stopLossPrice": args[0].stopPrice,
-                "origQty": args[0].quantity,
-                "executedQty": args[0].quantity,
-                "status": "FILLED",
-                "timeInForce": "GTC",
-                "type": args[0].type,
-                "side": args[0].side
-            })
+            throw new Error(`price * quantity is < to ${MIN_NOTIONAL}`)
         }
     });
     exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
@@ -90,6 +119,7 @@ module.exports = function (exchange) {
     overrideExchange(exchange);
 
     tickers(exchange);
+    userData();
 
     return {
         exchangeEmitter,
@@ -99,7 +129,7 @@ module.exports = function (exchange) {
 
 
         async editStopLossOrder({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
-            amount = exchange.amountToLots(symbol, amount);
+
             return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                 stopPrice,
                 price: limitPrice,
@@ -119,7 +149,6 @@ module.exports = function (exchange) {
         },
         async buyMarket({symbol, stopLossStopPrice, stopLossLimitPrice, amount}) {
             try {
-                amount = exchange.amountToLots(symbol, amount);
                 let order = await exchange.createMarketBuyOrder(symbol, amount/*,{newClientOrderId:orderId}*/)
                 order.stopLossOrder = await this.createStopLossOrder({
                     symbol,

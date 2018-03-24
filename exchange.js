@@ -10,9 +10,9 @@ const STOP_LOSS_BUY_PERCENT = .35;
 
 loadExchange(exchangeId).then(function ({exchange, internal}) {
     let {exchangeEmitter} = internal
-    appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice,stopLossLimitPrice}) => {
+    appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) => {
 
-        internal.buyMarket({symbol, amount, stopLossStopPrice,stopLossLimitPrice})
+        internal.buyMarket({symbol, amount, stopLossStopPrice, stopLossLimitPrice})
             .then(
                 (order) => appEmitter.emit('exchange:buy_ok', {symbol, order}),
                 (error) => appEmitter.emit('exchange:buy_ok', {symbol, error})
@@ -35,10 +35,10 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
     //             (error) => appEmitter.emit('exchange:stop_loss_updated', {error})
     //         )
     // });
-    appEmitter.on('trade:edit_stop_loss', async function putStopLoss({stopLossOrder, stopPrice,limitPrice}) {
+    appEmitter.on('trade:edit_stop_loss', async function putStopLoss({stopLossOrder, stopPrice, limitPrice}) {
         let {symbol, id, amount} = stopLossOrder;
         // let orderId = symbol.toUniqHex();
-        internal.editStopLossOrder({symbol, stopLossOrderId:id,amount, stopPrice,limitPrice})
+        internal.editStopLossOrder({symbol, stopLossOrderId: id, amount, stopPrice, limitPrice})
             .then(
                 (stopLossOrder) => appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder}),
                 (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
@@ -78,7 +78,8 @@ async function loadExchange(exchangeId) {
             // }
         });
         await exchange.loadMarkets();
-        const internal = require('./exchanges/' + exchangeId)(exchange);
+        let info = await exchange.publicGetExchangeInfo();
+        const internal = require('./exchanges/' + exchangeId)(exchange, info);
         debug('market loaded for ' + exchangeId);
         return {exchange, internal};
     } catch (ex) {
