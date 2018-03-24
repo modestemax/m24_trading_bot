@@ -81,30 +81,28 @@ function overrideExchange(exchange) {
         }
     }
 
-    function checkPrecision({symbol, amount, price, stopPrice}) {
+    function checkPrecision({symbol, quantity, price, stopPrice}) {
 
         //mettre ceci dans l'exchange
 
         let market = exchange.marketsById[symbol];
 
-        price = exchange.priceToPrecision(symbol, price);
-        stopPrice = exchange.priceToPrecision(symbol, stopPrice);
-        amount = exchange.amountToLots(symbol, amount);
+        price = price && exchange.priceToPrecision(market.symbol, price);
+        stopPrice = stopPrice && exchange.priceToPrecision(market.symbol, stopPrice);
+        quantity = exchange.amountToLots(market.symbol, quantity);
         ///
-        if (price * amount > market.limits.cost.min) {
-            return {symbol, amount, price, stopPrice}
-        } else {
-            return {}
+        if (price * quantity > market.limits.cost.min || (!price)) {
+            return {symbol, quantity, price, stopPrice}
         }
     }
 
     exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
         await orderSync();
         let {price, stopPrice, symbol, quantity} = args[0];
-        let newValues = checkPrecision({symbol, amount: quantity, price, stopPrice});
+        let newValues = checkPrecision({symbol, quantity, price, stopPrice});
         if (newValues) {
-            ({symbol, amount: quantity, price, stopPrice} = newValues);
-            _.extend(args[0], {price, stopPrice, quantity});
+            ({symbol, quantity, price, stopPrice} = newValues);
+            _.extend(args[0], {price, stopPrice, quantity,newClientOrderId: `${symbol}_m24_t${env.timeframe}`});
             if (env.isProduction) {
                 return privatePostOrder.apply(exchange, args)
             } else {
@@ -151,7 +149,6 @@ module.exports = function (exchange) {
             return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                 stopPrice,
                 price: limitPrice,
-                newClientOrderId: symbol + '_m24',
                 timeInForce: 'GTC'
             })
         },
@@ -160,7 +157,6 @@ module.exports = function (exchange) {
             return await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                     stopPrice: stopLossStopPrice,
                     price: stopLossLimitPrice,
-                    newClientOrderId: symbol + '_m24',
                     timeInForce: 'GTC'
                 }
             )
