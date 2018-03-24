@@ -22,8 +22,17 @@ function tickers(exchange) {
 
 async function userData() {
     const clean = await client.ws.user(msg => {
-        console.log(msg)
+        //console.log(msg);
+        if (msg.eventType === 'account') {
+            //send balance
+        } else if (msg.eventType === 'executionReport') {
+            if (/SELL/i.side && /CLODED/i.orderStatus) {
+                debugger
+            }
+        }
+
     });
+
     keepAlive(clean, userData);
 }
 
@@ -51,7 +60,7 @@ function toRawTicker(ticker) {
 }
 
 
-function overrideExchange(exchange, exchangeInfo) {
+function overrideExchange(exchange) {
     let rateLimits = [];
     const ORDERS_PER_SECOND = 10, SECOND = 1e3;
 
@@ -69,19 +78,30 @@ function overrideExchange(exchange, exchangeInfo) {
         }
     }
 
-    exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
-        await orderSync();
-        let {price, stopPrice, symbol, quantity} = args[0];
-        let symbolId = exchange.market(symbol).id;
-        let symbolInfo = exchangeInfo.symbols.find(s => s.symbol === symbolId);
-        let MIN_NOTIONAL = symbolInfo.filters[2].minNotional;
+    function checkPrecision({symbol, amount, price, stopPrice}) {
+
+        //mettre ceci dans l'exchange
+
+        let market = exchange.marketsById[symbol];
 
         price = exchange.priceToPrecision(symbol, price);
         stopPrice = exchange.priceToPrecision(symbol, stopPrice);
-        quantity = exchange.amountToLots(symbol, quantity);
-        // (quantity-minQty) % stepSize == 0
-        if (price * quantity > MIN_NOTIONAL) {
-            Object.assign(args[0], {price, stopPrice, quantity});
+        amount = exchange.amountToLots(symbol, amount);
+        ///
+        if (price * amount > market.limits.cost.min) {
+            return {symbol, amount, price, stopPrice}
+        } else {
+            return {}
+        }
+    }
+
+    exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
+        await orderSync();
+        let {price, stopPrice, symbol, quantity} = args[0];
+        let newValues = checkPrecision({symbol, amount: quantity, price, stopPrice});
+        if (newValues) {
+            ({symbol, amount: quantity, price, stopPrice} = newValues);
+            _.extend(args[0], {price, stopPrice, quantity});
             if (env.isProduction) {
                 return privatePostOrder.apply(exchange, args)
             } else {
@@ -102,7 +122,7 @@ function overrideExchange(exchange, exchangeInfo) {
                 })
             }
         } else {
-            throw new Error(`price * quantity is < to ${MIN_NOTIONAL}`)
+            throw new Error('Check price & quantity')
         }
     });
     exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
@@ -123,11 +143,6 @@ module.exports = function (exchange) {
 
     return {
         exchangeEmitter,
-        // addTicker({symbol}) {
-        //     symbolWS({symbol})
-        // },
-
-
         async editStopLossOrder({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
 
             return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {

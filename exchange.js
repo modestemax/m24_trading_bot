@@ -9,7 +9,7 @@ const STOP_LOSS_BUY_PERCENT = .35;
 
 
 loadExchange(exchangeId).then(function ({exchange, internal}) {
-    let {exchangeEmitter} = internal
+    let {exchangeEmitter} = internal;
     appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) => {
 
         internal.buyMarket({symbol, amount, stopLossStopPrice, stopLossLimitPrice})
@@ -17,7 +17,6 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
                 (order) => appEmitter.emit('exchange:buy_ok', {symbol, order}),
                 (error) => appEmitter.emit('exchange:buy_ok', {symbol, error})
             );
-
     });
 
     // internalExchangeEmitter.on('trade', ({trade, symbol}) => {
@@ -57,6 +56,9 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
         beautyTicker.green = beautyTicker.open < beautyTicker.close;
         beautyTicker.red = !beautyTicker.green;
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
+    });
+    exchangeEmitter.on('user_balance', ({balance}) => {
+        appEmitter.emit('exchange:balance', {balance});
     });
 });
 
