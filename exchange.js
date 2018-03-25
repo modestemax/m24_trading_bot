@@ -72,7 +72,7 @@ async function loadExchange(exchangeId) {
 
         const exchange = new ccxt[exchangeId]({
             apiKey: APIKEY, secret: SECRET,
-            verbose: true,
+            // verbose: true,
             'options': {
                 'adjustForTimeDifference': true,
                 'verbose': true, // if needed, not mandatory

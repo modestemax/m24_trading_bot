@@ -40,10 +40,14 @@ async function userData() {
 }
 
 function keepAlive(clean, start) {
+    // return;
+
     setTimeout(() => {
         clean();
         start();
-    }, 60e3 * 50)
+        // setTimeout(  start,0);
+    // }, 20e3)
+    }, 24*60*60e3)
 }
 
 function toRawTicker(ticker) {
@@ -102,7 +106,7 @@ function overrideExchange(exchange) {
         let newValues = checkPrecision({symbol, quantity, price, stopPrice});
         if (newValues) {
             ({symbol, quantity, price, stopPrice} = newValues);
-            _.extend(args[0], {price, stopPrice, quantity,newClientOrderId: `${symbol}_m24_t${env.timeframe}`});
+            _.extend(args[0], {price, stopPrice, quantity, newClientOrderId: `${symbol}_m24_t${env.timeframe}`});
             if (env.isProduction) {
                 return privatePostOrder.apply(exchange, args)
             } else {

@@ -70,9 +70,9 @@ function listenToEvents() {
 function trade({order, ticker}) {
     // putStopLoss({order});
     order.gainOrLoss = order.gainOrLoss || 0;
-    order.maxGain = order.maxGain || order.gainOrLoss;
+    order.maxGain = order.maxGain ||0;
     order.tradeDuration = moment.duration(new Date().getTime() - order.timestamp).humanize();
-    //it is a market buy, check the  order.price, it may be empty if so use ticker.last
+    //todo it is a market buy, check the  order.price, it may be empty if so use ticker.last
     order.gainOrLoss = getChangePercent(order.price, ticker.last);
     order.maxGain = _.max([order.maxGain, order.gainOrLoss]);
     updateTrailingStopLoss({order})
@@ -91,6 +91,7 @@ function updateTrailingStopLoss({order}) {
     let change = order.maxGain - order.prevMaxGain;
     if (change >= TRAILING_CHANGE_PERCENT) {
         let {stopLossOrder} = order;
+        //todo
         let stopPrice = stopLossOrder.price + change;
         appEmitter.emit('trade:edit_stop_loss', {stopLossOrder, stopPrice, limitPrice: stopPrice})
     }
