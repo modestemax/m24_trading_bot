@@ -4,7 +4,7 @@ const log = require('log-to-file');
 
 
 const apijson = process.env.HOME + '/.api.json';
-const api = require(apijson);
+const api = require(apijson).max;
 
 const env = process.env;
 

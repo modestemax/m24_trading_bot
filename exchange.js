@@ -89,7 +89,8 @@ async function loadExchange(exchangeId) {
         debug('market loaded for ' + exchangeId);
         return {exchange, internal};
     } catch (ex) {
-        log('Load Exchange Error' + ex, debug);
+        log('Load Exchange Error\n' +
+            '' + ex, debug);
         process.exit(1);
     }
 }
