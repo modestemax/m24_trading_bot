@@ -48,8 +48,9 @@ const checkIndicatorStatus = function () {
         indicators.weight = 0;
 
 
-        let totalWeight = checkTrendStatus();
-        if (indicators.trend_ok) {
+        let totalWeight = checkLongTrendStatus();
+        indicators.trendLong_ok && check24TrendStatus();
+        if (indicators.trend24_ok) {
             totalWeight += checkDepthStatus() +
                 checkEmaStatus() +
                 checkMacdStatus() +
@@ -60,9 +61,15 @@ const checkIndicatorStatus = function () {
             signal.buy = indicators.weight / totalWeight >= MIN_BUY_WEIGHT;
         }
 
-        function checkTrendStatus(weight = 1) {
-            indicators.trend_ok = (ticker.percentage > CHANGE_24H_FOR_TRADE && longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE);
-            indicators.weight += indicators.trend_ok && weight;
+        function checkLongTrendStatus(weight = .5) {
+            indicators.trendLong_ok = (longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE);
+            indicators.weight += indicators.trendLong_ok && weight;
+            return weight;
+        }
+
+        function check24TrendStatus(weight = .5) {
+            indicators.trend24_ok = ticker && (ticker.percentage > CHANGE_24H_FOR_TRADE);
+            indicators.weight += indicators.trend24_ok && weight;
             return weight;
         }
 
@@ -259,16 +266,22 @@ function listenToEvents() {
     function checkSignal({ticker, depth, signal, longSignal}) {
         setImmediate(() => {
             let {symbol} = ticker.symbol;
-            if (ticker /*&& depth*/ && signal && longSignal) {
+            if (/*ticker && depth &&*/ signal && longSignal) {
                 debug('checking ' + symbol);
                 let {buy, buyWeight, signal} = goodToBuy({ticker, depth, signal, longSignal});
                 if (buy) {
                     setImmediate(() => appEmitter.emit('analyse:try_trade', {market: signal, ticker}));
                 } else {
-                    if (buyWeight) {
-                        appEmitter.emit('analyse:fetch_depth', {symbol});
-                    } else {
+                    if (!buyWeight) {
+                        appEmitter.emit('analyse:no_fetch_ticker', {symbol});
                         appEmitter.emit('analyse:no_fetch_depth', {symbol});
+                    } else {
+                        if (buyWeight >= .5) {
+                            appEmitter.emit('analyse:fetch_ticker', {symbol});
+                        }
+                        if (buyWeight >= 1) {
+                            appEmitter.emit('analyse:fetch_depth', {symbol});
+                        }
                     }
                 }
 

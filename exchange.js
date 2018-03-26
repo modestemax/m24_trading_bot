@@ -58,6 +58,12 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
     appEmitter.on('analyse:no_fetch_depth', ({symbol}) => {
         internal.noDepth({symbol});
     });
+    appEmitter.on('analyse:fetch_ticker', ({symbol}) => {
+        internal.ticker({symbol});
+    });
+    appEmitter.on('analyse:no_fetch_ticker', ({symbol}) => {
+        internal.noTicker({symbol});
+    });
 
 
     exchangeEmitter.on('ticker', ({ticker}) => {

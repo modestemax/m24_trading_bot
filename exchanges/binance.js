@@ -10,31 +10,41 @@ const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
 
 function manageDepth(exchange) {
-    const depthSymbols = {};
+    return manageSocket({exchange, createSocket: depth, name: 'depth'});
+}
+
+function manageTicker(exchange) {
+    return manageSocket({exchange, createSocket: ticker, name: 'ticker'});
+}
+
+function manageSocket({exchange, createSocket, name}) {
+    const socketStore = {};
     return ({symbol, add}) => {
-        if (add && !depthSymbols[symbol]) {
-            depthSymbols[symbol] = {
-                clean: depth({exchange, symbol}),
-                timeout: keepAlive(depthSymbols[symbol], () => depthSymbols[symbol] = depth({exchange, symbol}))
+        if (add && !socketStore[symbol]) {
+            debug('adding socket ' + name + ' for ' + symbol);
+            socketStore[symbol] = {
+                clean: createSocket({exchange, symbol}),
+                timeout: keepAlive(socketStore[symbol], () => socketStore[symbol] = createSocket({exchange, symbol}))
             }
-        } else if (!add && depthSymbols[symbol]) {
-            let {clean, timeout} = depthSymbols[symbol];
+        } else if (!add && socketStore[symbol]) {
+            debug('removing socket ' + name + ' for ' + symbol);
+            let {clean, timeout} = socketStore[symbol];
             clearTimeout(timeout);
             clean();
         }
     }
-};
+}
 
 
-function tickers(exchange) {
-    let symbols = getTradingSymbols(exchange);
+function ticker({exchange, symbol}) {
+    let symbols = symbol ? [symbol] : getTradingSymbols(exchange);
     let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
     let clean = client.ws.ticker(symbols, ticker => {
         let rawTicker = toRawTicker(ticker);
         exchangeEmitter.emit('ticker', {ticker: rawTicker});
         logTicker(ticker);
     });
-    keepAlive(clean, () => tickers(exchange));
+    return symbol ? clean : keepAlive(clean, () => ticker({exchange, symbol}));
 }
 
 function depth({exchange, symbol}) {
@@ -186,8 +196,9 @@ function overrideExchange(exchange) {
 module.exports = function (exchange) {
     overrideExchange(exchange);
     const doDepth = manageDepth(exchange);
-    debug('listening to tickers')
-    tickers(exchange);
+    const doTicker = manageTicker(exchange);
+    // debug('listening to tickers')
+    // tickers(exchange);
     // debug('listening to depth')
     // depth({exchange});
     debug('listening to user data')
@@ -231,6 +242,12 @@ module.exports = function (exchange) {
         },
         noDepth({symbol}) {
             doDepth({symbol, add: false})
+        },
+        ticker({symbol}) {
+            doTicker({symbol, add: true})
+        },
+        noTicker({symbol}) {
+            doTicker({symbol, add: false})
         },
 
         async sellMarket({symbol}) {
