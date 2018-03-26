@@ -1,0 +1,38 @@
+{
+  "dependencies": {
+    "binance-api-node": "^0.7.4",
+    "ccxt": "^1.12.10",
+    "curl": "^0.1.4",
+    "debug": "^3.1.0",
+    "is-sorted": "^1.0.4",
+    "lodash": "^4.17.5",
+    "log-to-file": "^1.2.2",
+    "moment": "^2.21.0",
+    "text-hex": "^0.0.0"
+  },
+  "name": "m24_trading_bot",
+  "description": "trading bot",
+  "version": "1.0.0",
+  "main": "app.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modestemax/m24_trading_bot.git"
+  },
+  "keywords": [
+    "trading",
+    "bot"
+  ],
+  "author": "Modeste Nana",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modestemax/m24_trading_bot/issues"
+  },
+  "homepage": "https://github.com/modestemax/m24_trading_bot#readme"
+}
