@@ -30,6 +30,8 @@ const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) 
         , "EMA20" + timeframe
         , "MACD.macd" + timeframe
         , "MACD.signal" + timeframe
+        , "Aroon.Up" + timeframe
+        , "Aroon.Down" + timeframe
     ],
     "sort": {"sortBy": "change" + timeframe, "sortOrder": "desc"},
     "options": {"lang": "en"},
@@ -61,6 +63,8 @@ const beautify = (data) => {
                     "ema20": d[14],
                     "macd": d[15],
                     "macd_signal": d[16],
+                    "aroon_up": d[17],
+                    "aroon_down": d[18],
                 }
             });
 

@@ -43,10 +43,10 @@ const goodToBuy = function () {
 }();
 
 const checkIndicatorStatus = function () {
-    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2,
-        ADX_DI_DISTANCE_REF = 5, MIN_BUY_LEVEL = 3,
-        // MIN_LENGTH = 2
-        MIN_LENGTH = 5
+    const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2, AROON_DISTANCE_REF = 50,
+        ADX_DI_DISTANCE_REF = 5, MIN_BUY_LEVEL = 4,
+        MIN_LENGTH = 3
+        // MIN_LENGTH = 5
     ;
     return function (market) {
         let {indicators, symbol} = market;
@@ -54,6 +54,7 @@ const checkIndicatorStatus = function () {
 
         checkEmaStatus();
         checkMacdStatus();
+        checkAroonStatus();
         checkAdxStatus();
         checkRsiStatus();
 
@@ -119,6 +120,7 @@ const checkIndicatorStatus = function () {
         }
 
         function checkMacdStatus() {
+            //macd >macd_signal
             let {macd, macd_signal} = indicators;
 
             if (_.min([macd.length, macd_signal.length]) < MIN_LENGTH) return;
@@ -146,6 +148,24 @@ const checkIndicatorStatus = function () {
             indicators.buyLevel += +indicators.macd_ok;
 
 
+        }
+
+        function checkAroonStatus() {
+            let {aroon_up, aroon_down} = indicators;
+
+            if (_.min([aroon_up.length, aroon_down.length]) < 1) return;
+
+            let {value: aroon_up_cur} = _.last(aroon_up);
+            let {value: aroon_down_cur} = _.last(aroon_down);
+
+            indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
+
+            indicators.aroon_ok = aroon_up_cur > aroon_down_cur
+                && aroon_up_cur >= 70
+                && aroon_down_cur < 30
+                && indicators.aroon_distance >= AROON_DISTANCE_REF;
+
+            indicators.buyLevel += +indicators.aroon_ok;
         }
 
         function checkAdxStatus() {
