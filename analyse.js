@@ -4,16 +4,16 @@ const sorted = require('is-sorted');
 const {getChangePercent, updatePrice} = require('./utils');
 
 const goodToBuy = function () {
-    let markets = {};
+    let symbolsData = {};
     const MAX_LENGTH = 10;
-    return function (market) {
-        let {symbol} = market;
-        let prevMarket = markets[symbol] || market;
+    return function ({ticker, depth, signal, longSignal}) {
+        let {symbol} = signal;
+        let prevSignal = symbolsData[symbol] || signal;
 
-        let lastMarket = markets[symbol] = _.extend(prevMarket, _.omit(market, 'indicators'));
-        prevMarket.indicators = _.reduce(market.indicators, (prevIndicators, indValue, indKey) => {
+        let lastSignal = symbolsData[symbol] = _.extend(prevSignal, _.omit(signal, 'indicators'));
+        prevSignal.indicators = _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
             if (!_.isArray(prevIndicators[indKey])) {
-                prevIndicators[indKey] = [{value: prevIndicators[indKey], time: market.time}];
+                prevIndicators[indKey] = [{value: prevIndicators[indKey], time: signal.time}];
             }
             let {value: lastValue} = _.last(prevIndicators[indKey]);
             let newValue = indValue;
@@ -22,80 +22,86 @@ const goodToBuy = function () {
                 prevIndicators[indKey] = prevIndicators[indKey]
                     .concat({
                         value: indValue,
-                        time: market.time
+                        time: signal.time
                     }).slice(-MAX_LENGTH);
-                prevMarket.indicators[indKey + '_trendingUp'] = lastValue < newValue;
-                prevMarket.indicators[indKey + '_trendingDown'] = lastValue > newValue;
+                prevSignal.indicators[indKey + '_trendingUp'] = lastValue < newValue;
+                prevSignal.indicators[indKey + '_trendingDown'] = lastValue > newValue;
             }
             return prevIndicators;
-        }, prevMarket.indicators);
+        }, prevSignal.indicators);
 
-        checkIndicatorStatus(lastMarket);
+        checkIndicatorStatus({ticker, depth, signal: lastSignal, longSignal});
 
         // if (lastMarket.indicators.ema_ok && lastMarket.indicators.ema_angle) {
         //     let angle = `${symbol} angle ${lastMarket.indicators.ema_angle.toFixed(2)}`;
         //     log(angle, debug);
         // }
-        if (lastMarket.buy) {
-            return lastMarket
+        if (lastSignal.buy) {
+            return lastSignal
         }
     }
 }();
 
 const checkIndicatorStatus = function () {
     const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2, AROON_DISTANCE_REF = 50,
-        ADX_DI_DISTANCE_REF = 5, MIN_BUY_LEVEL = 4,
+        ADX_DI_DISTANCE_REF = 5, MIN_BUY_WEIGTH = 70 / 100, CHANGE_24H_FOR_TRADE = 2,
+        CHANGE_LONG_TIMEFRAME_FOR_TRADE = 1,
         MIN_LENGTH = 3
         // MIN_LENGTH = 5
     ;
-    return function (market) {
-        let {indicators, symbol} = market;
-        indicators.buyLevel = 0;
+    return function ({ticker, depth, signal, longSignal}) {
+        let {indicators, symbol, close} = signal;
+        indicators.buyWeith = 0;
 
-        checkEmaStatus();
-        checkMacdStatus();
-        checkAroonStatus();
-        checkAdxStatus();
-        checkRsiStatus();
 
-        market.buy = indicators.buyLevel >= MIN_BUY_LEVEL;
-        // market.buy = market.symbol == 'DLT/BTC' || indicators.buyLevel >= BUY_POSITION;//todo for test
+        let totalWeigth = checkTrendStatus();
+        if (indicators.trend_ok) {
+            totalWeigth += checkDepthStatus() +
+                checkEmaStatus() +
+                checkMacdStatus() +
+                checkAroonStatus() +
+                checkAdxStatus() +
+                checkVwmaStatus() +
+                checkRsiStatus();
+            signal.buy = indicators.buyWeith / totalWeigth >= MIN_BUY_WEIGTH;
+        }
 
-        // if (market.buy && 0) {
-        //     // console.debug(indicators.adx.slice(-2))
-        //     console.debug(symbol, ' buy: ' + indicators.buyLevel,
-        //         'Ema Distance', indicators.ema_distance,
-        //         'Ema Cross UP', indicators.ema_crossing_up,
-        //         'DI Distance', indicators.adx_di_distance,
-        //         'Original Signal: ', market.signalString)
-        // }
+        function checkTrendStatus(weigth = 1) {
+            indicators.trend_ok = (ticker.percentage > CHANGE_24H_FOR_TRADE && longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE);
+            indicators.buyWeith += indicators.trend_ok && weigth;
+            return weigth;
+        }
 
-        function checkEmaStatus() {
+        function checkDepthStatus(weigth = 1) {
+            indicators.depth_ok = (depth.bidBTC > depth.askBTC)
+            indicators.buyWeith += indicators.depth_ok && weigth
+            return weigth;
+        }
+
+        function checkEmaStatus(weigth = 1) {
             let {ema10, ema20} = indicators;
 
-            if (_.min([ema10.length, ema20.length]) < MIN_LENGTH) return;
-
-            let [{value: ema10_pre}, {value: ema10_cur}] = ema10.slice(-2);
-            let [{value: ema20_pre}, {value: ema20_cur}] = ema20.slice(-2);
-            let [{value: ema10_0},] = ema10;
-            let [{value: ema20_0},] = ema20;
-
-            indicators.ema_crossing_up = ema10_pre <= ema20_pre && ema10_cur > ema20_cur;
-            indicators.ema_crossing_down = ema10_pre >= ema20_pre && ema10_cur < ema20_cur;
-            indicators.ema_crossing = indicators.ema_crossing_up || indicators.ema_crossing_down;
-            indicators.ema_distance = distance(ema10_cur, ema20_cur);
-            indicators.ema_0_distance = distance(ema10_0, ema20_0);
-            // indicators.ema_angle = getEmaAngle();
-            indicators.ema_ok = ema10_cur > ema20_cur
-                && indicators.ema10_trendingUp
-                && isSorted(values(indicators.ema10))
-                && indicators.ema20_trendingUp
-                && isSorted(values(indicators.ema20))
-                // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
-                && indicators.ema_distance > EMA_DISTANCE_REF
-                && indicators.ema_distance >= indicators.ema_0_distance;
-
-            indicators.buyLevel += +indicators.ema_ok;
+            if (_.min([ema10.length, ema20.length]) >= MIN_LENGTH) {
+                let [{value: ema10_pre}, {value: ema10_cur}] = ema10.slice(-2);
+                let [{value: ema20_pre}, {value: ema20_cur}] = ema20.slice(-2);
+                let [{value: ema10_0},] = ema10;
+                let [{value: ema20_0},] = ema20;
+                indicators.ema_crossing_up = ema10_pre <= ema20_pre && ema10_cur > ema20_cur;
+                indicators.ema_crossing_down = ema10_pre >= ema20_pre && ema10_cur < ema20_cur;
+                indicators.ema_crossing = indicators.ema_crossing_up || indicators.ema_crossing_down;
+                indicators.ema_distance = distance(ema10_cur, ema20_cur);
+                indicators.ema_0_distance = distance(ema10_0, ema20_0);
+                indicators.ema_ok = ema10_cur > ema20_cur
+                    && indicators.ema10_trendingUp
+                    && isSorted(values(indicators.ema10))
+                    && indicators.ema20_trendingUp
+                    && isSorted(values(indicators.ema20))
+                    // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
+                    && indicators.ema_distance > EMA_DISTANCE_REF
+                    && indicators.ema_distance >= indicators.ema_0_distance;
+                indicators.buyWeith += indicators.ema_ok && weigth;
+            }
+            return weigth;
 
 
             function getEmaAngle() {
@@ -119,81 +125,92 @@ const checkIndicatorStatus = function () {
 
         }
 
-        function checkMacdStatus() {
+        function checkMacdStatus(weigth = 1) {
             //macd >macd_signal
             let {macd, macd_signal} = indicators;
 
-            if (_.min([macd.length, macd_signal.length]) < MIN_LENGTH) return;
-
-            let [{value: macd_pre}, {value: macd_cur}] = macd.slice(-2);
-            let [{value: macd_signal_pre}, {value: macd_signal_cur}] = macd_signal.slice(-2);
-            let [{value: macd_0},] = macd;
-            let [{value: macd_signal_0},] = macd_signal;
-
-            indicators.macd_crossing_up = macd_pre <= macd_signal_pre && macd_cur > macd_signal_cur;
-            indicators.macd_crossing_down = macd_pre >= macd_signal_pre && macd_cur < macd_signal_cur;
-            indicators.macd_crossing = indicators.macd_crossing_up || indicators.macd_crossing_down;
-            indicators.macd_distance = distance(macd_cur, macd_signal_cur);
-            indicators.macd_0_distance = distance(macd_0, macd_signal_0);
-            // indicators.macd_angle = getmacdAngle();
-            indicators.macd_ok = macd_cur > macd_signal_cur
-                && indicators.macd_trendingUp
-                && isSorted(values(indicators.macd))
-                && indicators.macd_signal_trendingUp
-                && isSorted(values(indicators.macd_signal))
-                // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
-                && indicators.macd_distance > MACD_DISTANCE_REF
-                && indicators.macd_distance >= indicators.macd_0_distance;
-
-            indicators.buyLevel += +indicators.macd_ok;
-
+            if (_.min([macd.length, macd_signal.length]) >= MIN_LENGTH) {
+                let [{value: macd_pre}, {value: macd_cur}] = macd.slice(-2);
+                let [{value: macd_signal_pre}, {value: macd_signal_cur}] = macd_signal.slice(-2);
+                let [{value: macd_0},] = macd;
+                let [{value: macd_signal_0},] = macd_signal;
+                indicators.macd_crossing_up = macd_pre <= macd_signal_pre && macd_cur > macd_signal_cur;
+                indicators.macd_crossing_down = macd_pre >= macd_signal_pre && macd_cur < macd_signal_cur;
+                indicators.macd_crossing = indicators.macd_crossing_up || indicators.macd_crossing_down;
+                indicators.macd_distance = distance(macd_cur, macd_signal_cur);
+                indicators.macd_0_distance = distance(macd_0, macd_signal_0);
+                indicators.macd_ok = macd_cur > macd_signal_cur
+                    && indicators.macd_trendingUp
+                    && isSorted(values(indicators.macd))
+                    && indicators.macd_signal_trendingUp
+                    && isSorted(values(indicators.macd_signal))
+                    // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
+                    && indicators.macd_distance > MACD_DISTANCE_REF
+                    && indicators.macd_distance >= indicators.macd_0_distance;
+                indicators.buyWeith += indicators.macd_ok && weigth;
+            }
+            return weigth;
 
         }
 
-        function checkAroonStatus() {
+        function checkAroonStatus(weigth = 1) {
             let {aroon_up, aroon_down} = indicators;
 
-            if (_.min([aroon_up.length, aroon_down.length]) < 1) return;
-
-            let {value: aroon_up_cur} = _.last(aroon_up);
-            let {value: aroon_down_cur} = _.last(aroon_down);
-
-            indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
-
-            indicators.aroon_ok = aroon_up_cur > aroon_down_cur
-                && aroon_up_cur >= 70
-                && aroon_down_cur < 30
-                && indicators.aroon_distance >= AROON_DISTANCE_REF;
-
-            indicators.buyLevel += +indicators.aroon_ok;
+            if (_.min([aroon_up.length, aroon_down.length]) >= 1) {
+                let {value: aroon_up_cur} = _.last(aroon_up);
+                let {value: aroon_down_cur} = _.last(aroon_down);
+                indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
+                indicators.aroon_ok = aroon_up_cur > aroon_down_cur
+                    && aroon_up_cur >= 70
+                    && aroon_down_cur < 30
+                    && indicators.aroon_distance >= AROON_DISTANCE_REF
+                ;
+                if (indicators.aroon_ok && _.min([aroon_up.length, aroon_down.length]) > 1) {
+                    indicators.aroon_ok = indicators.aroon_up_trendingUp && indicators.aroon_down_trendingDown
+                }
+                indicators.buyWeith += indicators.aroon_ok && weigth;
+            }
+            return weigth;
         }
 
-        function checkAdxStatus() {
+        function checkAdxStatus(weigth = 1) {
             let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
 
-            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) < MIN_LENGTH) return;
-
-            let [{value: minus_di_pre}, {value: minus_di_cur}] = adx_minus_di.slice(-2);
-            let [{value: plus_di_pre}, {value: plus_di_cur}] = adx_plus_di.slice(-2);
-
-            indicators.adx_di_distance = plus_di_cur - minus_di_cur;
-            indicators.adx_ok = _.last(adx).value > ADX_REF
-                && plus_di_cur > minus_di_cur
-                && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
-                && adx_plus_di_trendingUp
-                && adx_minus_di_trendingDown
-                && adx_trendingUp
-                && isSorted(values(indicators.adx))
-                && isSorted(values(indicators.adx_plus_di))
-                && isSorted(values(indicators.adx_minus_di), {reverse: true})
-
-            indicators.buyLevel += +indicators.adx_ok;
+            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= MIN_LENGTH) {
+                let [{value: minus_di_pre}, {value: minus_di_cur}] = adx_minus_di.slice(-2);
+                let [{value: plus_di_pre}, {value: plus_di_cur}] = adx_plus_di.slice(-2);
+                indicators.adx_di_distance = plus_di_cur - minus_di_cur;
+                indicators.adx_ok = _.last(adx).value > ADX_REF
+                    && plus_di_cur > minus_di_cur
+                    && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
+                    && adx_plus_di_trendingUp
+                    && adx_minus_di_trendingDown
+                    && adx_trendingUp
+                    && isSorted(values(indicators.adx))
+                    && isSorted(values(indicators.adx_plus_di))
+                    && isSorted(values(indicators.adx_minus_di), {reverse: true})
+                indicators.buyWeith += indicators.adx_ok && weigth;
+            }
+            return weigth;
         }
 
-        function checkRsiStatus() {
+        function checkVwmaStatus(weigth = 1) {
+            // vwma buy when it's < close price
+            let {vwma} = indicators;
+            if (vwma.length < 1) return;
+            let {value: vwma_cur} = _.last(vwma);
+            indicators.vwma_ok = (vwma_cur < close);
+            indicators.buyWeith += indicators.vwma_ok && weigth;
+            return weigth;
+        }
+
+        function checkRsiStatus(weigth = 1) {
             let {rsi} = indicators;
+            if (rsi.length < 1) return;
             let {value: rsi_cur} = _.last(rsi);
-            indicators.buyLevel += +(rsi_cur < RSI_REF);
+            indicators.rsi_ok = (rsi_cur < RSI_REF);
+            indicators.buyWeith += indicators.rsi_ok && weigth;
+            return weigth;
         }
 
         function isSorted(list, {reverse = false} = {}) {
@@ -223,6 +240,10 @@ function listenToEvents() {
         addSymbolData({symbol: ticker.symbol, prop: 'ticker', data: ticker});
         // checkSignal(symbolsDta[ticker.symbol])
     });
+    appEmitter.on('exchange:depth', ({depth}) => {
+        addSymbolData({symbol: depth.symbol, prop: 'depth', data: depth});
+        // checkSignal(symbolsDta[ticker.symbol])
+    });
     appEmitter.on('tv:signals_long_timeframe', ({markets}) => {
         _.forEach(markets, market => {
             addSymbolData({symbol: market.symbol, prop: 'longSignal', data: market});
@@ -241,17 +262,15 @@ function listenToEvents() {
         tickerData[prop] = data;
     }
 
-    function checkSignal({ticker, signal, longSignal}) {
+    function checkSignal({ticker, depth, signal, longSignal}) {
         setImmediate(() => {
-            const CHANGE_24H_FOR_TRADE = 2;
-            const CHANGE_LONG_TIMEFRAME_FOR_TRADE = 2;
-            if (ticker && signal && longSignal) {
-                if (ticker.percentage > CHANGE_24H_FOR_TRADE && longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE) {
-                    let marketBuy = goodToBuy(signal);
-                    if (marketBuy) {
-                        setImmediate(() => appEmitter.emit('analyse:try_trade', {market: marketBuy, ticker}));
-                    }
+            if (ticker && depth && signal && longSignal) {
+                debug('checking ' + ticker.symbol);
+                let marketBuy = goodToBuy({ticker, depth, signal, longSignal});
+                if (marketBuy) {
+                    setImmediate(() => appEmitter.emit('analyse:try_trade', {market: marketBuy, ticker}));
                 }
+
             }
         })
 

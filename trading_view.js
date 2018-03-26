@@ -5,10 +5,10 @@ const appEmitter = require('./events');
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
 
-const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
+const params = ({timeframe = '1D', exchange = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
     "filter": [
         {"left": "change" + timeframe, "operation": "nempty"},
-        {"left": "exchange", "operation": "equal", "right": "BINANCE"},
+        {"left": "exchange", "operation": "equal", "right": exchange.toUpperCase()},
         {"left": "name,description", "operation": "match", "right": "BTC$"}
     ],
     "symbols": {"query": {"types": []}},
@@ -32,6 +32,7 @@ const params = ({timeframe = '1D'} = {}) => ((timeframe = /1d/i.test(timeframe) 
         , "MACD.signal" + timeframe
         , "Aroon.Up" + timeframe
         , "Aroon.Down" + timeframe
+        , "VWMA" + timeframe
     ],
     "sort": {"sortBy": "change" + timeframe, "sortOrder": "desc"},
     "options": {"lang": "en"},
@@ -65,6 +66,7 @@ const beautify = (data) => {
                     "macd_signal": d[16],
                     "aroon_up": d[17],
                     "aroon_down": d[18],
+                    "vwma": d[19],
                 }
             });
 
@@ -114,7 +116,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             if (!err) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
-                    debug2('trading view ok' + (longTimeframe ? 'long' : ''));
+                    debug2('trading view ok ' + (longTimeframe ? 'long' : ''));
                     let beautifyData = beautify(jsonData.data);
                     if (longTimeframe) {
                         return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
@@ -129,21 +131,22 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
             console.log('trading_view exception:', longTimeframe, ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 11e3 : 2e3);
+            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 99e3 : 2e3);
         }
     })
 }
 
 const timeframe = env.TIMEFRAME;
+const exchange = env.EXCHANGE;
 
-getSignals({data: params({timeframe})});
+getSignals({data: params({timeframe, exchange})});
 
 switch (timeframe) {
     case 15:
-        getSignals({data: params({timeframe: 60}), longTimeframe: true});
+        getSignals({data: params({timeframe: 60, exchange}), longTimeframe: true});
         break;
     case 60:
-        getSignals({data: params({timeframe: '1D'}), longTimeframe: true});
+        getSignals({data: params({timeframe: '1D', exchange}), longTimeframe: true});
         break;
 }
 

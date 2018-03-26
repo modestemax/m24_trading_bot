@@ -4,3 +4,4 @@ require('./trading_view');
 require('./analyse');
 require('./trade');
 require('./exchange');
+

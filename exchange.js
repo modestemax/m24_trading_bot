@@ -57,6 +57,10 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
         beautyTicker.red = !beautyTicker.green;
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
     });
+    exchangeEmitter.on('depth', ({depth}) => {
+        depth.symbol=exchange.marketsById[depth.symbol].symbol
+        appEmitter.emit('exchange:depth', {depth});
+    });
 
     exchangeEmitter.on('user_balance', ({balances}) => {
         appEmitter.emit('exchange:balance', {balances});
