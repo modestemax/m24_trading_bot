@@ -9,6 +9,23 @@ let {APIKEY, SECRET} = env;
 const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
 
+function manageDepth(exchange) {
+    const depthSymbols = {};
+    return ({symbol, add}) => {
+        if (add && !depthSymbols[symbol]) {
+            depthSymbols[symbol] = {
+                clean: depth({exchange, symbol}),
+                timeout: keepAlive(depthSymbols[symbol], () => depthSymbols[symbol] = depth({exchange, symbol}))
+            }
+        } else if (!add && depthSymbols[symbol]) {
+            let {clean, timeout} = depthSymbols[symbol];
+            clearTimeout(timeout);
+            clean();
+        }
+    }
+};
+
+
 function tickers(exchange) {
     let symbols = getTradingSymbols(exchange);
     let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
@@ -20,8 +37,8 @@ function tickers(exchange) {
     keepAlive(clean, () => tickers(exchange));
 }
 
-function depth(exchange) {
-    let symbols = getTradingSymbols(exchange).map(symbol => ({symbol, level: 5}));
+function depth({exchange, symbol}) {
+    let symbols = symbol ? [symbol] : getTradingSymbols(exchange).map(symbol => ({symbol, level: 5}));
     let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
 
     let clean = client.ws.partialDepth(symbols, depth => {
@@ -29,7 +46,7 @@ function depth(exchange) {
         exchangeEmitter.emit('depth', {depth});
         logDepth(depth);
     });
-    keepAlive(clean, () => depth(exchange));
+    return symbol ? clean : keepAlive(clean, () => depth({exchange, symbol}));
 }
 
 function getTradingSymbols(exchange) {
@@ -68,9 +85,7 @@ async function userData() {
 }
 
 function keepAlive(clean, start) {
-    // return;
-
-    setTimeout(() => {
+    return setTimeout(() => {
         clean();
         start();
         // setTimeout(  start,0);
@@ -170,11 +185,11 @@ function overrideExchange(exchange) {
 
 module.exports = function (exchange) {
     overrideExchange(exchange);
-
+    const doDepth = manageDepth(exchange);
     debug('listening to tickers')
     tickers(exchange);
-    debug('listening to depth')
-    depth(exchange);
+    // debug('listening to depth')
+    // depth({exchange});
     debug('listening to user data')
     userData();
 
@@ -211,6 +226,13 @@ module.exports = function (exchange) {
                 throw  ex
             }
         },
+        depth({symbol}) {
+            doDepth({symbol, add: true})
+        },
+        noDepth({symbol}) {
+            doDepth({symbol, add: false})
+        },
+
         async sellMarket({symbol}) {
 
         },

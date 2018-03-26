@@ -51,6 +51,15 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
             .catch((error) => appEmitter.emit('exchange:sell_ok:' + symbol, {error}))
     });
 
+
+    appEmitter.on('analyse:fetch_depth', ({symbol}) => {
+        internal.depth({symbol});
+    });
+    appEmitter.on('analyse:no_fetch_depth', ({symbol}) => {
+        internal.noDepth({symbol});
+    });
+
+
     exchangeEmitter.on('ticker', ({ticker}) => {
         let beautyTicker = exchange.parseTicker(ticker);
         beautyTicker.green = beautyTicker.open < beautyTicker.close;
@@ -58,7 +67,7 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
     });
     exchangeEmitter.on('depth', ({depth}) => {
-        depth.symbol=exchange.marketsById[depth.symbol].symbol
+        depth.symbol = exchange.marketsById[depth.symbol].symbol
         appEmitter.emit('exchange:depth', {depth});
     });
 
