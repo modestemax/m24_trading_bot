@@ -50,11 +50,12 @@ function ticker({exchange, symbol}) {
 }
 
 function depth({exchange, symbol}) {
-    let pairs = symbol ? [getPair(exchange, symbol)] : getTradingPairs(exchange).map(symbol => ({symbol, level: 5}));
+    let pairs = (symbol ? [getPair(exchange, symbol)] : getTradingPairs(exchange))
+        .map(symbol => ({symbol, level: 5}));
     let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
 
     let clean = client.ws.partialDepth(pairs, depth => {
-        depth = flattenDepth(depth);
+        depth = flattenDepth({exchange, depth});
         exchangeEmitter.emit('depth', {depth});
         logDepth(depth);
     });
@@ -71,15 +72,16 @@ function getPair(exchange, symbol) {
     return exchange.market(symbol).id
 }
 
-function flattenDepth(depth) {
-    depth.bidBTC = _.reduce(depth.bids, (btc, {price, quantity}) => {
+function flattenDepth({exchange, depth}) {
+    let symbol = exchange.marketsById[depth.symbol].symbol;
+    let bidBTC = _.reduce(depth.bids, (btc, {price, quantity}) => {
         return btc + price * quantity;
     }, 0);
-    depth.askBTC = _.reduce(depth.asks, (btc, {price, quantity}) => {
+    let askBTC = _.reduce(depth.asks, (btc, {price, quantity}) => {
         return btc + price * quantity;
     }, 0);
-    depth.buy = depth.bidBTC > depth.askBTC;
-    return depth
+    let buy = depth.bidBTC > depth.askBTC;
+    return _.extend({}, depth, {symbol, bidBTC, askBTC, buy})
 }
 
 async function userData() {

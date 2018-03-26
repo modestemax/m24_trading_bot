@@ -274,9 +274,10 @@ function listenToEvents() {
         setImmediate(() => {
             if (/*ticker && depth &&*/ signal && longSignal) {
                 let {symbol} = signal;
-                ticker && depth && debug('checking ' + symbol);
+              //  ticker && depth && debug('checking ' + symbol);
                 let {buy, buyWeight, signal: market} = goodToBuy({ticker, depth, signal, longSignal});
                 if (buy) {
+                    log(symbol+' is good to buy',debug);
                     setImmediate(() => appEmitter.emit('analyse:try_trade', {market, ticker}));
                 } else {
                     if (!buyWeight) {

@@ -3,12 +3,13 @@ const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
 
-const debug2 = _.throttle((msg) => debug(msg), 30e3);
 
-const params = ({timeframe = '1D', exchange = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
+const debug2 = _.throttle((msg) => debug(msg), 30e3);
+require('./exchange').loadExchange().then((exchange) => {
+const params = ({timeframe = '1D', exchangeId = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
     "filter": [
         {"left": "change" + timeframe, "operation": "nempty"},
-        {"left": "exchange", "operation": "equal", "right": exchange.toUpperCase()},
+        {"left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase()},
         {"left": "name,description", "operation": "match", "right": "BTC$"}
     ],
     "symbols": {"query": {"types": []}},
@@ -42,8 +43,8 @@ const params = ({timeframe = '1D', exchange = "BINANCE"} = {}) => ((timeframe = 
 const beautify = (data) => {
     let time = new Date().getTime();
     return _(data).map(({d}) => {
-            return formalisesymbol({
-                symbol: d[0],
+            return {
+                symbol: exchange.marketsById[d[0]].symbol,
                 time,
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
@@ -68,15 +69,7 @@ const beautify = (data) => {
                     "aroon_down": d[18],
                     "vwma": d[19],
                 }
-            });
-
-            function formalisesymbol(market) {
-                market.symbol = market.symbol.replace(/btc$/i, '/BTC');
-                market.symbol = market.symbol.replace(/usdt$/i, '/USDT');
-                market.symbol = market.symbol.replace(/bnb$/i, '/BNB');
-                market.symbol = market.symbol.replace(/eth$/i, '/ETH');
-                return market;
-            }
+            };
 
             function signal(int) {
                 switch (true) {
@@ -137,18 +130,20 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
 }
 
 const timeframe = env.TIMEFRAME;
-const exchange = env.EXCHANGE;
-
-getSignals({data: params({timeframe, exchange})});
-
-switch (Number(timeframe)) {
-    case 15:
-        getSignals({data: params({timeframe: 60, exchange}), longTimeframe: true});
-        break;
-    case 60:
-        getSignals({data: params({timeframe: '1D', exchange}), longTimeframe: true});
-        break;
-}
+const exchangeId = env.EXCHANGE;
 
 
-debug('trading on ' + timeframe + ' trimeframe');
+
+    getSignals({data: params({timeframe, exchangeId})});
+
+    switch (Number(timeframe)) {
+        case 15:
+            getSignals({data: params({timeframe: 60, exchangeId}), longTimeframe: true});
+            break;
+        case 60:
+            getSignals({data: params({timeframe: '1D', exchangeId}), longTimeframe: true});
+            break;
+    }
+    debug('trading on ' + timeframe + ' trimeframe');
+
+});

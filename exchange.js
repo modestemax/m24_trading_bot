@@ -2,13 +2,11 @@ const _ = require('lodash');
 const ccxt = require('ccxt');
 
 let {APIKEY, SECRET} = env;
-const {getChangePercent, updatePrice} = require('./utils');
 
 const exchangeId = env.EXCHANGE;
-const STOP_LOSS_BUY_PERCENT = .35;
 
 
-loadExchange(exchangeId).then(function ({exchange, internal}) {
+let exchangePromise = loadExchange(exchangeId).then(function ({exchange, internal}) {
     let {exchangeEmitter} = internal;
     appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) => {
 
@@ -73,7 +71,6 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
     });
     exchangeEmitter.on('depth', ({depth}) => {
-        depth.symbol = exchange.marketsById[depth.symbol].symbol
         appEmitter.emit('exchange:depth', {depth});
     });
 
@@ -83,6 +80,7 @@ loadExchange(exchangeId).then(function ({exchange, internal}) {
     exchangeEmitter.on('stop_loss_updated', ({symbol, stopLossOrder}) => {
         appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder});
     });
+    return exchange;
 });
 
 
@@ -102,15 +100,16 @@ async function loadExchange(exchangeId) {
             //     return milli - milli % 50;
             // }
         });
+
         await exchange.loadMarkets();
         let info = await exchange.publicGetExchangeInfo();
         const internal = require('./exchanges/' + exchangeId)(exchange, info);
         debug('market loaded for ' + exchangeId);
         return {exchange, internal};
     } catch (ex) {
-        log('Load Exchange Error\n' +
-            '' + ex, debug);
+        log('Load Exchange Error\n' + ex, debug);
         process.exit(1);
     }
 }
 
+module.exports.loadExchange = async () => exchangePromise;
