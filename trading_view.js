@@ -141,7 +141,7 @@ const exchange = env.EXCHANGE;
 
 getSignals({data: params({timeframe, exchange})});
 
-switch (timeframe) {
+switch (Number(timeframe)) {
     case 15:
         getSignals({data: params({timeframe: 60, exchange}), longTimeframe: true});
         break;

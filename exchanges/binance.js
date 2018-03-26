@@ -22,24 +22,26 @@ function manageSocket({exchange, createSocket, name}) {
     return ({symbol, add}) => {
         if (add && !socketStore[symbol]) {
             debug('adding socket ' + name + ' for ' + symbol);
+            let clean = createSocket({exchange, symbol});
             socketStore[symbol] = {
-                clean: createSocket({exchange, symbol}),
-                timeout: keepAlive(socketStore[symbol], () => socketStore[symbol] = createSocket({exchange, symbol}))
+                clean,
+                timeout: keepAlive(clean, () => socketStore[symbol] = createSocket({exchange, symbol}))
             }
         } else if (!add && socketStore[symbol]) {
             debug('removing socket ' + name + ' for ' + symbol);
             let {clean, timeout} = socketStore[symbol];
             clearTimeout(timeout);
             clean();
+            delete socketStore[symbol];
         }
     }
 }
 
 
 function ticker({exchange, symbol}) {
-    let symbols = symbol ? [symbol] : getTradingSymbols(exchange);
+    let pairs = symbol ? [getPair(exchange, symbol)] : getTradingPairs(exchange);
     let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
-    let clean = client.ws.ticker(symbols, ticker => {
+    let clean = client.ws.ticker(pairs, ticker => {
         let rawTicker = toRawTicker(ticker);
         exchangeEmitter.emit('ticker', {ticker: rawTicker});
         logTicker(ticker);
@@ -48,10 +50,10 @@ function ticker({exchange, symbol}) {
 }
 
 function depth({exchange, symbol}) {
-    let symbols = symbol ? [symbol] : getTradingSymbols(exchange).map(symbol => ({symbol, level: 5}));
+    let pairs = symbol ? [getPair(exchange, symbol)] : getTradingPairs(exchange).map(symbol => ({symbol, level: 5}));
     let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
 
-    let clean = client.ws.partialDepth(symbols, depth => {
+    let clean = client.ws.partialDepth(pairs, depth => {
         depth = flattenDepth(depth);
         exchangeEmitter.emit('depth', {depth});
         logDepth(depth);
@@ -59,10 +61,14 @@ function depth({exchange, symbol}) {
     return symbol ? clean : keepAlive(clean, () => depth({exchange, symbol}));
 }
 
-function getTradingSymbols(exchange) {
+function getTradingPairs(exchange) {
     return _.keys(exchange.marketsById)
         .filter(id => /btc$/i.test(id))
         .filter(id => !/bnbbtc$/i.test(id))
+}
+
+function getPair(exchange, symbol) {
+    return exchange.market(symbol).id
 }
 
 function flattenDepth(depth) {
@@ -100,7 +106,7 @@ function keepAlive(clean, start) {
         start();
         // setTimeout(  start,0);
         // }, 20e3)
-    }, 24 * 60 * 60e3)
+    }, 24 * 59 * 60e3)
 }
 
 function toRawTicker(ticker) {

@@ -32,7 +32,14 @@ const goodToBuy = function () {
 
         checkIndicatorStatus({ticker, depth, signal: lastSignal, longSignal});
 
-        return {ticker, depth, signal: lastSignal, longSignal, buy: lastSignal.buy, buyWeight: signal.indicators.weight}
+        return {
+            ticker,
+            depth,
+            signal: lastSignal,
+            longSignal,
+            buy: lastSignal.buy,
+            buyWeight: lastSignal.indicators.weight
+        }
     }
 }();
 
@@ -46,7 +53,7 @@ const checkIndicatorStatus = function () {
     return function ({ticker, depth, signal, longSignal}) {
         let {indicators, close} = signal;
         indicators.weight = 0;
-
+        signal.buy = false;
 
         let totalWeight = checkLongTrendStatus();
         indicators.trendLong_ok && check24TrendStatus();
@@ -68,14 +75,14 @@ const checkIndicatorStatus = function () {
         }
 
         function check24TrendStatus(weight = .5) {
-            indicators.trend24_ok = ticker && (ticker.percentage > CHANGE_24H_FOR_TRADE);
+            indicators.trend24_ok = Boolean(ticker) && (ticker.percentage > CHANGE_24H_FOR_TRADE);
             indicators.weight += indicators.trend24_ok && weight;
             return weight;
         }
 
         function checkDepthStatus(weight = 1) {
-            indicators.depth_ok = depth && (depth.bidBTC > depth.askBTC)
-            indicators.weight += indicators.depth_ok && weight
+            indicators.depth_ok = Boolean(depth) && (depth.bidBTC > depth.askBTC)
+            indicators.weight += indicators.depth_ok && weight;
             return weight;
         }
 
@@ -265,12 +272,12 @@ function listenToEvents() {
 
     function checkSignal({ticker, depth, signal, longSignal}) {
         setImmediate(() => {
-            let {symbol} = ticker.symbol;
             if (/*ticker && depth &&*/ signal && longSignal) {
-                debug('checking ' + symbol);
-                let {buy, buyWeight, signal} = goodToBuy({ticker, depth, signal, longSignal});
+                let {symbol} = signal;
+                ticker && depth && debug('checking ' + symbol);
+                let {buy, buyWeight, signal: market} = goodToBuy({ticker, depth, signal, longSignal});
                 if (buy) {
-                    setImmediate(() => appEmitter.emit('analyse:try_trade', {market: signal, ticker}));
+                    setImmediate(() => appEmitter.emit('analyse:try_trade', {market, ticker}));
                 } else {
                     if (!buyWeight) {
                         appEmitter.emit('analyse:no_fetch_ticker', {symbol});
