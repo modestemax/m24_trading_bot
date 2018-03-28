@@ -2,62 +2,64 @@ const _ = require('lodash');
 const sorted = require('is-sorted')
 const {getChangePercent, updatePrice} = require('../utils');
 
-const ADX_REF = 30, RSI_REF = 30, EMA_DISTANCE_REF = .2, MACD_DISTANCE_REF = .2, AROON_DISTANCE_REF = 50,
-    ADX_DI_DISTANCE_REF = 5, MIN_BUY_WEIGHT = 70 / 100, CHANGE_24H_FOR_TRADE = 2,
-    CHANGE_LONG_TIMEFRAME_FOR_TRADE = 1,
-    MIN_LENGTH = 3
 
 module.exports = {
-    settings : [
+    settings: [
         {
-            indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true,
+            indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: {minChangePercent: 1}
         },
         {
-            indicator: '24H_TREND', check: true, weight: .5, mandatory: true,
+            indicator: '24H_TREND', check: true, weight: .5, mandatory: true, options: {minChangePercent: 2}
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'EMA', check: true, weight: 1, mandatory: false,
+            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 3}
         },
         {
-            indicator: 'MACD', check: true, weight: 1, mandatory: false,
+            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 3}
         },
         {
-            indicator: 'AROON', check: true, weight: 1, mandatory: false,
+            indicator: 'AROON', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 1}
         },
         {
-            indicator: 'ADX', check: true, weight: 1, mandatory: false,
+            indicator: 'ADX', check: true, weight: 1, mandatory: false, options: {
+                buyReference: 25, minDIDistance: 5,
+                minCount: 3
+            }
         },
         {
             indicator: 'VWMA', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'RSI', check: false, weight: 1, mandatory: false,
+            indicator: 'RSI', check: false, weight: 1, mandatory: false, options: {buyReference: 30}
         },
     ],
-    checkers:{
-        LONG_TREND({weight, longSignal}) {
-            let ok = Boolean(longSignal) && (longSignal.changePercent > CHANGE_LONG_TIMEFRAME_FOR_TRADE);
+    get settingsByIndicators() {
+        return _.reduce(this.settings, (byInd, setting) => (byInd[setting.indicator] = setting, byInd), {});
+    },
+    checkers: {
+        LONG_TREND({weight, longSignal, options}) {
+            let ok = Boolean(longSignal) && (longSignal.changePercent >= options.minChangePercent);
             return +ok && weight
         },
 
-        '24H_TREND'({weight, ticker}) {
-            let ok = Boolean(ticker) && (ticker.percentage > CHANGE_24H_FOR_TRADE);
+        '24H_TREND'({weight, ticker, options}) {
+            let ok = Boolean(ticker) && (ticker.percentage >= options.minChangePercent);
             return +ok && weight;
 
         },
 
-        BID_ASK_VOLUME({weight, depth}) {
+        BID_ASK_VOLUME({weight, depth, options}) {
             let ok = Boolean(depth) && (depth.bidBTC > depth.askBTC);
             return +ok && weight;
         },
-        EMA({weight, signal}) {
+        EMA({weight, signal, options}) {
             let {indicators} = signal;
             let {ema10, ema20} = indicators;
             let ok = false;
-            if (_.min([ema10.length, ema20.length]) >= MIN_LENGTH) {
+            if (_.min([ema10.length, ema20.length]) >= options.minCount) {
                 let [{value: ema10_pre}, {value: ema10_cur}] = ema10.slice(-2);
                 let [{value: ema20_pre}, {value: ema20_cur}] = ema20.slice(-2);
                 let [{value: ema10_0},] = ema10;
@@ -69,11 +71,11 @@ module.exports = {
                 indicators.ema_0_distance = distance(ema10_0, ema20_0);
                 ok = ema10_cur > ema20_cur
                     && indicators.ema10_trendingUp
-                    && isSorted(values(indicators.ema10))
+                    && isSorted(values(indicators.ema10), options.minCount)
                     && indicators.ema20_trendingUp
-                    && isSorted(values(indicators.ema20))
+                    && isSorted(values(indicators.ema20), options.minCount)
                     // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
-                    && indicators.ema_distance > EMA_DISTANCE_REF
+                    && indicators.ema_distance > options.minDistance
                     && indicators.ema_distance >= indicators.ema_0_distance;
             }
             return +ok && weight;
@@ -98,12 +100,12 @@ module.exports = {
             }
         },
 
-        MACD({weight, signal}) {
+        MACD({weight, signal, options}) {
             //macd >macd_signal
             let {indicators} = signal;
             let {macd, macd_signal} = indicators;
             let ok = false;
-            if (_.min([macd.length, macd_signal.length]) >= MIN_LENGTH) {
+            if (_.min([macd.length, macd_signal.length]) >= options.minCount) {
                 let [{value: macd_pre}, {value: macd_cur}] = macd.slice(-2);
                 let [{value: macd_signal_pre}, {value: macd_signal_cur}] = macd_signal.slice(-2);
                 let [{value: macd_0},] = macd;
@@ -115,28 +117,28 @@ module.exports = {
                 indicators.macd_0_distance = distance(macd_0, macd_signal_0);
                 ok = macd_cur > macd_signal_cur
                     && indicators.macd_trendingUp
-                    && isSorted(values(indicators.macd))
+                    && isSorted(values(indicators.macd), options.minCount)
                     && indicators.macd_signal_trendingUp
-                    && isSorted(values(indicators.macd_signal))
+                    && isSorted(values(indicators.macd_signal), options.minCount)
                     // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
-                    && indicators.macd_distance > MACD_DISTANCE_REF
+                    && indicators.macd_distance > options.minDistance
                     && indicators.macd_distance >= indicators.macd_0_distance;
             }
             return +ok && weight;
 
         },
-        AROON({weight, signal}) {
+        AROON({weight, signal, options}) {
             let {indicators} = signal;
             let {aroon_up, aroon_down} = indicators;
             let ok = false;
-            if (_.min([aroon_up.length, aroon_down.length]) >= 1) {
+            if (_.min([aroon_up.length, aroon_down.length]) >= options.minCount) {
                 let {value: aroon_up_cur} = _.last(aroon_up);
                 let {value: aroon_down_cur} = _.last(aroon_down);
                 indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
                 ok = aroon_up_cur > aroon_down_cur
                     && aroon_up_cur >= 70
                     && aroon_down_cur < 30
-                    && indicators.aroon_distance >= AROON_DISTANCE_REF;
+                    && indicators.aroon_distance >= options.minDistance;
 
                 // if (ok && _.min([aroon_up.length, aroon_down.length]) > 1) {
                 //     ok = indicators.aroon_up_trendingUp && indicators.aroon_down_trendingDown
@@ -144,24 +146,24 @@ module.exports = {
             }
             return +ok && weight;
         },
-        ADX({weight, signal}) {
+        ADX({weight, signal, options}) {
 
             let {indicators} = signal;
             let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
             let ok = false;
-            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= MIN_LENGTH) {
+            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= options.minCount) {
                 let [{value: minus_di_pre}, {value: minus_di_cur}] = adx_minus_di.slice(-2);
                 let [{value: plus_di_pre}, {value: plus_di_cur}] = adx_plus_di.slice(-2);
                 indicators.adx_di_distance = plus_di_cur - minus_di_cur;
-                ok = _.last(adx).value > ADX_REF
+                ok = _.last(adx).value > options.buyReference
                     && plus_di_cur > minus_di_cur
-                    && indicators.adx_di_distance > ADX_DI_DISTANCE_REF
+                    && indicators.adx_di_distance > options.minDIDistance
                     && adx_plus_di_trendingUp
                     && adx_minus_di_trendingDown
                     && adx_trendingUp
-                    && isSorted(values(indicators.adx))
-                    && isSorted(values(indicators.adx_plus_di))
-                    && isSorted(values(indicators.adx_minus_di), {reverse: true})
+                    && isSorted(values(indicators.adx), options.minCount)
+                    && isSorted(values(indicators.adx_plus_di), options.minCount)
+                    && isSorted(values(indicators.adx_minus_di), options.minCount, {reverse: true})
 
             }
             return +ok && weight;
@@ -179,23 +181,23 @@ module.exports = {
             return +ok && weight;
         },
 
-        RSI({weight, signal}) {
+        RSI({weight, signal, options}) {
             let {indicators} = signal;
             let {rsi} = indicators;
             let ok = false;
             if (rsi.length >= 1) {
                 let {value: rsi_cur} = _.last(rsi);
-                ok = (rsi_cur < RSI_REF);
+                ok = (rsi_cur <= options.buyReference);
             }
             return +ok && weight;
         }
     }
 
 
-}
+};
 
-function isSorted(list, {reverse = false} = {}) {
-    let slist = _.slice(list, -MIN_LENGTH);
+function isSorted(list, minCount, {reverse = false} = {}) {
+    let slist = _.slice(list, -minCount);
     let trendingUp = getChangePercent(_.head(list), _.last(list));
     trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
     return sorted(slist, reverse ? (a, b) => b - a : void 0)

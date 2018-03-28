@@ -3,6 +3,7 @@ const _ = require('lodash');
 // const sorted = require('is-sorted');
 // const {getChangePercent, updatePrice} = require('./utils');
 const analyseSignal = require('../analyse/analyser');
+let {settingsByIndicators: indicatorSettings} = require('./indicators');
 
 // const goodToBuy = function () {
 let symbolsData = {};
@@ -309,22 +310,33 @@ function listenToEvents() {
             // if (/*ticker && depth &&*/ signal && longSignal) {
             let {symbol} = signal;
             //  ticker && depth && debug('checking ' + symbol);
-            let {buy, buyWeight, signal: market} = getsignalResult({ticker, depth, signal, longSignal});
+            let {buy, buyWeight, signal: market, signalResult} = getsignalResult({ticker, depth, signal, longSignal});
             if (buy) {
                 log(symbol + ' is good to buy');
                 setImmediate(() => appEmitter.emit('analyse:try_trade', {market, ticker}));
             } else {
-                if (!buyWeight) {
-                    appEmitter.emit('analyse:no_fetch_ticker', {symbol});
-                    appEmitter.emit('analyse:no_fetch_depth', {symbol});
-                } else {
-                    if (buyWeight === .5) {
+
+
+                if (indicatorSettings.LONG_TREND.check && !longSignal) {
+                    appEmitter.emit('analyse:fetch_long_trend');
+                }
+                if (indicatorSettings['24H_TREND'].check && !ticker) {
+                    //ceci c'est a cause de la dependance des signaux long_trend viens avant 24h
+                    if (!indicatorSettings.LONG_TREND.check || (indicatorSettings.LONG_TREND.check && signalResult.indicatorsResult.LONG_TREND)) {
                         appEmitter.emit('analyse:fetch_ticker', {symbol});
                     }
-                    if (buyWeight === 1) {
+                }
+                if (indicatorSettings.BID_ASK_VOLUME.check && !depth) {
+                    if (!indicatorSettings['24H_TREND'].check || (indicatorSettings['24H_TREND'].check && signalResult.indicatorsResult['24H_TREND'])) {
                         appEmitter.emit('analyse:fetch_depth', {symbol});
                     }
                 }
+
+                if (buyWeight === 0) {
+                    indicatorSettings['24H_TREND'].check && ticker && appEmitter.emit('analyse:no_fetch_ticker', {symbol});
+                    indicatorSettings.BID_ASK_VOLUME.check && depth && appEmitter.emit('analyse:no_fetch_depth', {symbol});
+                }
+
             }
 
             // }

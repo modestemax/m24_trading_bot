@@ -12,13 +12,16 @@ module.exports = function ({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) 
 
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
-        let {check, weight, indicator, mandatory} = indicatorStetting;
+        let {check, weight, indicator, mandatory, options} = indicatorStetting;
         let {totalWeight, signalWeight, previousSignalWeight, previousIsMandatory, stopCheck, indicatorsResult, buy} = signalResult;
 
         if (check) {
             if (!stopCheck) {
                 if (!previousIsMandatory || (previousIsMandatory && previousSignalWeight)) {
-                    previousSignalWeight = indicatorCheckers[indicator]({weight, ticker, depth, signal, longSignal});
+                    previousSignalWeight = indicatorCheckers[indicator]({
+                        weight, ticker, depth, signal, longSignal,
+                        options
+                    });
                     previousIsMandatory = mandatory;
                     indicatorsResult[indicator] = Boolean(previousSignalWeight);
                     signalWeight += previousSignalWeight;
