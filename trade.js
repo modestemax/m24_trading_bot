@@ -21,7 +21,7 @@ function listenToEvents() {
     appEmitter.on('analyse:try_trade', ({market, ticker}) => {
         let {symbol} = market;
         if (!tradings[symbol]) {
-            tradings[symbol] = true;
+                tradings[symbol] = true;
             let stopLossStopPrice = updatePrice({price: ticker.last, percent: STOP_LOSS});
             let ratio = getTradeRatio({symbol});
             let btc = BTCQTY * ratio;
@@ -35,6 +35,10 @@ function listenToEvents() {
 
             log(`${symbol} is good to buy, price: ${ticker.last}`, debug);
         }
+    });
+
+    appEmitter.on('analyse:get-trading-symbols', () => {
+        appEmitter.emit('trade:symbols', {symbols: tradings})
     });
 
     appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
@@ -70,7 +74,7 @@ function listenToEvents() {
 function trade({order, ticker}) {
     // putStopLoss({order});
     order.gainOrLoss = order.gainOrLoss || 0;
-    order.maxGain = order.maxGain ||0;
+    order.maxGain = order.maxGain || 0;
     order.tradeDuration = moment.duration(new Date().getTime() - order.timestamp).humanize();
     //todo it is a market buy, check the  order.price, it may be empty if so use ticker.last
     order.gainOrLoss = getChangePercent(order.price, ticker.last);

@@ -69,6 +69,7 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
         beautyTicker.green = beautyTicker.open < beautyTicker.close;
         beautyTicker.red = !beautyTicker.green;
         appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
+        appEmitter.emit('exchange:ticker:' + beautyTicker.symbol, {ticker: beautyTicker});
     });
     exchangeEmitter.on('depth', ({depth}) => {
         appEmitter.emit('exchange:depth', {depth});
@@ -103,7 +104,7 @@ async function loadExchange(exchangeId) {
 
         await exchange.loadMarkets();
         let info = await exchange.publicGetExchangeInfo();
-        const internal = require('./exchanges/' + exchangeId)(exchange, info);
+        const internal = require(`./${exchangeId}`)(exchange, info);
         debug('market loaded for ' + exchangeId);
         return {exchange, internal};
     } catch (ex) {

@@ -1,7 +1,7 @@
 require('./env');
 require('./events');
 require('./exchange');
-require('./trading_view');
+require('./signals');
 require('./analyse');
 require('./trade');
 

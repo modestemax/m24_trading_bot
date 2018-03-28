@@ -1,4 +1,4 @@
-const debug = require('debug')('trading_view');
+const debug = require('debug')('signals');
 const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
@@ -6,11 +6,11 @@ const appEmitter = require('./events');
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
 require('./exchange').loadExchange().then((exchange) => {
-    const params = ({timeframe = '1D', exchangeId = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
+    const params = ({timeframe = '1D', tradingCurrency = 'BTC', exchangeId = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
         "filter": [
             {"left": "change" + timeframe, "operation": "nempty"},
             {"left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase()},
-            {"left": "name,description", "operation": "match", "right": "BTC$"}
+            {"left": "name,description", "operation": "match", "right": tradingCurrency + "$"}
         ],
         "symbols": {"query": {"types": []}},
         "columns": [
@@ -109,7 +109,7 @@ require('./exchange').loadExchange().then((exchange) => {
                 if (!err) {
                     let jsonData = JSON.parse(data);
                     if (jsonData.data && !jsonData.error) {
-                        debug2('trading view ok ' + (longTimeframe ? 'long' : ''));
+                        debug2('signals ok ' + (longTimeframe ? 'long' : ''));
                         let beautifyData = beautify(jsonData.data);
                         if (longTimeframe) {
                             return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
@@ -122,7 +122,7 @@ require('./exchange').loadExchange().then((exchange) => {
                 throw err;
             } catch (ex) {
                 setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-                console.log('trading_view exception:', longTimeframe, ex)
+                console.log('signals exception:', longTimeframe, ex)
             } finally {
                 setTimeout(() => getSignals.apply(null, args), longTimeframe ? 99e3 : 2e3);
             }

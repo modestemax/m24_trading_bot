@@ -2,7 +2,7 @@ const debug = require('debug')('analyse:index');
 const _ = require('lodash');
 const {checkers: indicatorCheckers, settings: indicatorSettings} = require('./indicators');
 
-module.exports = function ({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
+  function analyseSignal({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
 
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
@@ -38,4 +38,47 @@ module.exports = function ({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) 
     });
 
     return signalResult;
-};
+}
+
+
+const symbolsData = {};
+const MAX_LENGTH = 10, MIN_BUY_WEIGHT = 70 / 100;
+
+function getSignalResult({ticker, depth, signal, longSignal}) {
+    let {symbol} = signal;
+    let prevSignal = symbolsData[symbol] || signal;
+
+    let lastSignal = symbolsData[symbol] = _.extend(prevSignal, _.omit(signal, 'indicators'));
+    prevSignal.indicators = _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
+        if (!_.isArray(prevIndicators[indKey])) {
+            prevIndicators[indKey] = [{value: prevIndicators[indKey], time: signal.time}];
+        }
+        let {value: lastValue} = _.last(prevIndicators[indKey]);
+        let newValue = indValue;
+
+        if (lastValue !== newValue) {
+            prevIndicators[indKey] = prevIndicators[indKey]
+                .concat({
+                    value: indValue,
+                    time: signal.time
+                }).slice(-MAX_LENGTH);
+            prevSignal.indicators[indKey + '_trendingUp'] = lastValue < newValue;
+            prevSignal.indicators[indKey + '_trendingDown'] = lastValue > newValue;
+        }
+        return prevIndicators;
+    }, prevSignal.indicators);
+
+    let signalResult = analyseSignal({ticker, depth, signal: lastSignal, longSignal, MIN_BUY_WEIGHT});
+
+    return {
+        ticker,
+        depth,
+        signal: lastSignal,
+        longSignal,
+        buy: signalResult.buy,
+        buyWeight: signalResult.signalWeight,
+        signalResult
+    }
+}
+
+module.exports={getSignalResult};
