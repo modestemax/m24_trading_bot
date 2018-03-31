@@ -6,7 +6,7 @@ const {getChangePercent, updatePrice} = require('./utils');
 
 const STOP_LOSS = -1;
 const TRAILING_CHANGE_PERCENT = .3;
-const TRADE_RATIO = .4;
+const TRADE_RATIO = env.TRADE_RATION;
 let BTCQTY = env.BTCQTY;//todo
 
 const getTradeRatio = function () {
@@ -21,7 +21,7 @@ function listenToEvents() {
     appEmitter.on('analyse:try_trade', ({market, ticker}) => {
         let {symbol} = market;
         if (!tradings[symbol]) {
-                tradings[symbol] = true;
+            tradings[symbol] = true;
             let stopLossStopPrice = updatePrice({price: ticker.last, percent: STOP_LOSS});
             let ratio = getTradeRatio({symbol});
             let btc = BTCQTY * ratio;
@@ -64,6 +64,13 @@ function listenToEvents() {
         }
     });
 
+
+    appEmitter.on('exchange:end_trade', ({symbol, stopLossOrder}) => {
+        let order = tradings[symbol];
+        let effectiveGain = getChangePercent(order.price, stopLossOrder.price);
+        log('End trade ' + symbol + ' GainOrLoss ' + effectiveGain);
+        delete tradings[symbol];
+    });
 
     appEmitter.on('exchange:sell_ok', ({symbol, order}) => {
         delete tradings[symbol];

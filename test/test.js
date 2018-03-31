@@ -2,33 +2,37 @@ const ccxt = require('ccxt');
 const _ = require('lodash');
 
 const apijson = process.env.HOME + '/.api.json';
-const api = require(apijson);
+const api = require(apijson).key;
 const APIKEY = api.api_key;
 const SECRET = api.secret;
 
-let symbol = 'TRX/BTC';
+let symbol = 'BNB/BTC';
+let pair='BNBBTC';
+let base ='BNB';
 let exchange;
 
 loadExchange('binance').then(async ({exchange, info}) => {
     let bal, orders, ticker, stopPrice, amount, orderId, order, price, timeInForce, symbolInfo, stopLossOrderId,
         stopPrice_new;
     try {
-        symbolInfo = info.symbols.find(s => /trxbtc/i.test(s.symbol));
+        symbolInfo = info.symbols.find(s => new RegExp(pair,'i').test(s.symbol));
         bal = await exchange.fetchBalance();
         orders = await  exchange.fetchOrders(symbol);
         ticker = await  exchange.fetchTicker(symbol);
-        stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 12 / 100);
+        stopPrice = exchange.priceToPrecision(symbol, ticker.last -ticker.last * .1 / 100);
+        // stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 12 / 100);
         stopPrice_new = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 8 / 100);
-        amount = exchange.amountToLots(symbol, 262);
+        amount = exchange.amountToLots(symbol, bal[base].total);
+        // amount = exchange.amountToLots(symbol, 262);
         price = exchange.priceToPrecision(symbol, stopPrice);
         timeInForce = 'GTC';
-        orderId = 'toto_tata1';
+        orderId = getClientOrderId({symbol:pair});
         stopLossOrderId = _.find(orders, o => o.side === 'sell' && o.status === 'open' && o.type === 'stop_loss_limit');
         stopLossOrderId = stopLossOrderId && stopLossOrderId.id;
         if (price * amount > symbolInfo.filters[2].minNotional) {
-            // order = await   putStoploss();
+            order = await   putStoploss();
             // order=  await editStopLoss();
-            order = await cancelOrder();
+            // order = await cancelOrder();
         }
         debugger;
     } catch (ex) {
@@ -38,6 +42,9 @@ loadExchange('binance').then(async ({exchange, info}) => {
         debugger
     }
 
+    function getClientOrderId({symbol}) {
+        return `${symbol}_m24_t${15}`
+    }
 
     async function putStoploss() {
         let order = await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {

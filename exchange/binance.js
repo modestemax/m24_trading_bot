@@ -40,33 +40,40 @@ module.exports = function (exchange) {
 
 
     function ticker({symbol}) {
-        let pairs = symbol ? [getPair(symbol)] : getTradingPairs();
-        let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
-        let clean = client.ws.ticker(pairs, ticker => {
-            let rawTicker = toRawTicker(ticker);
-            exchangeEmitter.emit('ticker', {ticker: rawTicker});
-            logTicker(ticker);
-        });
-        return symbol ? clean : keepAlive(clean, () => ticker({symbol}));
+        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getBtcPairs());
+        if (pairs.length) {
+            let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
+            let clean = client.ws.ticker(pairs, ticker => {
+                let rawTicker = toRawTicker(ticker);
+                exchangeEmitter.emit('ticker', {ticker: rawTicker});
+                logTicker(ticker);
+            });
+            return symbol ? clean : keepAlive(clean, () => ticker({symbol}));
+        }
     }
 
     function depth({symbol}) {
-        let pairs = (symbol ? [getPair(symbol)] : getTradingPairs())
+        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getBtcPairs())
             .map(symbol => ({symbol, level: 5}));
-        let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
+        if (pairs.length) {
+            let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
 
-        let clean = client.ws.partialDepth(pairs, depth => {
-            depth = flattenDepth({depth});
-            exchangeEmitter.emit('depth', {depth});
-            logDepth(depth);
-        });
-        return symbol ? clean : keepAlive(clean, () => depth({symbol}));
+            let clean = client.ws.partialDepth(pairs, depth => {
+                depth = flattenDepth({depth});
+                exchangeEmitter.emit('depth', {depth});
+                logDepth(depth);
+            });
+            return symbol ? clean : keepAlive(clean, () => depth({symbol}));
+        }
     }
 
-    function getTradingPairs() {
+    function getBtcPairs() {
         return _.keys(exchange.marketsById)
             .filter(id => /btc$/i.test(id))
-        // .filter(id => !/bnbbtc$/i.test(id))
+    }
+
+    function getTradingPairs(pairs) {
+        return pairs.filter(id => !/bnbbtc$/i.test(id))
     }
 
     function getPair(symbol) {
@@ -83,14 +90,14 @@ module.exports = function (exchange) {
             lastTradeQuantity: executedQty, orderType: type, orderStatus: status
         } = msg;
 
-        return exchange.parseOrder(_.extend({
+        return exchange.parseOrder(_.extend({},msg,{
             time,
             price,
             origQty,
             executedQty,
             type,
             status
-        }, msg));
+        }));
 
     }
 
@@ -117,12 +124,22 @@ module.exports = function (exchange) {
                 //send balance
                 exchangeEmitter.emit('user_balance', msg.balances);
             } else if (msg.eventType === 'executionReport') {
-                if (msg.newClientOrderId === getClientOrderId(msg)) {
+                let clientOrderId = getClientOrderId(msg);
+                if (msg.newClientOrderId === clientOrderId
+                    || msg.originalClientOrderId === clientOrderId) {
+
                     let order = parseExecutionReport(msg);
-                    if (/SELL/i.test(msg.side) && /NEW/i.test(msg.orderStatus) && /STOP_LOSS_LIMIT/i.test(msg.orderType)) {
-                        //new stoploss
-                        exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: order}));
+                    if (/SELL/i.test(msg.side) && /STOP_LOSS_LIMIT/i.test(msg.orderType)) {
+                        if (/NEW/i.test(msg.orderStatus)) {
+                            //new stoploss
+                            exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: order}));
+                        }
+                        if (/FILLED/i.test(msg.orderStatus)) {
+                            //new stoploss
+                            exchangeEmitter.emit('end_trade', ({symbol: msg.symbol, stopLossOrder: order}));
+                        }
                     }
+
                     if (/BUY/i.test(msg.side) && /FILLED/i.test(msg.orderStatus) && /TRADE/i.test(msg.executionType)) {
                         //new buy filled
                         exchangeEmitter.emit('buy_ok', ({symbol: order.symbol, order}));

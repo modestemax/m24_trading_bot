@@ -75,7 +75,10 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
         exchangeEmitter.on('stop_loss_updated', ({symbol, stopLossOrder}) => {
             appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder});
         });
-        
+        exchangeEmitter.on('end_trade', ({symbol, stopLossOrder}) => {
+            appEmitter.emit('exchange:end_trade', {symbol, stopLossOrder});
+        });
+
         exchangeEmitter.on('buy_ok', ({symbol, order}) => {
             appEmitter.emit('exchange:buy_ok', {symbol, order})
         });

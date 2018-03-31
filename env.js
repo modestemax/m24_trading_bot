@@ -12,6 +12,7 @@ const envVar = process.env;
 global.env = module.exports = {
     EXCHANGE: envVar.EXCHANGE || 'binance',
     BTCQTY: envVar.BTCQTY || .006,
+    TRADE_RATION: envVar.TRADE_RATION || .4,
     TIMEFRAME: envVar.TIMEFRAME || 15,
     APIKEY: api.api_key,
     SECRET: api.secret,
