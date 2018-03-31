@@ -5,7 +5,7 @@ const appEmitter = require('./events');
 
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
-require('./exchange').loadExchange().then((exchange) => {
+global.loadExchange().then((exchange) => {
     const params = ({timeframe = '1D', tradingCurrency = 'BTC', exchangeId = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
         "filter": [
             {"left": "change" + timeframe, "operation": "nempty"},

@@ -7,26 +7,26 @@ const APIKEY = api.api_key;
 const SECRET = api.secret;
 
 let symbol = 'BNB/BTC';
-let pair='BNBBTC';
-let base ='BNB';
+let pair = 'BNBBTC';
+let base = 'BNB';
 let exchange;
 
 loadExchange('binance').then(async ({exchange, info}) => {
     let bal, orders, ticker, stopPrice, amount, orderId, order, price, timeInForce, symbolInfo, stopLossOrderId,
         stopPrice_new;
     try {
-        symbolInfo = info.symbols.find(s => new RegExp(pair,'i').test(s.symbol));
+        symbolInfo = info.symbols.find(s => new RegExp(pair, 'i').test(s.symbol));
         bal = await exchange.fetchBalance();
         orders = await  exchange.fetchOrders(symbol);
         ticker = await  exchange.fetchTicker(symbol);
-        stopPrice = exchange.priceToPrecision(symbol, ticker.last -ticker.last * .1 / 100);
+        stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * .1 / 100);
         // stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 12 / 100);
         stopPrice_new = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 8 / 100);
         amount = exchange.amountToLots(symbol, bal[base].total);
         // amount = exchange.amountToLots(symbol, 262);
         price = exchange.priceToPrecision(symbol, stopPrice);
         timeInForce = 'GTC';
-        orderId = getClientOrderId({symbol:pair});
+        orderId = getClientOrderId({symbol: pair});
         stopLossOrderId = _.find(orders, o => o.side === 'sell' && o.status === 'open' && o.type === 'stop_loss_limit');
         stopLossOrderId = stopLossOrderId && stopLossOrderId.id;
         if (price * amount > symbolInfo.filters[2].minNotional) {
@@ -69,7 +69,7 @@ loadExchange('binance').then(async ({exchange, info}) => {
     }
 
     async function cancelOrder() {
-        let order = await        exchange.cancelOrder(stopLossOrderId, symbol)
+        let order = await  exchange.cancelOrder(stopLossOrderId, symbol)
         debugger;
         return order;
     }

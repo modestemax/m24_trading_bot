@@ -27,19 +27,29 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
         appEmitter.on('trade:edit_stop_loss', async function putStopLoss({stopLossOrder, stopPrice, limitPrice}) {
             let {symbol, id, amount} = stopLossOrder;
             // let orderId = symbol.toUniqHex();
-            internal.editStopLossOrder({symbol, stopLossOrderId: id, amount, stopPrice, limitPrice})
-                .then(
-                    (stopLossOrder) => appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder}),
-                    (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
-                )
+            internal.editStopLossOrder({
+                symbol, stopLossOrderId: id, amount,
+                stopPrice, limitPrice
+            }).catch(
+                (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
+            )
         });
 
-
-        appEmitter.on('trade:sell', ({symbol}) => {
-            internal.sellMarket({symbol})
-                .then((order) => appEmitter.emit('exchange:sell_ok:' + symbol, {order}))
-                .catch((error) => appEmitter.emit('exchange:sell_ok:' + symbol, {error}))
+        appEmitter.on('trade:put_stop_loss', async function putStopLoss({symbol, amount, stopPrice, limitPrice}) {
+            internal.createStopLossOrder({
+                symbol, amount, stopLossStopPrice: stopPrice,
+                stopLossLimitPrice: limitPrice
+            }).catch(
+                (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
+            )
         });
+
+        //
+        // appEmitter.on('trade:sell', ({symbol}) => {
+        //     internal.sellMarket({symbol})
+        //         .then((order) => appEmitter.emit('exchange:sell_ok:' + symbol, {order}))
+        //         .catch((error) => appEmitter.emit('exchange:sell_ok:' + symbol, {error}))
+        // });
 
 
         appEmitter.on('analyse:fetch_depth', ({symbol}) => {
@@ -114,4 +124,4 @@ async function loadExchange(exchangeId) {
     }
 }
 
-module.exports.loadExchange = async () => exchangePromise;
+global.loadExchange = module.exports.loadExchange = async () => exchangePromise;
