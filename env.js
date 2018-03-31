@@ -4,19 +4,21 @@ const log = require('log-to-file');
 
 
 const apijson = process.env.HOME + '/.api.json';
-const api = require(apijson).max;
+// const api = require(apijson).max;
+const api = require(apijson).key;
 
-const env = process.env;
+const envVar = process.env;
 
 global.env = module.exports = {
-    EXCHANGE: env.EXCHANGE || 'binance',
-    BTCQTY: env.BTCQTY || 0,
-    TIMEFRAME: env.TIMEFRAME || 15,
+    EXCHANGE: envVar.EXCHANGE || 'binance',
+    BTCQTY: envVar.BTCQTY || .006,
+    TIMEFRAME: envVar.TIMEFRAME || 15,
     APIKEY: api.api_key,
     SECRET: api.secret,
-    isProduction: env.NODE_ENV === 'production'
+    // isProduction: envVar.NODE_ENV === 'production'
+    isProduction: true// envVar.NODE_ENV === 'production'
 };
-env.BTCQTY = env.isProduction ? env.BTCQTY : 1;
+// env.BTCQTY = env.isProduction ? env.BTCQTY : .006;
 
 global.debug = console.debug.bind(console);
 

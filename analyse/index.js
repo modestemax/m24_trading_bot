@@ -36,7 +36,8 @@ function listenToEvents() {
     async function checkSignal({ticker, depth, signal, longSignal}) {
         let {symbol} = signal;
         let {buy, buyWeight, signal: market, signalResult} = getSignalResult({ticker, depth, signal, longSignal});
-        if (buy) {
+        // if (buy) {
+        if (symbol==='BNB/BTC') {
             appEmitter.emit('analyse:fetch_ticker', {symbol}); //this is used for trading
             ticker && appEmitter.emit('analyse:try_trade', {market, ticker});
             ticker || appEmitter.once('exchange:ticker:' + symbol, ({ticker}) => {
