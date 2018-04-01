@@ -57,19 +57,19 @@ async function listenToEvents() {
         appEmitter.emit('trade:symbols', {symbols: tradings})
     });
 
-    appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
+    appEmitter.on('exchange:buy_ok', ({error, symbol, trade}) => {
         if (error) {
             delete tradings[symbol];
         } else {
-            tradings[symbol] = order;
+            tradings[symbol] = trade;
         }
     });
 
     appEmitter.on('exchange:ticker', ({ticker}) => {
         let {symbol} = ticker;
-        let order = tradings[symbol];
-        if (_.isObject(order)) {
-            trade({order, ticker})
+        let trade = tradings[symbol];
+        if (_.isObject(trade)) {
+            doTrade({trade, ticker})
         }
     });
 
@@ -78,7 +78,7 @@ async function listenToEvents() {
         if (order) {
             if (error) {
                 let ticker = await getTicker({symbol});
-                putStopLoss({symbol, buyPrice: order.price, amount:order.quantity, lastPrice: ticker.last})
+                putStopLoss({symbol, buyPrice: order.price, amount: order.quantity, lastPrice: ticker.last})
             } else {
                 if (_.isObject(order)) {
                     order.stopLossOrder = stopLossOrder;
@@ -101,14 +101,14 @@ async function listenToEvents() {
 }
 
 
-function trade({order, ticker}) {
+function doTrade({trade, ticker}) {
     // putStopLoss({order});
-    order.gainOrLoss = order.gainOrLoss || 0;
-    order.maxGain = order.maxGain || 0;
-    order.tradeDuration = moment.duration(new Date().getTime() - order.timestamp).humanize();
-    order.gainOrLoss = getChangePercent(order.price, ticker.last);
-    order.maxGain = _.max([order.maxGain, order.gainOrLoss]);
-    updateTrailingStopLoss({order, ticker})
+    trade.gainOrLoss = trade.gainOrLoss || 0;
+    trade.maxGain = trade.maxGain || 0;
+    trade.tradeDuration = moment.duration(new Date().getTime() - trade.timestamp).humanize();
+    trade.gainOrLoss = getChangePercent(trade.price, ticker.last);
+    trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
+    updateTrailingStopLoss({trade, ticker})
 }
 
 async function putStopLoss({symbol, buyPrice, stopLossOrderId, amount, lastPrice}) {
@@ -123,11 +123,11 @@ async function putStopLoss({symbol, buyPrice, stopLossOrderId, amount, lastPrice
     })
 }
 
-function updateTrailingStopLoss({order, ticker}) {
-    order.prevMaxGain = order.prevMaxGain || 0;
-    let change = order.maxGain - order.prevMaxGain;
+function updateTrailingStopLoss({trade, ticker}) {
+    trade.prevMaxGain = trade.prevMaxGain || 0;
+    let change = trade.maxGain - trade.prevMaxGain;
     if (change >= TRAILING_CHANGE_PERCENT) {
-        let {stopLossOrder, symbol, price: buyPrice, quantity} = order;
+        let {stopLossOrder, symbol, price: buyPrice, quantity} = trade;
         let stopLossOrderId;
         if (stopLossOrder) {
             stopLossOrderId = stopLossOrder.id;
@@ -136,7 +136,7 @@ function updateTrailingStopLoss({order, ticker}) {
 
         putStopLoss({symbol, buyPrice, stopLossOrderId, amount: quantity, lastPrice: ticker.last});
     }
-    order.prevMaxGain = order.maxGain;
+    trade.prevMaxGain = trade.maxGain;
 }
 
 async function restartTrade() {
@@ -150,21 +150,22 @@ async function restartTrade() {
                 let price = prices[symbol];
                 if (price * total >= market.limits.cost.min) {
                     let orders = await  exchange.fetchOrders(symbol);
-                    let order = tradings[symbol] = getLastBuyOrder(orders);
-                    tradings[symbol] = order;
+                    let order = getLastBuyOrder(orders);
+                    let trade = Object.assign(order, {quantity: order.amount});
+                    tradings[symbol] = trade;
                     fetchTicker({symbol});
-                    let {price: buyPrice} = order;
+                    let {price: buyPrice} = trade;
                     let stopLossOrder = getLastStopLossOrder(orders);
                     if (stopLossOrder) {
                         let change = getChangePercent(stopLossOrder.price, price);
                         if (change > 1) {
                             putStopLoss({
                                 symbol, buyPrice, stopLossOrderId: stopLossOrder.id,
-                                amount: stopLossOrder.amount || order.amount, lastPrice: price
+                                amount: stopLossOrder.amount || trade.quantity, lastPrice: price
                             })
                         }
                     } else {
-                        putStopLoss({symbol, amount: order.amount, buyPrice, lastPrice: price})
+                        putStopLoss({symbol, amount: trade.quantity, buyPrice, lastPrice: price})
                     }
                 }
             }

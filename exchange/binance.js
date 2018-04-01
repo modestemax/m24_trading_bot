@@ -117,21 +117,21 @@ module.exports = function (exchange) {
                 if (msg.newClientOrderId === clientOrderId
                     || msg.originalClientOrderId === clientOrderId) {
 
-                    let order = parseExecutionReport(msg);
+                    let trade = parseExecutionReport(msg);
                     if (/SELL/i.test(msg.side) && /STOP_LOSS_LIMIT/i.test(msg.orderType)) {
                         if (/NEW/i.test(msg.orderStatus)) {
                             //new stoploss
-                            exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: order}));
+                            exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: trade}));
                         }
                         if (/FILLED/i.test(msg.orderStatus)) {
                             //new stoploss
-                            exchangeEmitter.emit('end_trade', ({symbol: msg.symbol, stopLossOrder: order}));
+                            exchangeEmitter.emit('end_trade', ({symbol: msg.symbol, stopLossOrder: trade}));
                         }
                     }
 
                     if (/BUY/i.test(msg.side) && /FILLED/i.test(msg.orderStatus) && /TRADE/i.test(msg.executionType)) {
                         //new buy filled
-                        exchangeEmitter.emit('buy_ok', ({symbol: order.symbol, order}));
+                        exchangeEmitter.emit('buy_ok', ({symbol: trade.symbol, trade}));
                     }
                 }
             }

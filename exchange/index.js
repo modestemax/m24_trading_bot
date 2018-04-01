@@ -89,8 +89,8 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
             appEmitter.emit('exchange:end_trade', {symbol, stopLossOrder});
         });
 
-        exchangeEmitter.on('buy_ok', ({symbol, order}) => {
-            appEmitter.emit('exchange:buy_ok', {symbol, order})
+        exchangeEmitter.on('buy_ok', ({symbol, trade}) => {
+            appEmitter.emit('exchange:buy_ok', {symbol, trade})
         });
     }
 });
