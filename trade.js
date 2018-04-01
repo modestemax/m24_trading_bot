@@ -140,22 +140,24 @@ async function restartTrade() {
     return Promise.all(_.map(balances, async ({free, used, total}, baseCur) => {
         if (total && isTradable({baseCur})) {
             let market = getMarket({baseCur});
-            let symbol = market.symbol;
-            let price = prices[symbol];
-            if (price * total >= market.limits.cost.min) {
-                let orders = await  exchange.fetchOrders(symbol);
-                let order = tradings[symbol] = getLastBuyOrder(orders);
-                tradings[symbol] = order;
-                fetchTicker({symbol});
-                let {price: buyPrice} = order;
-                let stopLossOrder = getLastStopLossOrder(orders);
-                if (stopLossOrder) {
-                    let change = getChangePercent(stopLossOrder.price, price);
-                    if (change > 1) {
-                        putStopLoss({symbol, buyPrice, stopLossOrderId: stopLossOrder.id, lastPrice: price})
+            if (market) {
+                let symbol = market.symbol;
+                let price = prices[symbol];
+                if (price * total >= market.limits.cost.min) {
+                    let orders = await  exchange.fetchOrders(symbol);
+                    let order = tradings[symbol] = getLastBuyOrder(orders);
+                    tradings[symbol] = order;
+                    fetchTicker({symbol});
+                    let {price: buyPrice} = order;
+                    let stopLossOrder = getLastStopLossOrder(orders);
+                    if (stopLossOrder) {
+                        let change = getChangePercent(stopLossOrder.price, price);
+                        if (change > 1) {
+                            putStopLoss({symbol, buyPrice, stopLossOrderId: stopLossOrder.id, lastPrice: price})
+                        }
+                    } else {
+                        putStopLoss({symbol, buyPrice, lastPrice: price})
                     }
-                } else {
-                    putStopLoss({symbol, buyPrice, lastPrice: price})
                 }
             }
         }

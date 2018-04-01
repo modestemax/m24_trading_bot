@@ -114,6 +114,7 @@ async function loadExchange() {
         });
 
         await exchange.loadMarkets();
+        global.exchange = exchange;
 
         const internal = require(`./${EXCHANGE.toLowerCase()}`)(exchange);
         debug('market loaded for ' + EXCHANGE);

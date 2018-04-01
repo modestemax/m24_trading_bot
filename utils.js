@@ -30,7 +30,7 @@ const fn = module.exports = {
             : pair ? !(new RegExp(fn.getPair({baseCur: FEE_CUR}), 'i').test(pair))
                 : null
     },
-    getTradingPairs(pairs) {
+    getTradablePairs(pairs) {
         return pairs.filter(pair => fn.isTradable({pair}))
     },
 
@@ -42,7 +42,8 @@ const fn = module.exports = {
     }
     ,
     getSymbol({pair}) {
-        return fn.getMarket({pair}).symbol
+        let market= fn.getMarket({pair});
+        return market && market.symbol
     },
     getQuotePairs() {
         return _.keys(exchange.marketsById)
@@ -52,7 +53,7 @@ const fn = module.exports = {
     getMarket({baseCur, symbol, pair}) {
         return baseCur ? exchange.marketsById[fn.getPair({baseCur})]
             : symbol ? exchange.market(symbol)
-                : pair ? exchange.marketsById(pair)
+                : pair ? exchange.marketsById[pair.toUpperCase()]
                     : null;
     },
 

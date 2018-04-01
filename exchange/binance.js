@@ -3,7 +3,7 @@ const _ = require('lodash');
 const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
-const {getTradingPairs, getPair, getSymbol, getQuotePairs} = require('../utils');
+const {getTradablePairs, getPair, getSymbol, getQuotePairs} = require('../utils');
 const {isProduction, APIKEY, SECRET, TIMEFRAME} = env;
 
 const Binance = require('binance-api-node').default
@@ -40,7 +40,7 @@ module.exports = function (exchange) {
 
 
     function ticker({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair({symbol})] : getQuotePairs());
+        let pairs = getTradablePairs(symbol ? [getPair({symbol})] : getQuotePairs());
         if (pairs.length) {
             let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
             let clean = client.ws.ticker(pairs, ticker => {
@@ -53,7 +53,7 @@ module.exports = function (exchange) {
     }
 
     function depth({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair({symbol})] : getQuotePairs())
+        let pairs = getTradablePairs(symbol ? [getPair({symbol})] : getQuotePairs())
             .map(symbol => ({symbol, level: 5}));
         if (pairs.length) {
             let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.allBid, 'ASK', depth.allAsk), 30e3);
@@ -271,7 +271,9 @@ module.exports = function (exchange) {
         async getAllPrices() {
             let prices = await  exchange.publicGetTickerAllPrices()
             return _.reduce(prices, (prices, {symbol: pair, price}) => {
-                prices[getSymbol({pair})] = +price;
+                if (pair !== '123456') {
+                    prices[getSymbol({pair})] = +price;
+                }
                 return prices;
             }, {})
         },
