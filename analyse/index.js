@@ -3,7 +3,7 @@ const _ = require('lodash');
 const {getSignalResult} = require('../analyse/analyser');
 let {settingsByIndicators: indicatorSettings} = require('./indicators');
 
-const {isCurrentlyTrading} = require('../utils');
+const {isCurrentlyTrading, fetchTicker, fetchDepth, fetchLongTrend} = require('../utils');
 
 function listenToEvents() {
 
@@ -39,7 +39,7 @@ function listenToEvents() {
         let {buy, buyWeight, signal: market, signalResult} = getSignalResult({ticker, depth, signal, longSignal});
         if (buy) {
             // if (symbol==='BNB/BTC') {
-            appEmitter.emit('app:fetch_ticker', {symbol}); //this is used for trading
+            fetchTicker({symbol}); //this is used for trading
             ticker && appEmitter.emit('analyse:try_trade', {market, ticker});
             ticker || appEmitter.once('exchange:ticker:' + symbol, ({ticker}) => {
                 appEmitter.emit('analyse:try_trade', {market, ticker});
@@ -48,17 +48,17 @@ function listenToEvents() {
         } else {
 
             if (indicatorSettings.LONG_TREND.check && !longSignal) {
-                appEmitter.emit('app:fetch_long_trend');
+                fetchLongTrend()
             }
             if (indicatorSettings['24H_TREND'].check && !ticker) {
                 //ceci c'est a cause de la dependance des signaux long_trend viens avant 24h
                 if (!indicatorSettings.LONG_TREND.check || (indicatorSettings.LONG_TREND.check && signalResult.indicatorsResult.LONG_TREND)) {
-                    appEmitter.emit('app:fetch_ticker', {symbol});
+                    fetchTicker({symbol})
                 }
             }
             if (indicatorSettings.BID_ASK_VOLUME.check && !depth) {
                 if (!indicatorSettings['24H_TREND'].check || (indicatorSettings['24H_TREND'].check && signalResult.indicatorsResult['24H_TREND'])) {
-                    appEmitter.emit('app:fetch_depth', {symbol});
+                    fetchDepth({symbol})
                 }
             }
 

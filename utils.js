@@ -61,17 +61,16 @@ const fn = module.exports = {
         return market.baseId;
     },
 
-    getTotalBaseCurBalance({symbol}) {
+    async getTotalBaseCurBalance({symbol}) {
         return fn.getBalance({cur: fn.getBaseCur({symbol}), part: 'total'});
     },
 
-    getFreeBalance({cur}) {
+    async getFreeBalance({cur}) {
         return fn.getBalance({cur, part: 'free'});
     },
 
-    getBalance({cur, part}) {
-    *
-        return balances[cur.toUpperCase()][part];
+    async getBalance({cur, part}) {
+        return (await fn.getBalances()) [cur.toUpperCase()][part];
     },
 
     async getTicker({symbol}) {
@@ -105,6 +104,15 @@ const fn = module.exports = {
             });
             appEmitter.emit('app:get_currently_tradings_symbols')
         })
+    },
+    fetchTicker({symbol}) {
+        appEmitter.emit('app:fetch_ticker', {symbol});
+    },
+    fetchDepth({symbol}) {
+        appEmitter.emit('app:fetch_depth', {symbol});
+    },
+    fetchLongTrend() {
+        appEmitter.emit('app:fetch_long_trend');
     },
     getLastBuyOrder(orders) {
         return _(orders).filter(orders, o => /BUY/i.test(o.side))

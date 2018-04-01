@@ -5,7 +5,7 @@ const moment = require('moment');
 const {
     getChangePercent, updatePrice, isTradable, getMarket
     , getTotalBaseCurBalance, getFreeBalance, getTicker, getAllPrices,
-    getLastBuyOrder, getLastStopLossOrder,getBalances
+    getLastBuyOrder, getLastStopLossOrder, getBalances, fetchTicker
 } = require('./utils');
 
 const {STOP_LOSS_PERCENT, QUOTE_CUR, TRAILING_CHANGE_PERCENT, QUOTE_CUR_QTY, TRADE_RATIO} = env;
@@ -23,14 +23,14 @@ const tradings = {};
 global.loadExchange().then(async (exchange) => {
 
         function listenToTradeBuyEvent() {
-            appEmitter.on('analyse:try_trade', ({market, ticker}) => {
+            appEmitter.on('analyse:try_trade', async ({market, ticker}) => {
                 let {symbol} = market;
                 if (!tradings[symbol]) {
                     tradings[symbol] = true;
                     let stopLossStopPrice = updatePrice({price: ticker.last, percent: STOP_LOSS_PERCENT});
                     let ratio = getTradeRatio({symbol});
                     let quoteTradeBalance = QUOTE_CUR_QTY * ratio;
-                    let quoteAvailableBalance = getFreeBalance({cur: QUOTE_CUR});
+                    let quoteAvailableBalance = await getFreeBalance({cur: QUOTE_CUR});
                     if (quoteAvailableBalance >= quoteTradeBalance) {
                         let remainingQuoteBalance = (quoteAvailableBalance - quoteTradeBalance);
                         if (remainingQuoteBalance < quoteTradeBalance) {
@@ -111,13 +111,13 @@ global.loadExchange().then(async (exchange) => {
             updateTrailingStopLoss({order, ticker})
         }
 
-        function putStopLoss({symbol, buyPrice, stopLossOrderId, lastPrice}) {
+        async function putStopLoss({symbol, buyPrice, stopLossOrderId, lastPrice}) {
             let price = _.max([buyPrice, lastPrice]);
             let stopPrice = updatePrice({price, percent: STOP_LOSS_PERCENT});
             appEmitter.emit('trade:put_stop_loss', {
                 symbol,
                 stopLossOrderId,
-                amount: getTotalBaseCurBalance({symbol}),
+                amount: await getTotalBaseCurBalance({symbol}),
                 stopPrice,
                 limitPrice: stopPrice
             })
@@ -135,7 +135,7 @@ global.loadExchange().then(async (exchange) => {
         }
 
         async function restartTrade() {
-            let balances =await getBalances();
+            let balances = await getBalances();
             let prices = await getAllPrices();
             return Promise.all(_.map(balances, async ({free, used, total}, baseCur) => {
                 if (total && isTradable({baseCur})) {
@@ -146,6 +146,7 @@ global.loadExchange().then(async (exchange) => {
                         let orders = await  exchange.fetchOrders(symbol);
                         let order = tradings[symbol] = getLastBuyOrder(orders);
                         tradings[symbol] = order;
+                        fetchTicker({symbol});
                         let {price: buyPrice} = order;
                         let stopLossOrder = getLastStopLossOrder(orders);
                         if (stopLossOrder) {
