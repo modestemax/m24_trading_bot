@@ -19,8 +19,8 @@ global.env = module.exports = {
     TIMEFRAME: envVar.TIMEFRAME || 15,
     APIKEY: api.api_key,
     SECRET: api.secret,
-    // isProduction: envVar.NODE_ENV === 'production'
-    isProduction: true// envVar.NODE_ENV === 'production'
+    isProduction: envVar.NODE_ENV === 'production'
+    // isProduction: true// envVar.NODE_ENV === 'production'
 };
 // env.BTCQTY = env.isProduction ? env.BTCQTY : .006;
 env.FEE_CUR = env.EXCHANGE === 'binance' ? 'BNB' : '';

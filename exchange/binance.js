@@ -68,14 +68,6 @@ module.exports = function (exchange) {
     }
 
 
-    async function getAllPrices() {
-        let prices = await exchange.publicGetTickerAllPrices()
-        return _.reduce(prices, (prices, {symbol: pair, price}) => {
-            prices[getSymbol({pair})] = +price;
-            return prices;
-        }, {})
-    }
-
     function parseExecutionReport(msg) {
         let {
             orderTime: time, priceLastTrade: price, quantity: origQty,
@@ -276,7 +268,13 @@ module.exports = function (exchange) {
                 timeInForce: 'GTC'
             })
         },
-
+        async getAllPrices() {
+            let prices = await  exchange.publicGetTickerAllPrices()
+            return _.reduce(prices, (prices, {symbol: pair, price}) => {
+                prices[getSymbol({pair})] = +price;
+                return prices;
+            }, {})
+        },
         async createStopLossOrder({symbol, amount, stopPrice, limitPrice}) {
             return await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                     stopPrice,
