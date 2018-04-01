@@ -3,8 +3,8 @@ const _ = require('lodash');
 const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
-const {getTradablePairs, getPair, getSymbol, getQuotePairs} = require('../utils');
-const {isProduction, APIKEY, SECRET, TIMEFRAME} = env;
+const {getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId} = require('../utils');
+const {isProduction, APIKEY, SECRET} = env;
 
 const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
@@ -85,9 +85,6 @@ module.exports = function (exchange) {
 
     }
 
-    function getClientOrderId({symbol}) {
-        return `${symbol}_m24_t${TIMEFRAME}`
-    }
 
     function flattenDepth({depth}) {
         let symbol = exchange.marketsById[depth.symbol].symbol;

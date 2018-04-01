@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const hex = require('text-hex');
-const {FEE_CUR, QUOTE_CUR} = env;
+const {FEE_CUR, QUOTE_CUR, TIMEFRAME, EXCHANGE} = env;
 
 // Extend the string type to allow converting to hex for quick access.
 String.prototype.toHex = function () {
@@ -42,7 +42,7 @@ const fn = module.exports = {
     }
     ,
     getSymbol({pair}) {
-        let market= fn.getMarket({pair});
+        let market = fn.getMarket({pair});
         return market && market.symbol
     },
     getQuotePairs() {
@@ -116,16 +116,35 @@ const fn = module.exports = {
         appEmitter.emit('app:fetch_long_trend');
     },
     getLastBuyOrder(orders) {
-        return _(orders).filter(orders, o => /BUY/i.test(o.side))
+        return _(orders)
+            .filter(orders, o => /BUY/i.test(o.side))
+            .filter(orders, o => /CLOSED/i.test(o.status))
+            .filter(orders, fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
             .value()
     },
 
     getLastStopLossOrder(orders) {
-        return _(orders).filter(orders, ({side, status, type}) => /SELL/i.test(side) && /OPEN/i.test(status) && /STOP_LOSS_LIMIT/i.test(type))
+        return _(orders)
+            .filter(orders, ({side, status, type}) => /SELL/i.test(side) && /OPEN/i.test(status) && /STOP_LOSS_LIMIT/i.test(type))
+            .filter(orders, fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
             .value()
+    },
+    getClientOrderId({symbol}) {
+        return `${symbol}_m24_t${TIMEFRAME}`
+    },
+    isM24BotOrder(order) {
+        if (fn.isBinance() && order.info) {
+            let clientOrderId = fn.getClientOrderId(order);
+            let {info} = order;
+            return info.clientOrderId === clientOrderId || info.originalClientOrderId === clientOrderId || info.newClientOrderId === clientOrderId
+        }
+    },
+    isBinance() {
+        return EXCHANGE.toLowerCase() === 'binance'
     }
+
 };
