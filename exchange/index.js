@@ -1,12 +1,11 @@
 const _ = require('lodash');
 const ccxt = require('ccxt');
 
-let {APIKEY, SECRET} = env;
+let {APIKEY, SECRET, EXCHANGE} = env;
 
-const exchangeId = env.EXCHANGE;
+let balances;
 
-
-let exchangePromise = loadExchange(exchangeId).then(function ({exchange, internal}) {
+module.exports = loadExchange().then(function ({exchange, internal}) {
     let {exchangeEmitter} = internal;
 
     listenAppEvents();
@@ -23,9 +22,15 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
                 );
         });
 
-        appEmitter.on('trade:get_prices', async () => {
+        appEmitter.on('app:get_prices', async () => {
             let prices = await internal.getAllPrices();
             appEmitter.emit('exchange:prices', {prices})
+        });
+        appEmitter.on('app:get_balances', async () => {
+            if (!balances) {
+                balances = await exchange.fetchBalance();
+            }
+            appEmitter.emit('exchange:balances', {balances});
         });
 
         appEmitter.on('trade:put_stop_loss', async function ({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
@@ -74,7 +79,8 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
         });
 
         exchangeEmitter.on('user_balance', ({balance}) => {
-            appEmitter.emit('exchange:balance', {balance});
+            balances = balance;
+            appEmitter.emit('exchange:balances', {balances});
         });
         exchangeEmitter.on('stop_loss_updated', ({symbol, stopLossOrder}) => {
             appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder});
@@ -90,10 +96,10 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
 });
 
 
-async function loadExchange(exchangeId) {
+async function loadExchange() {
     try {
 
-        const exchange = new ccxt[exchangeId]({
+        const exchange = new ccxt[EXCHANGE]({
             apiKey: APIKEY, secret: SECRET,
             // verbose: true,
             'options': {
@@ -108,14 +114,15 @@ async function loadExchange(exchangeId) {
         });
 
         await exchange.loadMarkets();
-        let info = await exchange.publicGetExchangeInfo();
-        const internal = require(`./${exchangeId}`)(exchange, info);
-        debug('market loaded for ' + exchangeId);
+
+        const internal = require(`./${EXCHANGE.toLowerCase()}`)(exchange);
+        debug('market loaded for ' + EXCHANGE);
         return {exchange, internal};
     } catch (ex) {
-        log('Load Exchange Error\n' + ex, debug);
+        log('Load Exchange ' + EXCHANGE + ' Error\n' + ex, debug);
         process.exit(1);
     }
 }
 
-global.loadExchange = module.exports.loadExchange = async () => exchangePromise;
+
+// module.exports.loadExchange = async () => exchangePromise;

@@ -2,9 +2,13 @@ const debug = require('debug')('m24:trade');
 const _ = require('lodash');
 const moment = require('moment');
 
-const {getChangePercent, updatePrice} = require('./utils');
+const {
+    getChangePercent, updatePrice, isTradable, getMarket
+    , getTotalBaseCurBalance, getFreeBalance, getTicker, getAllPrices,
+    getLastBuyOrder, getLastStopLossOrder,getBalances
+} = require('./utils');
 
-const {STOP_LOSS_PERCENT, FEE_CUR, QUOTE_CUR, TRAILING_CHANGE_PERCENT, QUOTE_CUR_QTY, TRADE_RATIO} = env;
+const {STOP_LOSS_PERCENT, QUOTE_CUR, TRAILING_CHANGE_PERCENT, QUOTE_CUR_QTY, TRADE_RATIO} = env;
 
 const getTradeRatio = function () {
     const ratios = {};
@@ -14,7 +18,7 @@ const getTradeRatio = function () {
 }();
 
 const tradings = {};
-let balances;
+
 
 global.loadExchange().then(async (exchange) => {
 
@@ -51,10 +55,6 @@ global.loadExchange().then(async (exchange) => {
 
             appEmitter.on('analyse:get-trading-symbols', () => {
                 appEmitter.emit('trade:symbols', {symbols: tradings})
-            });
-
-            appEmitter.on('exchange:balance', ({balance}) => {
-                balances = balance;
             });
 
             appEmitter.on('exchange:buy_ok', ({error, symbol, order}) => {
@@ -135,7 +135,7 @@ global.loadExchange().then(async (exchange) => {
         }
 
         async function restartTrade() {
-            balances = await    exchange.fetchBalance();
+            let balances =await getBalances();
             let prices = await getAllPrices();
             return Promise.all(_.map(balances, async ({free, used, total}, baseCur) => {
                 if (total && isTradable({baseCur})) {
@@ -161,70 +161,6 @@ global.loadExchange().then(async (exchange) => {
             }, []));
         }
 
-        function getMarket({baseCur}) {
-            return exchange.marketsById[getPair({baseCur})]
-        }
-
-        function getBaseCur({symbol}) {
-            let market = exchange.market(symbol);
-            return market.baseId;
-        }
-
-        function getTotalBaseCurBalance({symbol}) {
-            return getBalance({cur: getBaseCur({symbol}), part: 'total'});
-        }
-
-        function getFreeBalance({cur}) {
-            return getBalance({cur, part: 'free'});
-        }
-
-        function getBalance({cur, part}) {
-            return balances[cur.toUpperCase()][part];
-        }
-
-        async function getTicker({symbol}) {
-            return new Promise((resolve) => {
-                appEmitter.once('exchange:ticker:' + symbol, ({ticker}) => {
-                    resolve(ticker);
-                });
-            });
-        }
-
-
-        async function getAllPrices() {
-            return new Promise((resolve) => {
-                appEmitter.once('exchange:prices', ({prices}) => {
-                    resolve(prices);
-                });
-                appEmitter.emit('trade:get_prices');
-            });
-        }
-
-
-        function getLastBuyOrder(orders) {
-            return _(orders).filter(orders, o => o.side === 'buy')
-                .sortBy([o => new Date(o.datetime)])
-                .last()
-                .value()
-        }
-
-        function getLastStopLossOrder(orders) {
-            return _(orders).filter(orders, o =>
-                o.side === 'sell' && o.status === 'open'
-                && o.type === 'stop_loss_limit')
-                .sortBy([o => new Date(o.datetime)])
-                .last()
-                .value()
-        }
-
-
-        function isTradable({baseCur}) {
-            return !new RegExp(QUOTE_CUR + (FEE_CUR ? '|' + FEE_CUR : ''), 'i').test(baseCur)
-        }
-
-        function getPair({baseCur}) {
-            return (baseCur + QUOTE_CUR).toUpperCase();
-        }
 
         listenToEvents();
         await  restartTrade();

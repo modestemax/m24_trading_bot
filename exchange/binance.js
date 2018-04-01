@@ -3,8 +3,8 @@ const _ = require('lodash');
 const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
-
-let {isProduction,APIKEY, SECRET, QUOTE_CUR, TIMEFRAME} = env;
+const {getTradingPairs, getPair, getSymbol, getQuotePairs} = require('../utils');
+const {isProduction, APIKEY, SECRET, TIMEFRAME} = env;
 
 const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
@@ -40,7 +40,7 @@ module.exports = function (exchange) {
 
 
     function ticker({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getQuotePairs());
+        let pairs = getTradingPairs(symbol ? [getPair({symbol})] : getQuotePairs());
         if (pairs.length) {
             let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
             let clean = client.ws.ticker(pairs, ticker => {
@@ -53,7 +53,7 @@ module.exports = function (exchange) {
     }
 
     function depth({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getQuotePairs())
+        let pairs = getTradingPairs(symbol ? [getPair({symbol})] : getQuotePairs())
             .map(symbol => ({symbol, level: 5}));
         if (pairs.length) {
             let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.allBid, 'ASK', depth.allAsk), 30e3);
@@ -67,22 +67,6 @@ module.exports = function (exchange) {
         }
     }
 
-    function getQuotePairs() {
-        return _.keys(exchange.marketsById)
-            .filter(id => (new RegExp(QUOTE_CUR,'i')).test(id))
-    }
-
-    function getTradingPairs(pairs) {
-        return pairs.filter(id => !/bnbbtc$/i.test(id))
-    }
-
-    function getPair(symbol) {
-        return exchange.market(symbol).id
-    }
-
-    function getSymbol({pair}) {
-        return exchange.marketsById(pair).symbol
-    }
 
     async function getAllPrices() {
         let prices = await exchange.publicGetTickerAllPrices()
