@@ -11,8 +11,11 @@ const envVar = process.env;
 
 global.env = module.exports = {
     EXCHANGE: envVar.EXCHANGE || 'binance',
-    BTCQTY: envVar.BTCQTY || .006,
-    TRADE_RATION: envVar.TRADE_RATION || .4,
+    QUOTE_CUR_QTY: envVar.QUOTE_CUR_QTY || .006,
+    QUOTE_CUR: envVar.QUOTE_CUR || 'BTC',
+    STOP_LOSS_PERCENT: envVar.STOP_LOSS_PERCENT || -1,
+    TRADE_RATION: envVar.TRADE_RATION || 40 / 100,
+    TRAILING_CHANGE_PERCENT: envVar.TRAILING_CHANGE_PERCENT || .3,
     TIMEFRAME: envVar.TIMEFRAME || 15,
     APIKEY: api.api_key,
     SECRET: api.secret,
@@ -20,6 +23,7 @@ global.env = module.exports = {
     isProduction: true// envVar.NODE_ENV === 'production'
 };
 // env.BTCQTY = env.isProduction ? env.BTCQTY : .006;
+env.FEE_CUR = env.EXCHANGE === 'binance' ? 'BNB' : '';
 
 global.debug = console.debug.bind(console);
 

@@ -4,7 +4,7 @@ const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
 
-let {APIKEY, SECRET} = env;
+let {isProduction,APIKEY, SECRET, QUOTE_CUR, TIMEFRAME} = env;
 
 const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
@@ -40,7 +40,7 @@ module.exports = function (exchange) {
 
 
     function ticker({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getBtcPairs());
+        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getQuotePairs());
         if (pairs.length) {
             let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
             let clean = client.ws.ticker(pairs, ticker => {
@@ -53,10 +53,10 @@ module.exports = function (exchange) {
     }
 
     function depth({symbol}) {
-        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getBtcPairs())
+        let pairs = getTradingPairs(symbol ? [getPair(symbol)] : getQuotePairs())
             .map(symbol => ({symbol, level: 5}));
         if (pairs.length) {
-            let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.bidBTC, 'ASK', depth.askBTC), 30e3);
+            let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.allBid, 'ASK', depth.allAsk), 30e3);
 
             let clean = client.ws.partialDepth(pairs, depth => {
                 depth = flattenDepth({depth});
@@ -67,9 +67,9 @@ module.exports = function (exchange) {
         }
     }
 
-    function getBtcPairs() {
+    function getQuotePairs() {
         return _.keys(exchange.marketsById)
-            .filter(id => /btc$/i.test(id))
+            .filter(id => (new RegExp(QUOTE_CUR,'i')).test(id))
     }
 
     function getTradingPairs(pairs) {
@@ -80,8 +80,16 @@ module.exports = function (exchange) {
         return exchange.market(symbol).id
     }
 
-    function getSymbol(msg) {
+    function getSymbol({pair}) {
         return exchange.marketsById(pair).symbol
+    }
+
+    async function getAllPrices() {
+        let prices = await exchange.publicGetTickerAllPrices()
+        return _.reduce(prices, (prices, {symbol: pair, price}) => {
+            prices[getSymbol({pair})] = +price;
+            return prices;
+        }, {})
     }
 
     function parseExecutionReport(msg) {
@@ -90,7 +98,7 @@ module.exports = function (exchange) {
             lastTradeQuantity: executedQty, orderType: type, orderStatus: status
         } = msg;
 
-        return exchange.parseOrder(_.extend({},msg,{
+        return exchange.parseOrder(_.extend({}, msg, {
             time,
             price,
             origQty,
@@ -102,19 +110,19 @@ module.exports = function (exchange) {
     }
 
     function getClientOrderId({symbol}) {
-        return `${symbol}_m24_t${env.TIMEFRAME}`
+        return `${symbol}_m24_t${TIMEFRAME}`
     }
 
     function flattenDepth({depth}) {
         let symbol = exchange.marketsById[depth.symbol].symbol;
-        let bidBTC = _.reduce(depth.bids, (btc, {price, quantity}) => {
-            return btc + price * quantity;
+        let allBid = _.reduce(depth.bids, (bid, {price, quantity}) => {
+            return bid + price * quantity;
         }, 0);
-        let askBTC = _.reduce(depth.asks, (btc, {price, quantity}) => {
-            return btc + price * quantity;
+        let allAsk = _.reduce(depth.asks, (ask, {price, quantity}) => {
+            return ask + price * quantity;
         }, 0);
-        let buy = depth.bidBTC > depth.askBTC;
-        return _.extend({}, depth, {symbol, bidBTC, askBTC, buy})
+        let buy = allBid > allAsk;
+        return _.extend({}, depth, {symbol, allBid, allAsk, buy})
     }
 
     async function userData() {
@@ -122,7 +130,15 @@ module.exports = function (exchange) {
             debug(msg.eventType);
             if (msg.eventType === 'account') {
                 //send balance
-                exchangeEmitter.emit('user_balance', msg.balances);
+                let balance = _.mapValues(msg.balances, ({available, locked}, cur) => {
+                    return {
+                        free: +available,
+                        used: +locked,
+                        total: +available + locked
+                    }
+                });
+                balance = exchange.parseBalance(balance);
+                exchangeEmitter.emit('user_balance', {balance});
             } else if (msg.eventType === 'executionReport') {
                 let clientOrderId = getClientOrderId(msg);
                 if (msg.newClientOrderId === clientOrderId
@@ -215,26 +231,14 @@ module.exports = function (exchange) {
             let {price, stopPrice, symbol, quantity} = args[0];
             let newValues = checkPrecision({symbol, quantity, price, stopPrice});
             if (newValues) {
+                let newClientOrderId = getClientOrderId({symbol});
                 ({symbol, quantity, price, stopPrice} = newValues);
-                _.extend(args[0], {price, stopPrice, quantity, newClientOrderId: getClientOrderId({symbol})});
-                if (env.isProduction) {
+                _.extend(args[0], {price, stopPrice, quantity, newClientOrderId});
+                if (isProduction) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
-                    let order = await exchange.privatePostOrderTest.apply(exchange, args);
-                    return _.extend(order, {
-                        "symbol": args[0].symbol,
-                        "orderId": _.uniq(),
-                        "clientOrderId": args[0].newClientOrderId,
-                        "transactTime": new Date().getTime(),
-                        "price": args[0].stopPrice,
-                        "stopLossPrice": args[0].stopPrice,
-                        "origQty": args[0].quantity,
-                        "executedQty": args[0].quantity,
-                        "status": "FILLED",
-                        "timeInForce": "GTC",
-                        "type": args[0].type,
-                        "side": args[0].side
-                    })
+                    await exchange.privatePostOrderTest.apply(exchange, args);
+                    return testOrder(args[0])
                 }
             } else {
                 throw new Error('Check price & quantity')
@@ -247,7 +251,24 @@ module.exports = function (exchange) {
         exchange.privateGetOrder = _.wrap(exchange.privateGetOrder, async (privateGetOrder, ...args) => {
             await orderSync();
             return privateGetOrder.apply(exchange, args)
-        })
+        });
+
+        function testOrder(order) {
+            _.extend(order, {
+                // "symbol": symbol,
+                "orderId": _.uniq(),
+                "clientOrderId": order.newClientOrderId,
+                "transactTime": new Date().getTime(),
+                "price": order.stopPrice,
+                "stopLossPrice": order.stopPrice,
+                "origQty": order.quantity,
+                "executedQty": order.quantity,
+                "status": "FILLED",
+                "timeInForce": "GTC",
+                // "type": type,
+                // "side": side
+            })
+        }
     }
 
 
@@ -272,22 +293,22 @@ module.exports = function (exchange) {
             })
         },
 
-        async createStopLossOrder({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) {
+        async createStopLossOrder({symbol, amount, stopPrice, limitPrice}) {
             return await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
-                    stopPrice: stopLossStopPrice,
-                    price: stopLossLimitPrice,
+                    stopPrice,
+                    price: limitPrice,
                     timeInForce: 'GTC'
                 }
             )
         },
         async buyMarket({symbol, stopLossStopPrice, stopLossLimitPrice, amount}) {
             try {
-                let order = await exchange.createMarketBuyOrder(symbol, amount/*,{newClientOrderId:orderId}*/)
+                let order = await exchange.createMarketBuyOrder(symbol, amount);
                 order.stopLossOrder = await this.createStopLossOrder({
                     symbol,
                     amount: order.amount,
-                    stopLossStopPrice,
-                    stopLossLimitPrice
+                    stopPrice: stopLossStopPrice,
+                    limitPrice: stopLossLimitPrice
                 });
                 return order;
             } catch (ex) {

@@ -3,10 +3,11 @@ const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
 
+let {isProduction, APIKEY, SECRET, QUOTE_CUR, EXCHANGE, TIMEFRAME} = env;
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
 global.loadExchange().then((exchange) => {
-    const params = ({timeframe = '1D', tradingCurrency = 'BTC', exchangeId = "BINANCE"} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
+    const params = ({timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
         "filter": [
             {"left": "change" + timeframe, "operation": "nempty"},
             {"left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase()},
@@ -133,24 +134,21 @@ global.loadExchange().then((exchange) => {
         appEmitter.once('analyse:fetch_long_trend', function () {
             switch (Number(timeframe)) {
                 case 15:
-                    getSignals({data: params({timeframe: 60, exchangeId}), longTimeframe: true});
+                    getSignals({data: params({timeframe: 60}), longTimeframe: true});
                     break;
                 case 60:
-                    getSignals({data: params({timeframe: '1D', exchangeId}), longTimeframe: true});
+                    getSignals({data: params({timeframe: '1D'}), longTimeframe: true});
                     break;
             }
         });
     }
 
-    const timeframe = env.TIMEFRAME;
-    const exchangeId = env.EXCHANGE;
 
-
-    getSignals({data: params({timeframe, exchangeId})});
+    getSignals({data: params({timeframe: TIMEFRAME})});
 
     getLongsignal();
 
 
-    debug('trading on ' + timeframe + ' trimeframe');
+    debug('trading on ' + TIMEFRAME + ' trimeframe');
 
 });

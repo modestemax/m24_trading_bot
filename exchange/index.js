@@ -17,28 +17,22 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
     function listenAppEvents() {
 
         appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) => {
-
             internal.buyMarket({symbol, amount, stopLossStopPrice, stopLossLimitPrice})
                 .catch(
                     (error) => appEmitter.emit('exchange:buy_ok', {symbol, error})
                 );
         });
 
-        appEmitter.on('trade:edit_stop_loss', async function putStopLoss({stopLossOrder, stopPrice, limitPrice}) {
-            let {symbol, id, amount} = stopLossOrder;
-            // let orderId = symbol.toUniqHex();
-            internal.editStopLossOrder({
-                symbol, stopLossOrderId: id, amount,
-                stopPrice, limitPrice
-            }).catch(
-                (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
-            )
+        appEmitter.on('trade:get_prices', async () => {
+            let prices = await internal.getAllPrices();
+            appEmitter.emit('exchange:prices', {prices})
         });
 
-        appEmitter.on('trade:put_stop_loss', async function putStopLoss({symbol, amount, stopPrice, limitPrice}) {
-            internal.createStopLossOrder({
-                symbol, amount, stopLossStopPrice: stopPrice,
-                stopLossLimitPrice: limitPrice
+        appEmitter.on('trade:put_stop_loss', async function ({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
+            let fn = stopLossOrderId ? internal.editStopLossOrder : internal.createStopLossOrder;
+            fn({
+                symbol, stopLossOrderId, amount,
+                stopPrice, limitPrice
             }).catch(
                 (error) => appEmitter.emit('exchange:stop_loss_updated', {symbol, error})
             )
@@ -79,8 +73,8 @@ let exchangePromise = loadExchange(exchangeId).then(function ({exchange, interna
             appEmitter.emit('exchange:depth', {depth});
         });
 
-        exchangeEmitter.on('user_balance', ({balances}) => {
-            appEmitter.emit('exchange:balance', {balances});
+        exchangeEmitter.on('user_balance', ({balance}) => {
+            appEmitter.emit('exchange:balance', {balance});
         });
         exchangeEmitter.on('stop_loss_updated', ({symbol, stopLossOrder}) => {
             appEmitter.emit('exchange:stop_loss_updated', {symbol, stopLossOrder});

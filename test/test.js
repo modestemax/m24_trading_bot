@@ -19,6 +19,8 @@ loadExchange('binance').then(async ({exchange, info}) => {
         bal = await exchange.fetchBalance();
         orders = await  exchange.fetchOrders(symbol);
         ticker = await  exchange.fetchTicker(symbol);
+        let price1 = await exchange.publicGetTickerAllPrices();
+        let price2 = await exchange.publicGetTickerPrice();
         stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * .1 / 100);
         // stopPrice = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 12 / 100);
         stopPrice_new = exchange.priceToPrecision(symbol, ticker.last - ticker.last * 8 / 100);
@@ -30,7 +32,8 @@ loadExchange('binance').then(async ({exchange, info}) => {
         stopLossOrderId = _.find(orders, o => o.side === 'sell' && o.status === 'open' && o.type === 'stop_loss_limit');
         stopLossOrderId = stopLossOrderId && stopLossOrderId.id;
         if (price * amount > symbolInfo.filters[2].minNotional) {
-            order = await   putStoploss();
+            order = await   buy();
+            // order = await   putStoploss();
             // order=  await editStopLoss();
             // order = await cancelOrder();
         }
@@ -59,6 +62,17 @@ loadExchange('binance').then(async ({exchange, info}) => {
 
     async function editStopLoss() {
         let order = await     exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
+            stopPrice: stopPrice_new,
+            price,
+            newClientOrderId: orderId,
+            timeInForce
+        })
+        debugger;
+        return order;
+    }
+
+    async function buy() {
+        let order = await     exchange.createMarketBuyOrder(symbol, amount, void 0, {
             stopPrice: stopPrice_new,
             price,
             newClientOrderId: orderId,

@@ -52,7 +52,7 @@ module.exports = {
         },
 
         BID_ASK_VOLUME({weight, depth, options}) {
-            let ok = Boolean(depth) && (depth.bidBTC > depth.askBTC);
+            let ok = Boolean(depth) && (depth.AllBid > depth.allAsk);
             return +ok && weight;
         },
         EMA({weight, signal, options}) {
