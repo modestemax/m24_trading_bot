@@ -97,6 +97,15 @@ const fn = module.exports = {
             appEmitter.emit('app:get_prices');
         });
     },
+
+    async isCurrentlyTrading({symbol}) {
+        return new Promise((resolve, reject) => {
+            appEmitter.once('trade:symbols', ({symbols}) => {
+                resolve(symbols[symbol]);
+            });
+            appEmitter.emit('app:get_currently_tradings_symbols')
+        })
+    },
     getLastBuyOrder(orders) {
         return _(orders).filter(orders, o => /BUY/i.test(o.side))
             .sortBy([o => new Date(o.datetime)])

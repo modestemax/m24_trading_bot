@@ -51,16 +51,16 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
         // });
 
 
-        appEmitter.on('analyse:fetch_depth', ({symbol}) => {
+        appEmitter.on('app:fetch_depth', ({symbol}) => {
             internal.depth({symbol});
         });
-        appEmitter.on('analyse:no_fetch_depth', ({symbol}) => {
+        appEmitter.on('app:no_fetch_depth', ({symbol}) => {
             internal.noDepth({symbol});
         });
-        appEmitter.on('analyse:fetch_ticker', ({symbol}) => {
+        appEmitter.on('app:fetch_ticker', ({symbol}) => {
             internal.ticker({symbol});
         });
-        appEmitter.on('analyse:no_fetch_ticker', ({symbol}) => {
+        appEmitter.on('app:no_fetch_ticker', ({symbol}) => {
             internal.noTicker({symbol});
         });
     }

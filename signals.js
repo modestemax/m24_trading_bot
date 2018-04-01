@@ -132,7 +132,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
 }
 
 function getLongsignal() {
-    appEmitter.once('analyse:fetch_long_trend', function () {
+    appEmitter.once('app:fetch_long_trend', function () {
         switch (Number(timeframe)) {
             case 15:
                 getSignals({data: params({timeframe: 60}), longTimeframe: true});

@@ -53,7 +53,7 @@ global.loadExchange().then(async (exchange) => {
 
         function listenToEvents() {
 
-            appEmitter.on('analyse:get-trading-symbols', () => {
+            appEmitter.on('app:get_currently_tradings_symbols', () => {
                 appEmitter.emit('trade:symbols', {symbols: tradings})
             });
 
