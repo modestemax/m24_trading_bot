@@ -99,9 +99,13 @@ const fn = module.exports = {
     },
 
     async isCurrentlyTrading({symbol}) {
+        let trades = fn.getTrades();
+        return trades[symbol];
+    },
+    async getTrades() {
         return new Promise((resolve, reject) => {
             appEmitter.once('trade:symbols', ({symbols}) => {
-                resolve(symbols[symbol]);
+                resolve(symbols);
             });
             appEmitter.emit('app:get_currently_tradings_symbols')
         })
@@ -122,7 +126,6 @@ const fn = module.exports = {
             .filter(orders, fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
-            .value()
     },
 
     getLastStopLossOrder(orders) {
@@ -131,7 +134,7 @@ const fn = module.exports = {
             .filter(orders, fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
-            .value()
+          //  .value()
     },
     getClientOrderId({symbol}) {
         return `${symbol}_m24_t${TIMEFRAME}`

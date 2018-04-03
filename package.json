@@ -8,6 +8,7 @@
     "lodash": "^4.17.5",
     "log-to-file": "^1.2.2",
     "moment": "^2.21.0",
+    "redis-pubsub-emitter": "^0.6.0",
     "text-hex": "^0.0.0"
   },
   "name": "m24_trading_bot",
