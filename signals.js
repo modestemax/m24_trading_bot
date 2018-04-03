@@ -124,7 +124,8 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             throw err;
         } catch (ex) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-            console.log('signals exception:', longTimeframe, ex)
+            log('signals exception:' + (longTimeframe ? ' LONG_TREND' : 'SIGNAL_TREND') + ex)
+            emitException(ex)
         } finally {
             setTimeout(() => getSignals.apply(null, args), longTimeframe ? 99e3 : 2e3);
         }

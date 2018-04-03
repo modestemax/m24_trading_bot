@@ -6,7 +6,7 @@ const apijson = process.env.HOME + '/.api.json';
 // const api = require(apijson).max;
 
 
-const {QUOTE_CUR_QTY, STOP_LOSS_PERCENT, TRADE_RATION, TRAILING_CHANGE_PERCENT, NODE_ENV} = process.env;
+const {QUOTE_CUR_QTY, STOP_LOSS_PERCENT, TRADE_RATIO, TRAILING_CHANGE_PERCENT, NODE_ENV} = process.env;
 
 const api = require(apijson)[appStartupParams.API_KEY];
 
@@ -14,7 +14,7 @@ module.exports = Model.Settings.load().then(async settings => {
     settings = _.defaults({
             QUOTE_CUR_QTY,
             STOP_LOSS_PERCENT,
-            TRADE_RATION,
+            TRADE_RATIO,
             TRAILING_CHANGE_PERCENT,
             PRODUCTION: NODE_ENV === 'production',
             NO_TRADE_CUR: (() => {
@@ -29,7 +29,7 @@ module.exports = Model.Settings.load().then(async settings => {
             )()
 
         }, appStartupParams, settings,
-        {QUOTE_CUR_QTY: .006, STOP_LOSS_PERCENT: -1, TRADE_RATION: 40 / 100, TRAILING_CHANGE_PERCENT: .3});
+        {QUOTE_CUR_QTY: .006, STOP_LOSS_PERCENT: -1, TRADE_RATIO: 40 / 100, TRAILING_CHANGE_PERCENT: .3});
 
     if (settings['pd-sid']) {
          await Model.Settings.modify(settings);

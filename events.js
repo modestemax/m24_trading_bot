@@ -17,10 +17,14 @@ global.debug = console.debug.bind(console);
 
 process.on('uncaughtException', (err) => {
     log(`hdf Uncaught Exception ${err.message} ${ err.stack || 'no stack'}`, debug)
-    appEmitter.emit('app:error', err);
+    emitException(err);
 });
 
 process.on('unhandledRejection', (reason, p) => {
     log(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}\n\nreason: ${JSON.stringify(reason)}`, debug);
-    appEmitter.emit('app:error', reason);
+    emitException(reason);
 });
+
+global.emitException = function (ex) {
+    appEmitter.emit('app:error', ex);
+};

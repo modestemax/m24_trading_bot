@@ -27,15 +27,3 @@ function pushSettings() {
 // appEmitter.on('exchange:ticker', async function () {
 //     appPubSub.emit('m24:trades', await getTrades());
 // });
-
-//test
-
-
-redisPubSubClient.on('m24:trades',(data)=>{
-debugger
-})
-
-appEmitter.emit('trade:new_trade');
-// appEmitter.on('trade:end_trade', pushTrades);
-// appEmitter.on('app:error', pushError);
-// appPubSub.on('m24:get:settings', pushSettings);
