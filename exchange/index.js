@@ -11,6 +11,7 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
     listenAppEvents();
 
     listenExchangeEvents();
+
     return exchange;
 
     function listenAppEvents() {
@@ -97,32 +98,26 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
 
 
 async function loadExchange() {
-    try {
+    const exchangeId = EXCHANGE.toLowerCase();
+    const exchange = new ccxt[exchangeId]({
+        apiKey: APIKEY, secret: SECRET,
+        // verbose: true,
+        'options': {
+            'adjustForTimeDifference': true,
+            'verbose': true, // if needed, not mandatory
+            'recvWindow': 10000000, // not really needed
+        },
+        // nonce: function () {
+        //     let milli = this.milliseconds();
+        //     return milli - milli % 50;
+        // }
+    });
 
-        const exchange = new ccxt[EXCHANGE]({
-            apiKey: APIKEY, secret: SECRET,
-            // verbose: true,
-            'options': {
-                'adjustForTimeDifference': true,
-                'verbose': true, // if needed, not mandatory
-                'recvWindow': 10000000, // not really needed
-            },
-            // nonce: function () {
-            //     let milli = this.milliseconds();
-            //     return milli - milli % 50;
-            // }
-        });
+    await exchange.loadMarkets();
 
-        await exchange.loadMarkets();
-        global.exchange = exchange;
-
-        const internal = require(`./${EXCHANGE.toLowerCase()}`)(exchange);
-        debug('market loaded for ' + EXCHANGE);
-        return {exchange, internal};
-    } catch (ex) {
-        log('Load Exchange ' + EXCHANGE + ' Error\n' + ex, debug);
-        process.exit(1);
-    }
+    const internal = require(`./${exchangeId}`)(exchange);
+    debug('market loaded for ' + EXCHANGE);
+    return {exchange, internal};
 }
 
 

@@ -6,7 +6,7 @@ const {
     getChangePercent, updatePrice, isTradable, getMarket
     , getTotalBaseCurBalance, getFreeBalance, getTicker, getAllPrices,
     getLastBuyOrder, getLastStopLossOrder, getBalances, fetchTicker
-} = require('./utils');
+} = require('./utils')();
 
 const {STOP_LOSS_PERCENT, QUOTE_CUR, TRAILING_CHANGE_PERCENT, QUOTE_CUR_QTY, TRADE_RATIO} = env;
 
@@ -18,7 +18,6 @@ const getTradeRatio = function () {
 }();
 
 const tradings = {};
-
 
 const exchange = global.exchange;
 
@@ -59,10 +58,9 @@ async function listenToEvents() {
 
     appEmitter.on('exchange:buy_ok', ({error, symbol, trade}) => {
         if (error) {
-            delete tradings[symbol];
+            endTrade({symbol})
         } else {
-            tradings[symbol] = trade;
-            appEmitter.emit('trade:new_trade', trade);
+            startTrade({trade})
         }
     });
 
@@ -93,13 +91,13 @@ async function listenToEvents() {
         let order = tradings[symbol];
         let effectiveGain = getChangePercent(order.price, stopLossOrder.price);
         log('End trade ' + symbol + ' GainOrLoss ' + effectiveGain);
-        let trade = tradings[symbol];
-        delete tradings[symbol];
-        appEmitter.emit('trade:end_trade', trade)
+        endTrade({symbol});
+
     });
 
     appEmitter.on('exchange:sell_ok', ({symbol, order}) => {
-        delete tradings[symbol];
+        endTrade({symbol});
+
     });
 }
 
@@ -152,24 +150,28 @@ async function restartTrade() {
                 let symbol = market.symbol;
                 let price = prices[symbol];
                 if (price * total >= market.limits.cost.min) {
-                    let orders = await  exchange.fetchOrders(symbol);
-                    let order = getLastBuyOrder(orders);
-                    if (order) {
-                        let trade = Object.assign(order, {quantity: order.amount});
-                        tradings[symbol] = trade;
-                        fetchTicker({symbol});
-                        let {price: buyPrice} = trade;
-                        let stopLossOrder = getLastStopLossOrder(orders);
-                        if (stopLossOrder) {
-                            let change = getChangePercent(stopLossOrder.price, price);
-                            if (change > 1) {
-                                putStopLoss({
-                                    symbol, buyPrice, stopLossOrderId: stopLossOrder.id,
-                                    amount: stopLossOrder.amount || trade.quantity, lastPrice: price
-                                })
+                    let trade = Model.Trade.load({symbol});
+                    if (trade) {
+                        continueTrade({trade});
+                    } else {
+                        let orders = await  exchange.fetchOrders(symbol);
+                        let order = getLastBuyOrder(orders);
+                        if (order) {
+                            let trade = Object.assign(order, {quantity: order.amount});
+                            continueTrade({trade});
+                            let {price: buyPrice} = trade;
+                            let stopLossOrder = getLastStopLossOrder(orders);
+                            if (stopLossOrder) {
+                                let change = getChangePercent(stopLossOrder.price, price);
+                                if (change > 1) {
+                                    putStopLoss({
+                                        symbol, buyPrice, stopLossOrderId: stopLossOrder.id,
+                                        amount: stopLossOrder.amount || trade.quantity, lastPrice: price
+                                    })
+                                }
+                            } else {
+                                putStopLoss({symbol, amount: trade.quantity, buyPrice, lastPrice: price})
                             }
-                        } else {
-                            putStopLoss({symbol, amount: trade.quantity, buyPrice, lastPrice: price})
                         }
                     }
                 }
@@ -178,6 +180,27 @@ async function restartTrade() {
     }, []));
 }
 
+function continueTrade({trade}) {
+    startTrade({trade});
+
+}
+
+function endTrade({symbol}) {
+    if (symbol in tradings) {
+        let trade = tradings[symbol];
+        delete tradings[symbol];
+        appEmitter.emit('trade:end_trade', {trade})
+    }
+}
+
+function startTrade({trade}) {
+    if (trade && trade.symbol) {
+        let {symbol} = trade;
+        tradings[symbol] = trade;
+        fetchTicker({symbol});
+        appEmitter.emit('trade:new_trade', {trade});
+    }
+}
 
 listenToEvents().then(restartTrade).then(listenToTradeBuyEvent);
 

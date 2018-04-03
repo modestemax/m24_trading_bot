@@ -3,13 +3,14 @@ const _ = require('lodash');
 const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
-const {getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId} = require('../utils');
-const {isProduction, APIKEY, SECRET} = env;
+
+const {PRODUCTION, APIKEY, SECRET} = env;
 
 const Binance = require('binance-api-node').default
 const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
 
 module.exports = function (exchange) {
+    const {getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId} = require('../utils')(exchange);
     function manageDepth() {
         return manageSocket({createSocket: depth, name: 'depth'});
     }
@@ -207,7 +208,7 @@ module.exports = function (exchange) {
                 let newClientOrderId = getClientOrderId({symbol});
                 ({symbol, quantity, price, stopPrice} = newValues);
                 _.extend(args[0], {price, stopPrice, quantity, newClientOrderId});
-                if (isProduction) {
+                if (PRODUCTION) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
                     await exchange.privatePostOrderTest.apply(exchange, args);

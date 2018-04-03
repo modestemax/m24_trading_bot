@@ -3,7 +3,7 @@ const _ = require('lodash');
 const {getSignalResult} = require('../analyse/analyser');
 let {settingsByIndicators: indicatorSettings} = require('./indicators');
 
-const {isCurrentlyTrading, fetchTicker, fetchDepth, fetchLongTrend} = require('../utils');
+const {isCurrentlyTrading, fetchTicker, fetchDepth, fetchLongTrend} = require('../utils')();
 
 function listenToEvents() {
 

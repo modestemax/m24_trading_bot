@@ -4,7 +4,7 @@ const redisPubSub = require('redis-pubsub-emitter');
 const redisPubSubClient = redisPubSub.createClient(6379, 'localhost');
 
 
-const {getTrades} = require('./utils');
+const {getTrades} = require('./utils')();
 
 
 appEmitter.on('trade:new_trade', pushTrades);

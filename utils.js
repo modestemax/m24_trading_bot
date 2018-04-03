@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const hex = require('text-hex');
-const {FEE_CUR, QUOTE_CUR, TIMEFRAME, EXCHANGE} = env;
+const {NO_TRADE_CUR, QUOTE_CUR, TIMEFRAME, EXCHANGE} = env;
 
 // Extend the string type to allow converting to hex for quick access.
 String.prototype.toHex = function () {
@@ -11,10 +11,10 @@ String.prototype.toUniqHex = function () {
     return this + (new Date().getTime().toString()).toHex();
 };
 
-const exchange = global.exchange;
+let exchange = global.exchange;
 
 
-const fn = module.exports = {
+const fn = {
 
     getChangePercent(buyPrice, sellPrice) {
         return (sellPrice - buyPrice) / buyPrice * 100;
@@ -26,8 +26,15 @@ const fn = module.exports = {
     },
     isTradable({baseCur, pair}) {
         //baseCur is not QUOTE_CUR and not FEE_CUR
-        return baseCur ? !new RegExp(QUOTE_CUR + (FEE_CUR ? '|' + FEE_CUR : ''), 'i').test(baseCur)
-            : pair ? !(new RegExp(fn.getPair({baseCur: FEE_CUR}), 'i').test(pair))
+        let no_trade_reg = NO_TRADE_CUR.length ? '|' + NO_TRADE_CUR.join('|') : '';
+        return baseCur ? !new RegExp(QUOTE_CUR + no_trade_reg, 'i').test(baseCur)
+            : pair ? (() => {
+                        let market = fn.getMarket({pair: pair});
+                        if (market) {
+                            return !_.includes(NO_TRADE_CUR, market.baseId);
+                        }
+                    }
+                )()
                 : null
     },
     getTradablePairs(pairs) {
@@ -35,9 +42,17 @@ const fn = module.exports = {
     },
 
     getPair({symbol, baseCur}) {
-        return symbol ? fn.getMarket({symbol}).id
-            : baseCur ?
-                (_.find(exchange.markets, (market) => market.baseId.toUpperCase() === baseCur.toUpperCase()) || {}).id
+        return symbol ? (() => {
+                let market = fn.getMarket({symbol})
+                return market && market.id;
+            })()
+            : baseCur ? (() => {
+                    let markets = fn.getQuoteMarkets();
+                    let market = _.find(markets, {baseId: baseCur});
+                    if (market) {
+                        return market.id;
+                    }
+                })()
                 : null
     }
     ,
@@ -48,6 +63,10 @@ const fn = module.exports = {
     getQuotePairs() {
         return _.keys(exchange.marketsById)
             .filter(id => (new RegExp(QUOTE_CUR, 'i')).test(id))
+    },
+    getQuoteMarkets() {
+        return _.values(exchange.marketsById)
+            .filter(m => (new RegExp(QUOTE_CUR, 'i')).test(m.quoteId))
     },
 
     getMarket({baseCur, symbol, pair}) {
@@ -134,7 +153,7 @@ const fn = module.exports = {
             .filter(orders, fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
-          //  .value()
+        //  .value()
     },
     getClientOrderId({symbol}) {
         return `${symbol}_m24_t${TIMEFRAME}`
@@ -151,3 +170,9 @@ const fn = module.exports = {
     }
 
 };
+
+module.exports = function (exchange2) {
+    exchange = exchange2 || global.exchange || exchange;
+    return fn;
+};
+Object.assign(module.exports, fn);
