@@ -5,17 +5,12 @@ const moment = require('moment');
 const {
     getChangePercent, updatePrice, isTradable, getMarket
     , getTotalBaseCurBalance, getFreeBalance, getTicker, getAllPrices,
-    getLastBuyOrder, getLastStopLossOrder, getBalances, fetchTicker
+    getLastBuyOrder, getLastStopLossOrder, getBalances, fetchTicker,
+    getTradeRatio, getQuoteTradableQuantity, getTrailingChangePercent,
+    getStopLossPercent
 } = require('./utils')();
 
-const {STOP_LOSS_PERCENT, QUOTE_CUR, TRAILING_CHANGE_PERCENT, QUOTE_CUR_QTY, TRADE_RATIO} = env;
-
-const getTradeRatio = function () {
-    const ratios = {};
-    return function ({symbol}) {
-        return ratios[symbol] || TRADE_RATIO
-    }
-}();
+const {QUOTE_CUR} = env;
 
 const tradings = {};
 
@@ -26,9 +21,11 @@ async function listenToTradeBuyEvent() {
         let {symbol} = market;
         if (!tradings[symbol]) {
             tradings[symbol] = true;
-            let stopLossStopPrice = updatePrice({price: ticker.last, percent: STOP_LOSS_PERCENT});
-            let ratio = getTradeRatio({symbol});
-            let quoteTradeBalance = QUOTE_CUR_QTY * ratio;
+            let stopLossPercent = await getStopLossPercent();
+            let stopLossStopPrice = updatePrice({price: ticker.last, percent: stopLossPercent});
+            let ratio = await getTradeRatio({symbol});
+            let quoteTradableQuantity = await getQuoteTradableQuantity();
+            let quoteTradeBalance = quoteTradableQuantity * ratio;//todo QUOTE_CUR_QTY
             let quoteAvailableBalance = await getFreeBalance({cur: QUOTE_CUR});
             if (quoteAvailableBalance >= quoteTradeBalance) {
                 let remainingQuoteBalance = (quoteAvailableBalance - quoteTradeBalance);
@@ -59,6 +56,7 @@ async function listenToEvents() {
     appEmitter.on('exchange:buy_ok', ({error, symbol, trade}) => {
         if (error) {
             endTrade({symbol})
+            emitException(error)
         } else {
             startTrade({trade})
         }
@@ -124,10 +122,11 @@ async function putStopLoss({symbol, buyPrice, stopLossOrderId, amount, lastPrice
     })
 }
 
-function updateTrailingStopLoss({trade, ticker}) {
+async function updateTrailingStopLoss({trade, ticker}) {
     trade.prevMaxGain = trade.prevMaxGain || 0;
     let change = trade.maxGain - trade.prevMaxGain;
-    if (change >= TRAILING_CHANGE_PERCENT) {
+    let trailingChangePercent = await getTrailingChangePercent();
+    if (change >= trailingChangePercent) {
         let {stopLossOrder, symbol, price: buyPrice, quantity} = trade;
         let stopLossOrderId;
         if (stopLossOrder) {

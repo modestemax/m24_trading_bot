@@ -10,18 +10,28 @@ const {getTrades} = require('./utils')();
 appEmitter.on('trade:new_trade', pushTrades);
 appEmitter.on('trade:end_trade', pushTrades);
 appEmitter.on('app:error', pushError);
-redisPubSubClient.on('m24:get:settings', pushSettings);
+
+redisPubSubClient.on('*m24:get:settings', pushSettings);
+redisPubSubClient.on('*m24:set:settings', Model.Settings.updateSettings);
+redisPubSubClient.on('*m24:get:ratio', pushRatio);
+redisPubSubClient.on('*m24:set:ratio', Model.TradeRatio.updateTradeRatio);
 
 async function pushTrades() {
-    redisPubSubClient.publish('m24:trades', await getTrades())
+    redisPubSubClient.publish(appKey + 'm24:trades', await getTrades())
 }
 
 function pushError(error) {
-    redisPubSubClient.publish('m24:error', error)
+    redisPubSubClient.publish(appKey + 'm24:error', error)
 }
 
-function pushSettings() {
-    redisPubSubClient.publish('m24:settings', env)
+async function pushSettings() {
+    let settings = await Model.Settings.load();
+    redisPubSubClient.publish(appKey + 'm24:settings', settings)
+}
+
+async function pushRatio() {
+    let ratio = await Model.TradeRatio.load();
+    redisPubSubClient.publish(appKey + 'm24:ratio', ratio)
 }
 
 // appEmitter.on('exchange:ticker', async function () {

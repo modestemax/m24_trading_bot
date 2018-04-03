@@ -11,6 +11,7 @@ const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
 
 module.exports = function (exchange) {
     const {getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId} = require('../utils')(exchange);
+
     function manageDepth() {
         return manageSocket({createSocket: depth, name: 'depth'});
     }
@@ -228,7 +229,7 @@ module.exports = function (exchange) {
         });
 
         function testOrder(order) {
-            _.extend(order, {
+            return _.extend(order, {
                 // "symbol": symbol,
                 "orderId": _.uniq(),
                 "clientOrderId": order.newClientOrderId,

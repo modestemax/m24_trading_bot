@@ -26,5 +26,6 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 global.emitException = function (ex) {
+    log(ex);
     appEmitter.emit('app:error', ex);
 };
