@@ -36,7 +36,8 @@ const {checkers: indicatorCheckers, settings: indicatorSettings} = require('./in
         indicatorsResult: {},
         buy: false
     });
-
+    let strIndicators= _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v])=>k).value().join(' ');
+    signalResult.signalWeight && console.log(`${signal.symbol} ${signalResult.signalWeight} ${strIndicators} OK`);
     return signalResult;
 }
 

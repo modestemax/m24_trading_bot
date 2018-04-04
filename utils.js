@@ -132,13 +132,13 @@ const fn = {
         return await Model.TradeRatio.load({symbol});
     },
     async getQuoteTradableQuantity() {
-        return await Model.Settings.load()['QUOTE_CUR_QTY'];
+        return (await Model.Settings.load())['QUOTE_CUR_QTY'];
     },
     async getTrailingChangePercent() {
-        return await Model.Settings.load()['TRAILING_CHANGE_PERCENT'];
+        return (await Model.Settings.load())['TRAILING_CHANGE_PERCENT'];
     },
     async getStopLossPercent() {
-        return await Model.Settings.load()['STOP_LOSS_PERCENT'];
+        return (await Model.Settings.load())['STOP_LOSS_PERCENT'];
     },
     fetchTicker({symbol}) {
         appEmitter.emit('app:fetch_ticker', {symbol});
