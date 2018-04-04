@@ -4,22 +4,24 @@ const {checkers: indicatorCheckers, settings: indicatorSettings} = require('./in
 
 
 function analyseSignal({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
-
+    let previousIndicatorSignalWeight = 0, previousIndicatorIsMandatory = false;
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
         let {check, weight, indicator, mandatory, options} = indicatorStetting;
-        let {totalWeight, signalWeight, signalWeightPercent, previousSignalWeight, previousIsMandatory, stopCheck, indicatorsResult, buy} = signalResult;
+        let {totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy} = signalResult;
 
         if (check) {
             if (!stopCheck) {
-                if (!previousIsMandatory || (previousIsMandatory && previousSignalWeight)) {
-                    previousSignalWeight = indicatorCheckers[indicator]({
+                if (!previousIndicatorIsMandatory || previousIndicatorSignalWeight !== 0) {
+                    let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
                         weight, ticker, depth, signal, longSignal,
                         options
                     });
-                    previousIsMandatory = mandatory;
-                    indicatorsResult[indicator] = Boolean(previousSignalWeight);
-                    signalWeight += previousSignalWeight;
+
+                    indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
+                    signalWeight += thisIndicatorSignalWeight;
+                    previousIndicatorIsMandatory = mandatory;
+                    previousIndicatorSignalWeight = thisIndicatorSignalWeight;
                 } else {
                     stopCheck = true
                 }
@@ -28,21 +30,16 @@ function analyseSignal({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
         }
         signalWeightPercent = signalWeight / totalWeight;
         buy = signalWeightPercent >= MIN_BUY_WEIGHT;
-        return {
-            totalWeight, signalWeight, signalWeightPercent, previousSignalWeight,
-            previousIsMandatory, stopCheck, indicatorsResult, buy
-        };
+        return {totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy};
     }, {
-        symbol: signal.symbol,
         totalWeight: 0,
         signalWeight: 0,
         signalWeightPercent: 0,
-        previousSignalWeight: 0,
-        previousIsMandatory: false,
         stopCheck: false,
         indicatorsResult: {},
         buy: false
     });
+    signalResult.symbol = signal.symbol;
     logSignalResult(signalResult);
     return signalResult;
 }
@@ -89,7 +86,7 @@ function getSignalResult({ticker, depth, signal, longSignal}) {
 
 function logSignalResult(signalResult) {
     let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
-    signalResult.signalWeight && console.log(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} OK`);
+    signalResult.signalWeight>2 && console.log(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} OK`);
 }
 
 

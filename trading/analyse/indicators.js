@@ -6,6 +6,9 @@ const {getChangePercent, updatePrice} = require('../utils')();
 module.exports = {
     settings: [
         {
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: {minChangePercent: .1}
+        },
+        {
             indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: {minChangePercent: 1}
         },
         {
@@ -40,6 +43,10 @@ module.exports = {
         return _.reduce(this.settings, (byInd, setting) => (byInd[setting.indicator] = setting, byInd), {});
     },
     checkers: {
+        CANDLE_COLOR({weight, signal, options}) {
+            let ok =signal.candleColor > options.minChangePercent;
+            return +ok && weight
+        },
         LONG_TREND({weight, longSignal, options}) {
             let ok = Boolean(longSignal) && (longSignal.changePercent >= options.minChangePercent);
             return +ok && weight

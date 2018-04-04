@@ -4,7 +4,7 @@ const _ = require('lodash');
 const appEmitter = require('./events');
 
 let {QUOTE_CUR, EXCHANGE, TIMEFRAME} = env;
-const {    getChangePercent} = require('./utils')();
+
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
 const exchange = global.exchange;
@@ -38,6 +38,7 @@ const params = ({timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXC
         , "Aroon.Down" + timeframe
         , "VWMA" + timeframe
         , "open" + timeframe
+        , "change_from_open" + timeframe
     ],
     "sort": {"sortBy": "change" + timeframe, "sortOrder": "desc"},
     "options": {"lang": "en"},
@@ -47,11 +48,11 @@ const params = ({timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXC
 const beautify = (data) => {
     let time = new Date().getTime();
     return _(data).map(({d}) => {
-        let open,close;
+            let candleColor;
             return {
                 symbol: exchange.marketsById[d[0]].symbol,
                 time,
-                close:close= d[1],
+                close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
                 low: d[4],
@@ -74,8 +75,9 @@ const beautify = (data) => {
                     "aroon_down": d[18],
                     "vwma": d[19],
                 },
-                open:open= d[20],
-                green: getChangePercent(open,close)>.1
+                open: d[20],
+                candleColor: candleColor = d[21],
+                green: candleColor > 0
             };
 
             function signal(int) {
@@ -117,7 +119,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
                     let beautifyData = beautify(jsonData.data);
-                    debug2('signals ' + (longTimeframe ? 'long' : '') +_.keys(beautifyData).length+' symbols');
+                    debug2('signals ' + (longTimeframe ? 'long' : '') + _.keys(beautifyData).length + ' symbols');
                     if (longTimeframe) {
                         return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
                     } else {

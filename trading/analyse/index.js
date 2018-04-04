@@ -54,7 +54,7 @@ function listenToEvents() {
                 fetchLongTrend()
             }
             if (indicatorSettings['24H_TREND'].check && !ticker) {
-                //ceci c'est a cause de la dependance des signaux long_trend viens avant 24h
+                //ceci c'est a cause de la dependance des signaux, "long_trend" viens avant "24h"
                 if (!indicatorSettings.LONG_TREND.check || (indicatorSettings.LONG_TREND.check && signalResult.indicatorsResult.LONG_TREND)) {
                     fetchTicker({symbol})
                 }
