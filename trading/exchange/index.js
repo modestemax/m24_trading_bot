@@ -70,8 +70,8 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
 
         exchangeEmitter.on('ticker', ({ticker}) => {
             let beautyTicker = exchange.parseTicker(ticker);
-            beautyTicker.green = beautyTicker.open < beautyTicker.close;
-            beautyTicker.red = !beautyTicker.green;
+            beautyTicker.green24h = beautyTicker.open < beautyTicker.close;
+            beautyTicker.red24h = !beautyTicker.green24h;
             appEmitter.emit('exchange:ticker', {ticker: beautyTicker});
             appEmitter.emit('exchange:ticker:' + beautyTicker.symbol, {ticker: beautyTicker});
         });

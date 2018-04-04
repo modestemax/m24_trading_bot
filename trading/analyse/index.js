@@ -36,7 +36,7 @@ function listenToEvents() {
 
     async function checkSignal({ticker, depth, signal, longSignal}) {
         let {symbol} = signal;
-        let {buy, buyWeight, signal: market, signalResult} = getSignalResult({ticker, depth, signal, longSignal});
+        let {buy, signal: market, signalResult} = getSignalResult({ticker, depth, signal, longSignal});
         if (buy) {
             // if (symbol==='BNB/BTC') {
             fetchTicker({symbol}); //this is used for trading
@@ -46,6 +46,9 @@ function listenToEvents() {
             });
 
         } else {
+            if (signalResult.signalWeightPercent > 49 / 100) {
+                appEmitter.emit('analyse:tracking', {symbol, signalResult});
+            }
 
             if (indicatorSettings.LONG_TREND.check && !longSignal) {
                 fetchLongTrend()
@@ -62,7 +65,7 @@ function listenToEvents() {
                 }
             }
 
-            if (buyWeight === 0) {
+            if (signalResult.signalWeight === 0) {
                 indicatorSettings['24H_TREND'].check && ticker && !(await isCurrentlyTrading({symbol})) && appEmitter.emit('app:no_fetch_ticker', {symbol});
                 indicatorSettings.BID_ASK_VOLUME.check && depth && appEmitter.emit('app:no_fetch_depth', {symbol});
             }

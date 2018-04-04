@@ -113,8 +113,8 @@ function symbolWS({ws, symbol}) {
 
                 case streams.ticker(symbol):
                     let ticker = streamEvent.data;
-                    ticker.green = ticker.open < ticker.currentClose;
-                    ticker.red = !ticker.green;
+                    ticker.green24h = ticker.open < ticker.currentClose;
+                    ticker.red24h = !ticker.green24h;
                     ticker.price = +ticker.currentClose;
                     internalExchangeEmitter.emit('ticker', {ticker});
                     debug('ticker', symbol);

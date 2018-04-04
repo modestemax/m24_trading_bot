@@ -9,6 +9,7 @@ const {getTrades} = require('./utils')();
 
 appEmitter.on('trade:new_trade', pushTrades);
 appEmitter.on('trade:end_trade', pushTrades);
+appEmitter.on('analyse:tracking', pushTracking);
 appEmitter.on('app:error', pushError);
 
 redisPubSubClient.on('*m24:get:settings', pushSettings);
@@ -18,6 +19,10 @@ redisPubSubClient.on('*m24:set:ratio', Model.TradeRatio.updateTradeRatio);
 
 async function pushTrades() {
     redisPubSubClient.publish(appKey + 'm24:trades', await getTrades())
+}
+
+async function pushTracking({symbol, signalResult}) {
+    redisPubSubClient.publish(appKey + 'm24:track', {symbol, signalResult})
 }
 
 function pushError(error) {

@@ -2,12 +2,13 @@ const debug = require('debug')('analyse:index');
 const _ = require('lodash');
 const {checkers: indicatorCheckers, settings: indicatorSettings} = require('./indicators');
 
-  function analyseSignal({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
+
+function analyseSignal({ticker, depth, signal, longSignal, MIN_BUY_WEIGHT}) {
 
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
         let {check, weight, indicator, mandatory, options} = indicatorStetting;
-        let {totalWeight, signalWeight, previousSignalWeight, previousIsMandatory, stopCheck, indicatorsResult, buy} = signalResult;
+        let {totalWeight, signalWeight, signalWeightPercent, previousSignalWeight, previousIsMandatory, stopCheck, indicatorsResult, buy} = signalResult;
 
         if (check) {
             if (!stopCheck) {
@@ -25,19 +26,24 @@ const {checkers: indicatorCheckers, settings: indicatorSettings} = require('./in
             }
             totalWeight += weight;
         }
-        buy = signalWeight / totalWeight >= MIN_BUY_WEIGHT;
-        return {totalWeight, signalWeight, previousSignalWeight, previousIsMandatory, stopCheck, indicatorsResult, buy};
+        signalWeightPercent = signalWeight / totalWeight;
+        buy = signalWeightPercent >= MIN_BUY_WEIGHT;
+        return {
+            totalWeight, signalWeight, signalWeightPercent, previousSignalWeight,
+            previousIsMandatory, stopCheck, indicatorsResult, buy
+        };
     }, {
+        symbol: signal.symbol,
         totalWeight: 0,
         signalWeight: 0,
+        signalWeightPercent: 0,
         previousSignalWeight: 0,
         previousIsMandatory: false,
         stopCheck: false,
         indicatorsResult: {},
         buy: false
     });
-    let strIndicators= _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v])=>k).value().join(' ');
-    signalResult.signalWeight && console.log(`${signal.symbol} ${signalResult.signalWeight} ${strIndicators} OK`);
+    logSignalResult(signalResult);
     return signalResult;
 }
 
@@ -77,9 +83,14 @@ function getSignalResult({ticker, depth, signal, longSignal}) {
         signal: lastSignal,
         longSignal,
         buy: signalResult.buy,
-        buyWeight: signalResult.signalWeight,
         signalResult
     }
 }
 
-module.exports={getSignalResult};
+function logSignalResult(signalResult) {
+    let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
+    signalResult.signalWeight && console.log(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} OK`);
+}
+
+
+module.exports = {getSignalResult};
