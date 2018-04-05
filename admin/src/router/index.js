@@ -1,8 +1,12 @@
 import Vue from 'vue';
 import Router from 'vue-router';
-import HelloWorld from '@/components/HelloWorld';
-
-const HelloWorld1 = HelloWorld;
+import Hello from '@/components/Hello';
+import Trades from '@/components/Trades';
+// import Hello from '@/components/Hello';
+// import Hello from '@/components/Hello';
+// import Hello from '@/components/Hello';
+// import Hello from '@/components/Hello';
+// import Hello from '@/components/Hello';
 
 Vue.use(Router);
 
@@ -10,8 +14,9 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'HelloWorld',
-      components: { HelloWorld, HelloWorld1 },
+      name: 'Hello',
+      // component: Hello,
+      components: { Hello, Trades },
     },
   ],
 });
