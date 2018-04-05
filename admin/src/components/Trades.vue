@@ -1,24 +1,32 @@
 <template>
   <div>
     all trades
-    <div></div>
-    <Trade></Trade>
-  </div>
+    <Trade v-for="(trade, symbol) in  trades" :key="symbo" :trade="trade">  </Trade>
   </div>
 
 </template>
 
 <script>
   import Trade from '@/components/Trade';
+  import appEmitter from '../data';
 
   export default {
     name: 'trades',
     data() {
       return {
         msg: 'Welcome to Your Vue.js App',
+        trades: {},
       };
     },
     components: { Trade },
+    mounted() {
+      const me = this;
+      this.$nextTick(() => {
+        appEmitter.on('trades', (trades) => {
+          me.trades = trades;
+        });
+      });
+    },
   };
 </script>
 
