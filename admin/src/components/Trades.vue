@@ -1,7 +1,7 @@
 <template>
   <div>
     all trades
-    <Trade v-for="(trade, symbol) in  trades" :key="symbo" :trade="trade">  </Trade>
+    <Trade v-for="(trade, symbol) in  trades" :key="symbol" :trade="trade">  </Trade>
   </div>
 
 </template>

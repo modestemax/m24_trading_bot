@@ -18,6 +18,7 @@
             require('./analyse');
             require('./trade');
             require('./pub_sub');
+            require('./admin_interface');
         }
     }
     catch
