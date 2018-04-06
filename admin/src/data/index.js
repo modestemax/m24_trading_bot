@@ -10,15 +10,23 @@ socket.on('connect', () => {
 });
 
 socket.on('data', (data) => {
-  console.log(`got message: ${data}`);
+  // console.log(`got message: ${data}`);
   const clientData = JSON.parse(`${data}`);
-  if (clientData.type === 'trades') {
-    appEmitter.emit('trades', clientData.trades);
+  switch (clientData.type) {
+    case 'trades':
+      debugger;
+      appEmitter.emit('trades', clientData.trades);
+      break;
+    case 'error':
+      appEmitter.emit('error', clientData.error);
+      break;
+    default:
+
   }
 });
 socket.on('disconnect', () => {
   // socket is connected!
-  debugger;
+  // debugger;
 });
 // setInterval(() => {
 //   appEmitter.emit('trades', [{ symbol: 'eth/btc' }, { symbol: 'pac/btc' }]);

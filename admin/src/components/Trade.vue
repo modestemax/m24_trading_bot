@@ -1,5 +1,10 @@
 <template>
- <div><span> {{trade.symbol}}</span></div>
+ <div>
+   <span class="time pr-1"> {{trade.time}}</span>
+   <span class="symbol pr-1"> {{trade.symbol}}</span>
+   <span class="price pr-1"> {{trade.price}}</span>
+   <span class="gainOrLoss pr-1"> {{trade.gainOrLoss}}</span>
+ </div>
 </template>
 
 <script>
@@ -16,21 +21,7 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-  h1, h2 {
-    font-weight: normal;
-  }
+  .time{
 
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  li {
-    display: inline-block;
-    margin: 0 10px;
-  }
-
-  a {
-    color: #42b983;
   }
 </style>

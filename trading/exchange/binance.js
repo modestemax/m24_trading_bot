@@ -4,35 +4,35 @@ const EventEmitter = require('events');
 const exchangeEmitter = new EventEmitter();
 
 
-const {PRODUCTION, APIKEY, SECRET} = env;
+const { PRODUCTION, APIKEY, SECRET } = env;
 
 const Binance = require('binance-api-node').default
-const client = Binance({apiKey: APIKEY, apiSecret: SECRET});
+const client = Binance({ apiKey: APIKEY, apiSecret: SECRET });
 
 module.exports = function (exchange) {
-    const {getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId} = require('../utils')(exchange);
+    const { getTradablePairs, getPair, getSymbol, getQuotePairs, getClientOrderId } = require('../utils')(exchange);
 
     function manageDepth() {
-        return manageSocket({createSocket: depth, name: 'depth'});
+        return manageSocket({ createSocket: depth, name: 'depth' });
     }
 
     function manageTicker() {
-        return manageSocket({createSocket: ticker, name: 'ticker'});
+        return manageSocket({ createSocket: ticker, name: 'ticker' });
     }
 
-    function manageSocket({createSocket, name}) {
+    function manageSocket({ createSocket, name }) {
         const socketStore = {};
-        return ({symbol, add}) => {
+        return ({ symbol, add }) => {
             if (add && !socketStore[symbol]) {
                 debug('adding socket ' + name + ' for ' + symbol);
-                let clean = createSocket({symbol});
+                let clean = createSocket({ symbol });
                 socketStore[symbol] = {
                     clean,
-                    timeout: keepAlive(clean, () => socketStore[symbol] = createSocket({symbol}))
+                    timeout: keepAlive(clean, () => socketStore[symbol] = createSocket({ symbol }))
                 }
             } else if (!add && socketStore[symbol]) {
                 debug('removing socket ' + name + ' for ' + symbol);
-                let {clean, timeout} = socketStore[symbol];
+                let { clean, timeout } = socketStore[symbol];
                 clearTimeout(timeout);
                 clean();
                 delete socketStore[symbol];
@@ -41,31 +41,31 @@ module.exports = function (exchange) {
     }
 
 
-    function ticker({symbol}) {
-        let pairs = getTradablePairs(symbol ? [getPair({symbol})] : getQuotePairs());
+    function ticker({ symbol }) {
+        let pairs = getTradablePairs(symbol ? [getPair({ symbol })] : getQuotePairs());
         if (pairs.length) {
             let logTicker = _.throttle((ticker) => debug('ticker', ticker.symbol, ticker.curDayClose), 30e3);
             let clean = client.ws.ticker(pairs, ticker => {
                 let rawTicker = toRawTicker(ticker);
-                exchangeEmitter.emit('ticker', {ticker: rawTicker});
+                exchangeEmitter.emit('ticker', { ticker: rawTicker });
                 logTicker(ticker);
             });
-            return symbol ? clean : keepAlive(clean, () => ticker({symbol}));
+            return symbol ? clean : keepAlive(clean, () => ticker({ symbol }));
         }
     }
 
-    function depth({symbol}) {
-        let pairs = getTradablePairs(symbol ? [getPair({symbol})] : getQuotePairs())
-            .map(symbol => ({symbol, level: 5}));
+    function depth({ symbol }) {
+        let pairs = getTradablePairs(symbol ? [getPair({ symbol })] : getQuotePairs())
+            .map(symbol => ({ symbol, level: 5 }));
         if (pairs.length) {
             let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.allBid, 'ASK', depth.allAsk), 30e3);
 
             let clean = client.ws.partialDepth(pairs, depth => {
-                depth = flattenDepth({depth});
-                exchangeEmitter.emit('depth', {depth});
+                depth = flattenDepth({ depth });
+                exchangeEmitter.emit('depth', { depth });
                 logDepth(depth);
             });
-            return symbol ? clean : keepAlive(clean, () => depth({symbol}));
+            return symbol ? clean : keepAlive(clean, () => depth({ symbol }));
         }
     }
 
@@ -88,16 +88,16 @@ module.exports = function (exchange) {
     }
 
 
-    function flattenDepth({depth}) {
+    function flattenDepth({ depth }) {
         let symbol = exchange.marketsById[depth.symbol].symbol;
-        let allBid = _.reduce(depth.bids, (bid, {price, quantity}) => {
+        let allBid = _.reduce(depth.bids, (bid, { price, quantity }) => {
             return bid + price * quantity;
         }, 0);
-        let allAsk = _.reduce(depth.asks, (ask, {price, quantity}) => {
+        let allAsk = _.reduce(depth.asks, (ask, { price, quantity }) => {
             return ask + price * quantity;
         }, 0);
         let buy = allBid > allAsk;
-        return _.extend({}, depth, {symbol, allBid, allAsk, buy})
+        return _.extend({}, depth, { symbol, allBid, allAsk, buy })
     }
 
     async function userData() {
@@ -105,7 +105,7 @@ module.exports = function (exchange) {
             debug(msg.eventType);
             if (msg.eventType === 'account') {
                 //send balance
-                let balance = _.mapValues(msg.balances, ({available, locked}, cur) => {
+                let balance = _.mapValues(msg.balances, ({ available, locked }, cur) => {
                     return {
                         free: +available,
                         used: +locked,
@@ -113,7 +113,7 @@ module.exports = function (exchange) {
                     }
                 });
                 balance = exchange.parseBalance(balance);
-                exchangeEmitter.emit('user_balance', {balance});
+                exchangeEmitter.emit('user_balance', { balance });
             } else if (msg.eventType === 'executionReport') {
                 let clientOrderId = getClientOrderId(msg);
                 if (msg.newClientOrderId === clientOrderId
@@ -123,17 +123,17 @@ module.exports = function (exchange) {
                     if (/SELL/i.test(msg.side) && /STOP_LOSS_LIMIT/i.test(msg.orderType)) {
                         if (/NEW/i.test(msg.orderStatus)) {
                             //new stoploss
-                            exchangeEmitter.emit('stop_loss_updated', ({symbol: msg.symbol, stopLossOrder: trade}));
+                            exchangeEmitter.emit('stop_loss_updated', ({ symbol: msg.symbol, stopLossOrder: trade }));
                         }
                         if (/FILLED/i.test(msg.orderStatus)) {
                             //new stoploss
-                            exchangeEmitter.emit('end_trade', ({symbol: msg.symbol, stopLossOrder: trade}));
+                            exchangeEmitter.emit('end_trade', ({ symbol: msg.symbol, stopLossOrder: trade }));
                         }
                     }
 
                     if (/BUY/i.test(msg.side) && /FILLED/i.test(msg.orderStatus) && /TRADE/i.test(msg.executionType)) {
                         //new buy filled
-                        exchangeEmitter.emit('buy_ok', ({symbol: trade.symbol, trade}));
+                        exchangeEmitter.emit('buy_ok', ({ symbol: trade.symbol, trade }));
                     }
                 }
             }
@@ -186,7 +186,7 @@ module.exports = function (exchange) {
             }
         }
 
-        function checkPrecision({symbol, quantity, price, stopPrice}) {
+        function checkPrecision({ symbol, quantity, price, stopPrice }) {
 
             //mettre ceci dans l'exchange
 
@@ -197,18 +197,18 @@ module.exports = function (exchange) {
             quantity = exchange.amountToLots(market.symbol, quantity);
             ///
             if (price * quantity > market.limits.cost.min || (!price)) {
-                return {symbol, quantity, price, stopPrice}
+                return { symbol, quantity, price, stopPrice }
             }
         }
 
         exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
             await orderSync();
-            let {price, stopPrice, symbol, quantity} = args[0];
-            let newValues = checkPrecision({symbol, quantity, price, stopPrice});
+            let { price, stopPrice, symbol, quantity } = args[0];
+            let newValues = checkPrecision({ symbol, quantity, price, stopPrice });
             if (newValues) {
-                let newClientOrderId = getClientOrderId({symbol});
-                ({symbol, quantity, price, stopPrice} = newValues);
-                _.extend(args[0], {price, stopPrice, quantity, newClientOrderId});
+                let newClientOrderId = getClientOrderId({ symbol });
+                ({ symbol, quantity, price, stopPrice } = newValues);
+                _.extend(args[0], { price, stopPrice, quantity, newClientOrderId });
                 if (PRODUCTION) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
@@ -259,7 +259,7 @@ module.exports = function (exchange) {
 
     return {
         exchangeEmitter,
-        async editStopLossOrder({symbol, stopLossOrderId, amount, stopPrice, limitPrice}) {
+        async editStopLossOrder({ symbol, stopLossOrderId, amount, stopPrice, limitPrice }) {
 
             return exchange.editOrder(stopLossOrderId, symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                 stopPrice,
@@ -269,14 +269,14 @@ module.exports = function (exchange) {
         },
         async getAllPrices() {
             let prices = await  exchange.publicGetTickerAllPrices()
-            return _.reduce(prices, (prices, {symbol: pair, price}) => {
+            return _.reduce(prices, (prices, { symbol: pair, price }) => {
                 if (pair !== '123456') {
-                    prices[getSymbol({pair})] = +price;
+                    prices[getSymbol({ pair })] = +price;
                 }
                 return prices;
             }, {})
         },
-        async createStopLossOrder({symbol, amount, stopPrice, limitPrice}) {
+        async createStopLossOrder({ symbol, amount, stopPrice, limitPrice }) {
             return await exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'sell', amount, void 0, {
                     stopPrice,
                     price: limitPrice,
@@ -284,7 +284,7 @@ module.exports = function (exchange) {
                 }
             )
         },
-        async buyMarket({symbol, stopLossStopPrice, stopLossLimitPrice, amount}) {
+        async buyMarket({ symbol, stopLossStopPrice, stopLossLimitPrice, amount, essay = 2 }) {
             try {
                 let order = await exchange.createMarketBuyOrder(symbol, amount);
                 order.stopLossOrder = await this.createStopLossOrder({
@@ -295,28 +295,37 @@ module.exports = function (exchange) {
                 });
                 return order;
             } catch (ex) {
+                if (/"code"\s*:\s*-2010/i.test(ex.message) && essay) {
+                    //binance {"code":-2010,"msg":"Account has insufficient balance for requested action."}
+                    return this.buyMarket({
+                        symbol, stopLossStopPrice, stopLossLimitPrice,
+                        amount: --amount,
+                        essay: --essay
+                    })
+                }
+                emitException(ex);
                 throw  ex
             }
         },
-        depth({symbol}) {
-            doDepth({symbol, add: true})
+        depth({ symbol }) {
+            doDepth({ symbol, add: true })
         },
-        noDepth({symbol}) {
-            doDepth({symbol, add: false})
+        noDepth({ symbol }) {
+            doDepth({ symbol, add: false })
         },
-        ticker({symbol}) {
-            doTicker({symbol, add: true})
+        ticker({ symbol }) {
+            doTicker({ symbol, add: true })
         },
-        noTicker({symbol}) {
-            doTicker({symbol, add: false})
+        noTicker({ symbol }) {
+            doTicker({ symbol, add: false })
         },
 
-        async sellMarket({symbol}) {
+        async sellMarket({ symbol }) {
 
         },
-        async cancelOrders({symbol}) {
+        async cancelOrders({ symbol }) {
         },
-        async putStopLoss({symbol, stopPrice}) {
+        async putStopLoss({ symbol, stopPrice }) {
         }
     }
 }

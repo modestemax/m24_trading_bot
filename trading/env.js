@@ -16,7 +16,8 @@ module.exports = Model.Settings.load().then(async settings => {
             STOP_LOSS_PERCENT,
             TRADE_RATIO,
             TRAILING_CHANGE_PERCENT,
-            PRODUCTION: NODE_ENV === 'production',
+            // PRODUCTION:true,// NODE_ENV === 'production',
+            PRODUCTION:NODE_ENV === 'production',
             NO_TRADE_CUR: (() => {
                     let no_trade = [];
                     switch (appStartupParams.EXCHANGE) {
