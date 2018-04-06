@@ -16,20 +16,30 @@ appEmitter.on('app:error', pushError);
 async function pushTrades() {
     let trades = await getTrades();
     // trades=_.mapValues(trades,(t,k)=>({symbol:k}));
-    socket.send(JSON.stringify({ type: 'trades', trades }))
+    socketSend(JSON.stringify({ type: 'trades', trades }))
 }
 
 async function pushTracking({ symbol, signalResult }) {
-    socket.send(JSON.stringify({ type: 'tracking', trades: { symbol, signalResult } }))
+    socketSend(JSON.stringify({ type: 'tracking', trades: { symbol, signalResult } }))
 }
 
 function pushError(error) {
-    socket.send(JSON.stringify({ type: 'error', error }))
+    socketSend(JSON.stringify({ type: 'error', error }))
 }
 
+let sockets = [];
+
+function socketSend(data) {
+    sockets = _.compact(sockets).filter(socket => {
+        if ((socket.connected){
+            socket.send(data)
+            return true
+        }
+    })
+}
 
 server.on('connection', function (socket) {
-
+    sockets.push(socket);
 
     //  debugger
     // socket.write('pong')
@@ -37,11 +47,11 @@ server.on('connection', function (socket) {
         //   debugger
     })
     socket.on('close', function () {
-        debugger
+        sockets.splice(sockets.findIndex(s => s === socket), 1)
     })
     socket.on('error', function (err) {
-        debugger
+        // debugger
     })
-})
+});
 
 // server.close()
