@@ -151,17 +151,17 @@ const fn = {
     },
     getLastBuyOrder(orders) {
         return _(orders)
-            .filter(orders, o => /BUY/i.test(o.side))
-            .filter(orders, o => /CLOSED/i.test(o.status))
-            .filter(orders, fn.isM24BotOrder)
+            .filter(o => /BUY/i.test(o.side))
+            .filter(o => /CLOSED/i.test(o.status))
+            .filter(fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
     },
 
     getLastStopLossOrder(orders) {
         return _(orders)
-            .filter(orders, ({side, status, type}) => /SELL/i.test(side) && /OPEN/i.test(status) && /STOP_LOSS_LIMIT/i.test(type))
-            .filter(orders, fn.isM24BotOrder)
+            .filter(({side, status, type}) => /SELL/i.test(side) && /OPEN/i.test(status) && /STOP_LOSS_LIMIT/i.test(type))
+            .filter( fn.isM24BotOrder)
             .sortBy([o => new Date(o.datetime)])
             .last()
         //  .value()
@@ -171,7 +171,7 @@ const fn = {
     },
     isM24BotOrder(order) {
         if (fn.isBinance() && order.info) {
-            let clientOrderId = fn.getClientOrderId(order);
+            let clientOrderId = fn.getClientOrderId(order.info);
             let {info} = order;
             return info.clientOrderId === clientOrderId || info.originalClientOrderId === clientOrderId || info.newClientOrderId === clientOrderId
         }

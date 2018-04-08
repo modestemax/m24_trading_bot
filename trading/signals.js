@@ -119,7 +119,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
                     let beautifyData = beautify(jsonData.data);
-                    debug2('signals ' + (longTimeframe ? 'long' : '') + _.keys(beautifyData).length + ' symbols');
+                    debug2('signals ' + (longTimeframe ? ' long' : '') + _.keys(beautifyData).length + ' symbols');
                     if (longTimeframe) {
                         return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
                     } else {

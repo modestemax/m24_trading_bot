@@ -2,7 +2,7 @@ import Vue from 'vue';
 import Router from 'vue-router';
 import Hello from '@/components/Hello';
 import Trades from '@/components/Trades';
-// import Hello from '@/components/Hello';
+import Errors from '@/components/Errors';
 // import Hello from '@/components/Hello';
 // import Hello from '@/components/Hello';
 // import Hello from '@/components/Hello';
@@ -14,9 +14,9 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Hello',
+      name: 'M24',
       // component: Hello,
-      components: { Hello, Trades },
+      components: { Hello, Trades, Errors },
     },
   ],
 });

@@ -8,14 +8,15 @@ const { getTrades } = require('./utils')();
 
 
 appEmitter.on('trade:new_trade', pushTrades);
-appEmitter.on('analyse:try_trade', pushTrades);
+appEmitter.on('trade:do_trade', pushTrades);
+// appEmitter.on('analyse:try_trade', pushTrades);
 appEmitter.on('trade:end_trade', pushTrades);
 appEmitter.on('analyse:tracking', pushTracking);
 appEmitter.on('app:error', pushError);
 
 async function pushTrades() {
     let trades = await getTrades();
-    // trades=_.mapValues(trades,(t,k)=>({symbol:k}));
+    // trades=_.filter(trades,(t,k)=>({symbol:k}));
     socketSend(JSON.stringify({ type: 'trades', trades }))
 }
 
@@ -24,19 +25,19 @@ async function pushTracking({ symbol, signalResult }) {
 }
 
 function pushError(error) {
-    socketSend(JSON.stringify({ type: 'error', error }))
+    socketSend(JSON.stringify({ type: 'error', error: error && error.toString() }))
 }
 
 let sockets = [];
 
 function socketSend(data) {
     sockets = _.compact(sockets).filter(socket => {
-        if ((socket.connected){
+        if ((socket.connected)) {
             socket.send(data)
             return true
         }
     })
-}
+    }
 
 server.on('connection', function (socket) {
     sockets.push(socket);

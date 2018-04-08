@@ -1,15 +1,27 @@
 <template>
   <div id="app">
     <!--<img class="m24-logo" src="./assets/images/m24_on.gif">-->
-    <img class="m24-logo" :src="logo">
-    <router-view name="Hello"></router-view>
-    <router-view name="Trades"></router-view>
+    <div class="pb-5">
+      <img class="m24-logo" :src="logo">
+      <router-view name="Hello"></router-view>
+    </div>
+
+    <b-card-group class="px-3">
+      <b-card class="trades" title="Trades">
+        <router-view name="Trades"></router-view>
+      </b-card>
+      <b-card class="errors" title="Errors">
+        <router-view name="Errors"></router-view>
+      </b-card>
+
+    </b-card-group>
   </div>
 </template>
 
 <script>
   import logoOn from './assets/images/m24_on.gif';
   import logoOff from './assets/images/m24_off.png';
+  import appEmitter from './data';
 
   export default {
     name: 'app',
@@ -20,6 +32,17 @@
       logo() {
         return this.online ? logoOn : logoOff;
       },
+    },
+    mounted() {
+      const me = this;
+      this.$nextTick(() => {
+        appEmitter.on('offline', () => {
+          me.online = false;
+        });
+        appEmitter.on('online', () => {
+          me.online = true;
+        });
+      });
     },
   };
 </script>
@@ -44,5 +67,15 @@
 
   body {
     background-color: black;
+  }
+
+  .trades {
+    background: #559929;
+    /*opacity: .5;*/
+  }
+
+  .errors {
+    background: #ff1d0052;
+    opacity: .8;
   }
 </style>

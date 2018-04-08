@@ -295,13 +295,21 @@ module.exports = function (exchange) {
                 });
                 return order;
             } catch (ex) {
-                if (/"code"\s*:\s*-2010/i.test(ex.message) && essay) {
-                    //binance {"code":-2010,"msg":"Account has insufficient balance for requested action."}
-                    return this.buyMarket({
-                        symbol, stopLossStopPrice, stopLossLimitPrice,
-                        amount: --amount,
-                        essay: --essay
-                    })
+                if (essay) {
+                    if (/"code"\s*:\s*-2010/i.test(ex.message)) {
+                        //binance {"code":-2010,"msg":"Account has insufficient balance for requested action."}
+                        return this.buyMarket({
+                            symbol, stopLossStopPrice, stopLossLimitPrice,
+                            amount: --amount,
+                            essay: --essay
+                        })
+                    } else if (/timed\s*out/i.test(ex.message)) {
+                        return this.buyMarket({
+                            symbol, stopLossStopPrice, stopLossLimitPrice,
+                            amount: amount,
+                            essay: --essay
+                        })
+                    }
                 }
                 emitException(ex);
                 throw  ex

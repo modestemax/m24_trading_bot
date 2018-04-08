@@ -10,6 +10,7 @@ export default appEmitter;
   socket.on('connect', () => {
     // socket is connected!
     // socket.send('sup!');
+    appEmitter.emit('online');
   });
 
   socket.on('data', (data) => {
@@ -28,6 +29,7 @@ export default appEmitter;
     }
   });
   socket.on('close', () => {
+    appEmitter.emit('offline');
     setTimeout(connect, 0);
   });
   socket.on('error', (err) => {

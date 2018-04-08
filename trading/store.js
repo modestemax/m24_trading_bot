@@ -4,7 +4,7 @@ const Trade = require('pd-redis-model')(appKey + 'Trade');
 const OldTrade = require('pd-redis-model')(appKey + 'OldTrade');
 const TradeRatio = require('pd-redis-model')(appKey + 'TradeRatio');
 
-Object.assign(global, {Model: {Settings, Trade, OldTrade, TradeRatio}});
+Object.assign(global, { Model: { Settings, Trade, OldTrade, TradeRatio } });
 Settings.current = null;
 Settings.load = async function () {
     if (!Settings.current) {
@@ -25,7 +25,7 @@ Settings.load = async function () {
     }
 };
 
-Settings.updateSettings = async function ({settings}) {
+Settings.updateSettings = async function ({ settings }) {
     try {
         if (settings) {
             let settings0 = await Settings.load();
@@ -40,7 +40,7 @@ Settings.updateSettings = async function ({settings}) {
 }
 
 
-Trade.load = async function ({symbol}) {
+Trade.load = async function ({ symbol }) {
     try {
         let trades = await Trade.range({
             latest: Date.now(), //* the ending time point of list
@@ -53,10 +53,10 @@ Trade.load = async function ({symbol}) {
     }
 };
 
-async function addTrade({trade}) {
+async function addTrade({ trade }) {
     try {
         if (trade) {
-            let oldTrade = await Trade.load({symbol: trade.symbol});
+            let oldTrade = await Trade.load({ symbol: trade.symbol });
             if (oldTrade) {
                 await Trade.remove(oldTrade['pd-sid']);
             }
@@ -67,11 +67,11 @@ async function addTrade({trade}) {
     }
 }
 
-async function delTrade({symbol, trade}) {
+async function delTrade({ symbol, trade }) {
     try {
         if (trade || symbol) {
             symbol = symbol || trade.symbol;
-            let oldTrade = await Trade.load({symbol});
+            let oldTrade = await Trade.load({ symbol });
             if (oldTrade) {
                 await  Trade.remove(oldTrade['pd-sid']);
                 await OldTrade.create(trade || oldTrade);
@@ -82,9 +82,10 @@ async function delTrade({symbol, trade}) {
     }
 }
 
-TradeRatio.load = async function ({symbol}) {
+
+TradeRatio.load = async function ({ symbol }) {
     try {
-        const {TRADE_RATIO} = await Settings.load();
+        const { TRADE_RATIO } = await Settings.load();
         let tradeRatio = await TradeRatio.range({
             latest: Date.now(), //* the ending time point of list
             earliest: 0,                   //* the starting time point of list
@@ -92,7 +93,7 @@ TradeRatio.load = async function ({symbol}) {
         });
         if (!tradeRatio.length) {
             let sid = await TradeRatio.create({});
-            tradeRatio = {'pd-sid': sid};
+            tradeRatio = { 'pd-sid': sid };
         } else {
             tradeRatio = _.first(tradeRatio);
         }
@@ -103,7 +104,7 @@ TradeRatio.load = async function ({symbol}) {
 };
 
 
-TradeRatio.updateTradeRatio = async function ({symbol, ratio}) {
+TradeRatio.updateTradeRatio = async function ({ symbol, ratio }) {
     try {
         if (symbol && ratio && !isNaN(+ratio)) {
             let tradeRatio = await TradeRatio.load();
