@@ -16,12 +16,12 @@ global.log('m24 started with key ' + appKey);
 global.debug = console.debug.bind(console);
 
 process.on('uncaughtException', (err) => {
-    log(`hdf Uncaught Exception ${err.message} ${ err.stack || 'no stack'}`,console.error);
+    log(`hdf Uncaught Exception ${err.message} ${ err.stack || 'no stack'}`, console.error);
     emitException(err);
 });
 
 process.on('unhandledRejection', (reason, p) => {
-    log(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}\n\nreason: ${JSON.stringify(reason)}`, console.error);
+    log(`Unhandled Rejection at: Promise: ${p && p.toString()}\n\nreason: ${reason && reason.toString()}`, console.error);
     emitException(reason);
 });
 
