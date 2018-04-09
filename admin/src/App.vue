@@ -26,7 +26,7 @@
   export default {
     name: 'app',
     data() {
-      return { online: true };
+      return { online: false };
     },
     computed: {
       logo() {
