@@ -7,10 +7,10 @@ module.exports = {
 
     // First application
     {
-      name      : 'API',
+      name      : 'bot',
       script    : 'trading/app.js',
       env: {
-        COMMON_VARIABLE: 'true'
+        DEBUG: '*'
       },
       env_production : {
         NODE_ENV: 'production'
