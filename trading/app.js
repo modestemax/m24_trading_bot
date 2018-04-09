@@ -1,11 +1,11 @@
 (async (env) => {
-    let {EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY} = env;
+    let { EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY } = env;
     try {
         const _ = require('lodash');
 
         if (EXCHANGE && TIMEFRAME && QUOTE_CUR && API_KEY) {
-            global.appStartupParams = _.mapValues({EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY}, v => v.toUpperCase());
-            ({EXCHANGE, TIMEFRAME, QUOTE_CUR} = appStartupParams);
+            global.appStartupParams = _.mapValues({ EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY }, v => v.toUpperCase());
+            ({ EXCHANGE, TIMEFRAME, QUOTE_CUR } = appStartupParams);
             global.appKey = `${EXCHANGE}:${TIMEFRAME}:${QUOTE_CUR}:`;
             require('./events');
 
@@ -19,6 +19,8 @@
             require('./trade');
             require('./pub_sub');
             require('./admin_interface');
+        } else {
+            console.error(EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY)
         }
     }
     catch
