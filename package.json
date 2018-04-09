@@ -1,0 +1,20 @@
+{
+  "name": "m24_trading_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "trading/app.js",
+  "scripts": {
+    "test": "DEBUG=* QUOTE_CUR=BTC EXCHANGE=binance TIMEFRAME=15 API_KEY=keys  node --inspect=0.0.0.0:5858 app",
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modestemax/m24_trading_bot.git"
+  },
+  "author": "modeste nana",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modestemax/m24_trading_bot/issues"
+  },
+  "homepage": "https://github.com/modestemax/m24_trading_bot#readme"
+}

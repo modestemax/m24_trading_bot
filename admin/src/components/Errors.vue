@@ -1,5 +1,5 @@
 <template>
-  <div class="errors">
+  <div class="errors pl-1">
     <div v-for="(error, index) in  errors" :key="index">
       <span class="error">{{error.time}}</span>
       <span class="error">{{error.error}}</span>
@@ -10,6 +10,9 @@
 <script>
   import appEmitter from '../data';
 
+  const time = () => (new Date()).toTimeString().split(':').slice(0, 2)
+    .join('H ');
+
   export default {
     name: 'Errors',
     data() {
@@ -17,20 +20,12 @@
         errors: [],
       };
     },
-    computed: {
-      time() {
-        return (new Date())
-          .toTimeString()
-          .split(':')
-          .slice(0, 2)
-          .join('H ');
-      },
-    },
+    computed: {},
     mounted() {
       const me = this;
       this.$nextTick(() => {
         appEmitter.on('error', (error) => {
-          me.errors.unshift({ time: me.time, error });
+          me.errors.unshift({ time: time(), error });
         });
       });
     },
@@ -40,6 +35,7 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
   .errors {
-    /*padding-top: 50px;*/
+    text-align: left;
+
   }
 </style>

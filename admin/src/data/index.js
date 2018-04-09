@@ -7,7 +7,7 @@ export default appEmitter;
 
 (function connect() {
   // debugger;
-  const host = window.location.search.split('=')[1] || 'localhost';
+  const host = window.location.hostname;
   const socket = new Socket(`ws://${host}:12345`);
 
   socket.on('connect', () => {

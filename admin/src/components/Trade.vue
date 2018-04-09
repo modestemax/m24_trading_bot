@@ -1,10 +1,11 @@
 <template>
-  <div>
-    <span class="time pr-1"> {{time}}</span>
-    <span class="symbol pr-1"> {{trade.symbol}}</span>
-    <span class="price pr-1"> {{trade.price}}</span>
-    <span class="gainOrLoss pr-1"> {{gainOrLoss}}</span>
-  </div>
+  <tr>
+    <th>{{time}}</th>
+    <th>{{trade.symbol}}</th>
+    <th>{{trade.minGain}}</th>
+    <th>{{gainOrLoss}}</th>
+    <th>{{trade.maxGain}}</th>
+  </tr>
 </template>
 
 <script>

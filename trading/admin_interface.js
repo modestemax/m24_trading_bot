@@ -62,11 +62,11 @@ server.on('connection', function (socket) {
 
 
 app.use('/static', express.static(__dirname + "/../admin/dist/static"));
+// app.get('/', async (req, res) => {
+//     let host = await curl.get('http://169.254.169.254/latest/meta-data/public-ipv4')
+//     res.redirect('/bot?host=' + host||'')
+// })
 app.get('/', async (req, res) => {
-    let host = await curl.get('http://169.254.169.254/latest/meta-data/public-ipv4')
-    res.redirect('/bot?host=' + host||'')
-})
-app.get('/bot', async (req, res) => {
     res.sendFile(path.resolve(__dirname + "/../admin/dist/index.html"))
 })
 // server.close() return

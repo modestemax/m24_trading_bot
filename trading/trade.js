@@ -101,10 +101,12 @@ function doTrade({ trade, ticker }) {
     // putStopLoss({order});
     trade.gainOrLoss = trade.gainOrLoss || 0;
     trade.maxGain = trade.maxGain || 0;
+    trade.minGain = trade.minGain || 0;
     trade.tradeDuration = moment.duration(new Date().getTime() - trade.timestamp).humanize();
     trade.price = trade.price || ticker.last;
     trade.gainOrLoss = getChangePercent(trade.price, ticker.last);
     trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
+    trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
     updateTrailingStopLoss({ trade, ticker })
     appEmitter.emit('trade:do_trade')
 }

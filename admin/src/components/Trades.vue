@@ -1,28 +1,37 @@
 <template>
   <div class="trades">
-      <Trade v-for="(trade, symbol) in  trades" :key="symbol" :trade="trade">  </Trade>
+    <b-table striped hover :items="tradesList" :fields="fields"></b-table>
   </div>
 
 </template>
 
 <script>
-  import Trade from '@/components/Trade';
+  // import Trade from '@/components/Trade';
+  import _ from 'lodash';
   import appEmitter from '../data';
 
+  const time = st => (new Date(st)).toTimeString().split(':').slice(0, 2)
+    .join('H ');
+  const fix = v => `${(+v).toFixed(2)}%`;
   export default {
     name: 'trades',
     data() {
       return {
-        msg: 'Welcome to Your Vue.js App',
-        trades: {},
+        trades: [],
+        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain','tradeDuration'],
       };
     },
-    components: { Trade },
+    // components: { Trade },
     mounted() {
       const me = this;
       this.$nextTick(() => {
         appEmitter.on('trades', (trades) => {
-          me.trades = trades;
+          me.trades = _.Values(trades, t => (_.extend(t, {
+            time: time(t.timestamp),
+            minGain: fix(t.minGain),
+            gainOrLoss: fix(t.gainOrLoss),
+            maxGain: fix(t.maxGain),
+          })));
         });
       });
     },

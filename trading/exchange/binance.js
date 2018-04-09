@@ -234,7 +234,7 @@ module.exports = function (exchange) {
         });
 
         function testOrder(order) {
-            return _.extend(order, {
+            return exchange.parseOrder( _.extend(order, {
                 // "symbol": symbol,
                 "orderId": _.uniq(),
                 "clientOrderId": order.newClientOrderId,
@@ -247,7 +247,7 @@ module.exports = function (exchange) {
                 "timeInForce": "GTC",
                 // "type": type,
                 // "side": side
-            })
+            }))
         }
     }
 

@@ -1,30 +1,30 @@
 const _ = require('lodash');
 const sorted = require('is-sorted')
-const {getChangePercent, updatePrice} = require('../utils')();
+const { getChangePercent, updatePrice } = require('../utils')();
 
 
 module.exports = {
     settings: [
         {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: {minChangePercent: .1}
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
-            indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: {minChangePercent: 1}
+            indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 1 }
         },
         {
-            indicator: '24H_TREND', check: true, weight: .5, mandatory: true, options: {minChangePercent: 2}
+            indicator: '24H_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 2 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 3}
+            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 3 }
         },
         {
-            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 3}
+            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 3 }
         },
         {
-            indicator: 'AROON', check: true, weight: 1, mandatory: false, options: {minDistance: .2, minCount: 1}
+            indicator: 'AROON', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 1 }
         },
         {
             indicator: 'ADX', check: true, weight: 1, mandatory: false, options: {
@@ -36,41 +36,41 @@ module.exports = {
             indicator: 'VWMA', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'RSI', check: false, weight: 1, mandatory: false, options: {buyReference: 30}
+            indicator: 'RSI', check: false, weight: 1, mandatory: false, options: { buyReference: 30 }
         },
     ],
     get settingsByIndicators() {
         return _.reduce(this.settings, (byInd, setting) => (byInd[setting.indicator] = setting, byInd), {});
     },
     checkers: {
-        CANDLE_COLOR({weight, signal, options}) {
-            let ok =signal.candleColor > options.minChangePercent;
+        CANDLE_COLOR({ weight, signal, options }) {
+            let ok = signal.candleColor > options.minChangePercent;
             return +ok && weight
         },
-        LONG_TREND({weight, longSignal, options}) {
+        LONG_TREND({ weight, longSignal, options }) {
             let ok = Boolean(longSignal) && (longSignal.changePercent >= options.minChangePercent);
             return +ok && weight
         },
 
-        '24H_TREND'({weight, ticker, options}) {
+        '24H_TREND'({ weight, ticker, options }) {
             let ok = Boolean(ticker) && (ticker.percentage >= options.minChangePercent);
             return +ok && weight;
 
         },
 
-        BID_ASK_VOLUME({weight, depth, options}) {
+        BID_ASK_VOLUME({ weight, depth, options }) {
             let ok = Boolean(depth) && (depth.allBid > depth.allAsk);
             return +ok && weight;
         },
-        EMA({weight, signal, options}) {
-            let {indicators} = signal;
-            let {ema10, ema20} = indicators;
+        EMA({ weight, signal, options }) {
+            let { indicators } = signal;
+            let { ema10, ema20 } = indicators;
             let ok = false;
             if (_.min([ema10.length, ema20.length]) >= options.minCount) {
-                let [{value: ema10_pre}, {value: ema10_cur}] = ema10.slice(-2);
-                let [{value: ema20_pre}, {value: ema20_cur}] = ema20.slice(-2);
-                let [{value: ema10_0},] = ema10;
-                let [{value: ema20_0},] = ema20;
+                let [{ value: ema10_pre }, { value: ema10_cur }] = ema10.slice(-2);
+                let [{ value: ema20_pre }, { value: ema20_cur }] = ema20.slice(-2);
+                let [{ value: ema10_0 },] = ema10;
+                let [{ value: ema20_0 },] = ema20;
                 indicators.ema_crossing_up = ema10_pre <= ema20_pre && ema10_cur > ema20_cur;
                 indicators.ema_crossing_down = ema10_pre >= ema20_pre && ema10_cur < ema20_cur;
                 indicators.ema_crossing = indicators.ema_crossing_up || indicators.ema_crossing_down;
@@ -107,16 +107,16 @@ module.exports = {
             }
         },
 
-        MACD({weight, signal, options}) {
+        MACD({ weight, signal, options }) {
             //macd >macd_signal
-            let {indicators} = signal;
-            let {macd, macd_signal} = indicators;
+            let { indicators } = signal;
+            let { macd, macd_signal } = indicators;
             let ok = false;
             if (_.min([macd.length, macd_signal.length]) >= options.minCount) {
-                let [{value: macd_pre}, {value: macd_cur}] = macd.slice(-2);
-                let [{value: macd_signal_pre}, {value: macd_signal_cur}] = macd_signal.slice(-2);
-                let [{value: macd_0},] = macd;
-                let [{value: macd_signal_0},] = macd_signal;
+                let [{ value: macd_pre }, { value: macd_cur }] = macd.slice(-2);
+                let [{ value: macd_signal_pre }, { value: macd_signal_cur }] = macd_signal.slice(-2);
+                let [{ value: macd_0 },] = macd;
+                let [{ value: macd_signal_0 },] = macd_signal;
                 indicators.macd_crossing_up = macd_pre <= macd_signal_pre && macd_cur > macd_signal_cur;
                 indicators.macd_crossing_down = macd_pre >= macd_signal_pre && macd_cur < macd_signal_cur;
                 indicators.macd_crossing = indicators.macd_crossing_up || indicators.macd_crossing_down;
@@ -134,13 +134,13 @@ module.exports = {
             return +ok && weight;
 
         },
-        AROON({weight, signal, options}) {
-            let {indicators} = signal;
-            let {aroon_up, aroon_down} = indicators;
+        AROON({ weight, signal, options }) {
+            let { indicators } = signal;
+            let { aroon_up, aroon_down } = indicators;
             let ok = false;
             if (_.min([aroon_up.length, aroon_down.length]) >= options.minCount) {
-                let {value: aroon_up_cur} = _.last(aroon_up);
-                let {value: aroon_down_cur} = _.last(aroon_down);
+                let { value: aroon_up_cur } = _.last(aroon_up);
+                let { value: aroon_down_cur } = _.last(aroon_down);
                 indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
                 ok = aroon_up_cur > aroon_down_cur
                     && aroon_up_cur >= 70
@@ -153,14 +153,14 @@ module.exports = {
             }
             return +ok && weight;
         },
-        ADX({weight, signal, options}) {
+        ADX({ weight, signal, options }) {
 
-            let {indicators} = signal;
-            let {adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di} = indicators;
+            let { indicators } = signal;
+            let { adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di } = indicators;
             let ok = false;
             if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= options.minCount) {
-                let [{value: minus_di_pre}, {value: minus_di_cur}] = adx_minus_di.slice(-2);
-                let [{value: plus_di_pre}, {value: plus_di_cur}] = adx_plus_di.slice(-2);
+                let [{ value: minus_di_pre }, { value: minus_di_cur }] = adx_minus_di.slice(-2);
+                let [{ value: plus_di_pre }, { value: plus_di_cur }] = adx_plus_di.slice(-2);
                 indicators.adx_di_distance = plus_di_cur - minus_di_cur;
                 ok = _.last(adx).value > options.buyReference
                     && plus_di_cur > minus_di_cur
@@ -170,30 +170,35 @@ module.exports = {
                     && adx_trendingUp
                     && isSorted(values(indicators.adx), options.minCount)
                     && isSorted(values(indicators.adx_plus_di), options.minCount)
-                    && isSorted(values(indicators.adx_minus_di), options.minCount, {reverse: true})
+                    && isSorted(values(indicators.adx_minus_di), options.minCount, { reverse: true })
+                    && isCrossingReference()
 
             }
             return +ok && weight;
+
+            function isCrossingReference() {
+                return _.min(adx) < options.buyReference && _.max(adx) > options.buyReference;
+            }
         },
 
-        VWMA({weight, signal}) {
+        VWMA({ weight, signal }) {
             // vwma buy when it's < close price
-            let {indicators, close} = signal;
-            let {vwma} = indicators;
+            let { indicators, close } = signal;
+            let { vwma } = indicators;
             let ok = false;
             if (vwma.length >= 1) {
-                let {value: vwma_cur} = _.last(vwma);
+                let { value: vwma_cur } = _.last(vwma);
                 ok = (vwma_cur < close);
             }
             return +ok && weight;
         },
 
-        RSI({weight, signal, options}) {
-            let {indicators} = signal;
-            let {rsi} = indicators;
+        RSI({ weight, signal, options }) {
+            let { indicators } = signal;
+            let { rsi } = indicators;
             let ok = false;
             if (rsi.length >= 1) {
-                let {value: rsi_cur} = _.last(rsi);
+                let { value: rsi_cur } = _.last(rsi);
                 ok = (rsi_cur <= options.buyReference);
             }
             return +ok && weight;
@@ -203,7 +208,7 @@ module.exports = {
 
 };
 
-function isSorted(list, minCount, {reverse = false} = {}) {
+function isSorted(list, minCount, { reverse = false } = {}) {
     let slist = _.slice(list, -minCount);
     let trendingUp = getChangePercent(_.head(list), _.last(list));
     trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
