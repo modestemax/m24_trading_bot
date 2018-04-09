@@ -203,7 +203,7 @@ module.exports = function (exchange) {
 
         exchange.privatePostOrder = _.wrap(exchange.privatePostOrder, async (privatePostOrder, ...args) => {
             await orderSync();
-            let { price, stopPrice, symbol, quantity } = args[0];
+            let { price, stopPrice, symbol, quantity, side } = args[0];
             let newValues = checkPrecision({ symbol, quantity, price, stopPrice });
             if (newValues) {
                 let newClientOrderId = getClientOrderId({ symbol });
@@ -213,7 +213,12 @@ module.exports = function (exchange) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
                     await exchange.privatePostOrderTest.apply(exchange, args);
-                    return testOrder(args[0])
+                    let order = testOrder(args[0])
+                    if (/buy/i.test(side)) {
+                        exchangeEmitter.emit('buy_ok', ({ symbol, trade: order }));
+                    } else {
+                        exchangeEmitter.emit('stop_loss_updated', ({ symbol, stopLossOrder: order }))
+                    }
                 }
             } else {
                 throw new Error('Check price & quantity')
@@ -311,6 +316,15 @@ module.exports = function (exchange) {
                         })
                     }
                 }
+                emitException(ex);
+                throw  ex
+            }
+        },
+        async buyLimit({ symbol, price, amount }) {
+            try {
+                let order = await exchange.createLimitBuyOrder(symbol, amount, price, { "timeInForce": "FOK", });
+                return order;
+            } catch (ex) {
                 emitException(ex);
                 throw  ex
             }

@@ -16,8 +16,8 @@ module.exports = loadExchange().then(function ({exchange, internal}) {
 
     function listenAppEvents() {
 
-        appEmitter.on('trade:buy', ({symbol, amount, stopLossStopPrice, stopLossLimitPrice}) => {
-            internal.buyMarket({symbol, amount, stopLossStopPrice, stopLossLimitPrice})
+        appEmitter.on('trade:buy', ({symbol, amount, price}) => {
+            internal.buyLimit({symbol, amount, price})
                 .catch(
                     (error) => appEmitter.emit('exchange:buy_ok', {symbol, error})
                 );

@@ -21,8 +21,7 @@ async function listenToTradeBuyEvent() {
         let { symbol } = market;
         if (!tradings[symbol]) {
             tradings[symbol] = true;
-            let stopLossPercent = await getStopLossPercent();
-            let stopLossStopPrice = updatePrice({ price: ticker.last, percent: stopLossPercent });
+
             let ratio = await getTradeRatio({ symbol });
             let quoteTradableQuantity = await getQuoteTradableQuantity();
             let quoteTradeBalance = quoteTradableQuantity * ratio;//todo QUOTE_CUR_QTY
@@ -33,14 +32,10 @@ async function listenToTradeBuyEvent() {
                     quoteTradeBalance += remainingQuoteBalance;
                 }
                 let amount = quoteTradeBalance / ticker.bid;
-                appEmitter.emit('trade:buy', {
-                    symbol,
-                    amount,
-                    stopLossStopPrice,
-                    stopLossLimitPrice: stopLossStopPrice
-                });
 
-                log(`${symbol} is good to buy, price: ${ticker.last}`, debug);
+                 appEmitter.emit('trade:buy', { symbol, amount, price: ticker.bid });
+
+                log(`${symbol} is good to buy, price: ${ticker.bid}`, debug);
             }
         }
     });
@@ -55,7 +50,7 @@ async function listenToEvents() {
 
     appEmitter.on('exchange:buy_ok', ({ error, symbol, trade }) => {
         if (error) {
-            endTrade({ symbol })
+            endTrade({ symbol });
             emitException(error)
         } else {
             startTrade({ trade })
@@ -135,7 +130,8 @@ async function updateTrailingStopLoss({ trade, ticker }) {
     if (change >= trailingChangePercent) {
         putStopLoss({ symbol, buyPrice, stopLossOrderId, amount: BuyQuantity || amount, lastPrice: ticker.last });
     } else if (!stopLossOrderId) {
-        putStopLoss({ symbol, buyPrice, amount: amount, lastPrice: ticker.last });
+        emitException("Trade " + symbol + " dont have a stoploss");
+        // putStopLoss({ symbol, buyPrice, amount: amount, lastPrice: ticker.last });
     }
     trade.prevMaxGain = trade.maxGain;
 }
@@ -200,6 +196,7 @@ function startTrade({ trade }) {
         let { symbol } = trade;
         tradings[symbol] = trade;
         fetchTicker({ symbol });
+        putStopLoss({symbol,buyPrice:trade.price,amount: trade.quantity||trade.amount})
         appEmitter.emit('trade:new_trade', { trade });
     }
 }

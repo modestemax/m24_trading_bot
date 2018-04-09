@@ -1,7 +1,8 @@
 <template>
   <div class="errors">
     <div v-for="(error, index) in  errors" :key="index">
-      <span class="error">{{error}}</span>
+      <span class="error">{{error.time}}</span>
+      <span class="error">{{error.error}}</span>
     </div>
   </div>
 </template>
@@ -16,11 +17,20 @@
         errors: [],
       };
     },
+    computed: {
+      time() {
+        return (new Date())
+          .toTimeString()
+          .split(':')
+          .slice(0, 2)
+          .join('H ');
+      },
+    },
     mounted() {
       const me = this;
       this.$nextTick(() => {
         appEmitter.on('error', (error) => {
-          me.errors.push(error);
+          me.errors.unshift({ time: me.time, error });
         });
       });
     },

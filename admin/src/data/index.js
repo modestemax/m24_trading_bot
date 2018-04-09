@@ -6,7 +6,9 @@ const appEmitter = new Events();
 export default appEmitter;
 
 (function connect() {
-  const socket = new Socket('ws://localhost:12345');
+  // debugger;
+  const host = window.location.search.split('=')[1] || 'localhost';
+  const socket = new Socket(`ws://${host}:12345`);
   socket.on('connect', () => {
     // socket is connected!
     // socket.send('sup!');
@@ -18,7 +20,7 @@ export default appEmitter;
     const clientData = JSON.parse(`${data}`);
     switch (clientData.type) {
       case 'trades':
-        debugger;
+        // debugger;
         appEmitter.emit('trades', clientData.trades);
         break;
       case 'error':
