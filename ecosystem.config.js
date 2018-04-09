@@ -35,7 +35,7 @@ module.exports = {
       host : '34.229.181.14',
       ref  : 'origin/master',
       repo : ' https://github.com/modestemax/m24_trading_bot.git',
-      path : '/var/www/production',
+      path : '/home/ubuntu/bot/prod',
       'post-deploy' : 'npm install && pm2 reload ecosystem.config.js --env production'
     },
     dev : {
@@ -44,7 +44,7 @@ module.exports = {
       host : '34.229.181.14',
       ref  : 'origin/master',
       repo : ' https://github.com/modestemax/m24_trading_bot.git',
-      path : '/var/www/development',
+      path : '/home/ubuntu/bot/dev',
       'post-deploy' : 'npm install && pm2 reload ecosystem.config.js --env dev',
       env  : {
         NODE_ENV: 'dev'
