@@ -1,9 +1,8 @@
 <template>
   <b-list-group>
     <b-list-group-item class="danger" v-for="(error, index) in  errors" :key="index">
-      <span class="error">{{error.time}}</span><br/>
-      <div class="errors">{{error.error}}</div><br/>
-    <span>---------</span>
+      <span class="error">{{error.time}}</span>
+      <div class="errors">{{error.error}}</div>
     </b-list-group-item>
   </b-list-group>
 </template>

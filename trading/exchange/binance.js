@@ -213,11 +213,12 @@ module.exports = function (exchange) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
                     await exchange.privatePostOrderTest.apply(exchange, args);
-                    let order = testOrder(args[0])
+                    let order = testOrder(args[0]);
+                    let pOrder= exchange.parseOrder(order)
                     if (/buy/i.test(side)) {
-                        exchangeEmitter.emit('buy_ok', ({ symbol, trade: order }));
+                        exchangeEmitter.emit('buy_ok', ({ symbol, trade: pOrder }));
                     } else {
-                        exchangeEmitter.emit('stop_loss_updated', ({ symbol, stopLossOrder: order }))
+                        exchangeEmitter.emit('stop_loss_updated', ({ symbol, stopLossOrder: pOrder }))
                     }
                     return order;
                 }
@@ -235,7 +236,7 @@ module.exports = function (exchange) {
         });
 
         function testOrder(order) {
-            return exchange.parseOrder(_.extend(order, {
+            return _.extend(order, {
                 // "symbol": symbol,
                 "orderId": _.uniq(),
                 "clientOrderId": order.newClientOrderId,
@@ -248,7 +249,7 @@ module.exports = function (exchange) {
                 "timeInForce": "GTC",
                 // "type": type,
                 // "side": side
-            }))
+            })
         }
     }
 
