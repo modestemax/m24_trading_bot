@@ -86,7 +86,7 @@ function getSignalResult({ ticker, depth, signal, longSignal }) {
 function logSignalResult(signalResult) {
     let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
     let ok = signalResult.buy ? 'OK' : 'NOK';
-    signalResult.signalWeight > 2 && console.log(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} ${ok}`);
+    signalResult.signalWeight > 2 && debug(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} ${ok}`);
 }
 
 
