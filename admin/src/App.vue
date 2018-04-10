@@ -3,6 +3,7 @@
     <!--<img class="m24-logo" src="./assets/images/m24_on.gif">-->
     <div class="pb-5">
       <img class="m24-logo" :src="logo">
+      <audio :src="sound" autoplay controls1></audio>
       <router-view name="Hello"></router-view>
     </div>
 
@@ -10,7 +11,7 @@
       <b-card class="trades" title="Trades">
         <router-view name="Trades"></router-view>
       </b-card>
-      <b-card class="errors" title="Errors">
+      <b-card class="errors" no-body header="<b>Errors</b>">
         <router-view name="Errors"></router-view>
       </b-card>
 
@@ -21,6 +22,8 @@
 <script>
   import logoOn from './assets/images/m24_on.gif';
   import logoOff from './assets/images/m24_off.png';
+  import soundOn from './assets/mp3/msn-online.mp3';
+  import soundOff from './assets/mp3/yahoo_door.mp3';
   import appEmitter from './data';
 
   export default {
@@ -31,6 +34,9 @@
     computed: {
       logo() {
         return this.online ? logoOn : logoOff;
+      },
+      sound() {
+        return this.online ? soundOn : soundOff;
       },
     },
     mounted() {

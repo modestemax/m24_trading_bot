@@ -219,6 +219,7 @@ module.exports = function (exchange) {
                     } else {
                         exchangeEmitter.emit('stop_loss_updated', ({ symbol, stopLossOrder: order }))
                     }
+                    return order;
                 }
             } else {
                 throw new Error('Check price & quantity')
@@ -234,12 +235,12 @@ module.exports = function (exchange) {
         });
 
         function testOrder(order) {
-            return exchange.parseOrder( _.extend(order, {
+            return exchange.parseOrder(_.extend(order, {
                 // "symbol": symbol,
                 "orderId": _.uniq(),
                 "clientOrderId": order.newClientOrderId,
                 "transactTime": new Date().getTime(),
-                "price": order.stopPrice,
+                "price": order.price || order.stopPrice,
                 "stopLossPrice": order.stopPrice,
                 "origQty": order.quantity,
                 "executedQty": order.quantity,

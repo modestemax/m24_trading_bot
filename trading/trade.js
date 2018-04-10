@@ -33,7 +33,7 @@ async function listenToTradeBuyEvent() {
                 }
                 let amount = quoteTradeBalance / ticker.bid;
 
-                 appEmitter.emit('trade:buy', { symbol, amount, price: ticker.bid });
+                appEmitter.emit('trade:buy', { symbol, amount, price: ticker.bid });
 
                 log(`${symbol} is good to buy, price: ${ticker.bid}`, debug);
             }
@@ -67,10 +67,10 @@ async function listenToEvents() {
 
     appEmitter.on('exchange:stop_loss_updated', async ({ symbol, error, stopLossOrder }) => {
         let order = tradings[symbol];
-        if (order) {
+        if (order && order.symbol) {
             if (error) {
-                let ticker = await getTicker({ symbol });
-                putStopLoss({ symbol, buyPrice: order.price, amount: order.quantity, lastPrice: ticker.last })
+                //let ticker = await getTicker({ symbol });
+                //  putStopLoss({ symbol, buyPrice: order.price, amount: order.quantity, lastPrice: ticker.last })
             } else {
                 if (_.isObject(order)) {
                     order.stopLossOrder = stopLossOrder;
@@ -190,7 +190,7 @@ function endTrade({ symbol, trade }) {
         trade = tradings[symbol];
         delete tradings[symbol];
     }
-    trade && appEmitter.emit('trade:end_trade', { trade })
+    trade && trade.symbol && appEmitter.emit('trade:end_trade', { trade })
 }
 
 function startTrade({ trade }) {
@@ -198,7 +198,7 @@ function startTrade({ trade }) {
         let { symbol } = trade;
         tradings[symbol] = trade;
         fetchTicker({ symbol });
-        putStopLoss({symbol,buyPrice:trade.price,amount: trade.quantity||trade.amount})
+        putStopLoss({ symbol, buyPrice: trade.price, amount: trade.quantity || trade.amount })
         appEmitter.emit('trade:new_trade', { trade });
     }
 }

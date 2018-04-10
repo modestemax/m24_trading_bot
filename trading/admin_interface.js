@@ -5,24 +5,41 @@ var path = require('path');
 const Server = require('simple-websocket/server')
 const server = new Server({ port: 12345 }) // see `ws` docs for other options
 
-const express = require('express') ;
+const express = require('express');
 const app = express();
 
 
 const { getTrades } = require('./utils')();
 
 
-appEmitter.on('trade:new_trade', pushTrades);
+appEmitter.on('trade:new_trade', pushTrades.bind('start'));
 appEmitter.on('trade:do_trade', pushTrades);
 // appEmitter.on('analyse:try_trade', pushTrades);
-appEmitter.on('trade:end_trade', pushTrades);
+appEmitter.on('trade:end_trade', pushTrades.bind('end'));
 appEmitter.on('analyse:tracking', pushTracking);
 appEmitter.on('app:error', pushError);
+appEmitter.on('test:trade', (start, end) => {
+    socketSend(JSON.stringify({
+        type: 'trades',
+        trades: {
+            "ETH/BTC": {
+                symbol: "ETH/BTC",
+                price: 125,
+                maxGain: 1,
+                minGain: 1,
+                gainOrLoss: 1,
+                tradeDuration: '1H'
+            }
+        },
+        start: this === 'start',
+        end: this === 'end'
+    }))
+});
 
 async function pushTrades() {
     let trades = await getTrades();
     // trades=_.filter(trades,(t,k)=>({symbol:k}));
-    socketSend(JSON.stringify({ type: 'trades', trades }))
+    socketSend(JSON.stringify({ type: 'trades', trades, start: this === 'start', end: this === 'end' }))
 }
 
 async function pushTracking({ symbol, signalResult }) {

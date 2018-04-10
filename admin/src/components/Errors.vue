@@ -1,10 +1,11 @@
 <template>
-  <div class="errors pl-1">
-    <div v-for="(error, index) in  errors" :key="index">
-      <span class="error">{{error.time}}</span>
-      <span class="error">{{error.error}}</span>
-    </div>
-  </div>
+  <b-list-group>
+    <b-list-group-item class="danger" v-for="(error, index) in  errors" :key="index">
+      <span class="error">{{error.time}}</span><br/>
+      <div class="errors">{{error.error}}</div><br/>
+    <span>---------</span>
+    </b-list-group-item>
+  </b-list-group>
 </template>
 
 <script>
@@ -36,6 +37,8 @@
 <style scoped>
   .errors {
     text-align: left;
-
+  }
+  .danger{
+    background: rgba(193, 8, 11, 0.97);
   }
 </style>

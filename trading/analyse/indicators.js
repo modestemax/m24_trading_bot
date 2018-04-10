@@ -6,7 +6,7 @@ const { getChangePercent, updatePrice } = require('../utils')();
 module.exports = {
     settings: [
         {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
+            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
             indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 1 }
@@ -27,8 +27,8 @@ module.exports = {
             indicator: 'AROON', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 1 }
         },
         {
-            indicator: 'ADX', check: true, weight: 1, mandatory: false, options: {
-                buyReference: 25, minDIDistance: 5,
+            indicator: 'ADX', check: true, weight: 1, mandatory: true, options: {
+                buyReference: 20, minDIDistance: 5,
                 minCount: 3
             }
         },
@@ -177,7 +177,8 @@ module.exports = {
             return +ok && weight;
 
             function isCrossingReference() {
-                return _.min(adx) < options.buyReference && _.max(adx) > options.buyReference;
+                let adxValues = _.map(adx, 'value');
+                return _.min(adxValues) < options.buyReference && _.max(adxValues) > options.buyReference;
             }
         },
 

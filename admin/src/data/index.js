@@ -22,7 +22,7 @@ export default appEmitter;
     switch (clientData.type) {
       case 'trades':
         // debugger;
-        appEmitter.emit('trades', clientData.trades);
+        appEmitter.emit('trades', clientData);
         break;
       case 'error':
         appEmitter.emit('error', clientData.error);
