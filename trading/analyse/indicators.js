@@ -168,16 +168,16 @@ module.exports = {
                     && adx_plus_di_trendingUp
                     && adx_minus_di_trendingDown
                     && adx_trendingUp
-                    && isSorted(values(indicators.adx), options.minCount)
-                    && isSorted(values(indicators.adx_plus_di), options.minCount)
-                    && isSorted(values(indicators.adx_minus_di), options.minCount, { reverse: true })
-                    && isCrossingReference()
+                    && isSorted(values(adx), options.minCount)
+                    && isSorted(values(adx_plus_di), options.minCount)
+                    && isSorted(values(adx_minus_di), options.minCount, { reverse: true })
+                    // && isCrossingReference()
 
             }
             return +ok && weight;
 
             function isCrossingReference() {
-                let adxValues = _.map(adx, 'value');
+                let adxValues = values(adx);
                 return _.min(adxValues) < options.buyReference && _.max(adxValues) > options.buyReference;
             }
         },
@@ -213,8 +213,7 @@ function isSorted(list, minCount, { reverse = false } = {}) {
     let slist = _.slice(list, -minCount);
     let trendingUp = getChangePercent(_.head(list), _.last(list));
     trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
-    return sorted(slist, reverse ? (a, b) => b - a : void 0)
-        || trendingUp;
+    return sorted(slist, reverse ? (a, b) => b - a : void 0) || trendingUp;
 }
 
 function values(list) {

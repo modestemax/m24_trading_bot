@@ -134,7 +134,7 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             log('signals exception:' + (longTimeframe ? ' LONG_TREND' : 'SIGNAL_TREND') + ex);
             emitException(ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 99e3 : 2e3);
+            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 120e3 : 1e3);
         }
     })
 }
@@ -146,7 +146,7 @@ function getLongsignal() {
                 getSignals({data: params({timeframe: 60}), longTimeframe: true});
                 break;
             case 60:
-                getSignals({data: params({timeframe: '1D'}), longTimeframe: true});
+                getSignals({data: params({timeframe: 240}), longTimeframe: true});
                 break;
         }
     });
