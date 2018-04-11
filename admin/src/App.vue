@@ -7,7 +7,7 @@
       <router-view name="Hello"></router-view>
     </div>
 
-    <b-card-group class="px-3">
+    <b-card-group deck cols="7" class="px-3">
       <b-card class="trades" title="Trades">
         <router-view name="Trades"></router-view>
       </b-card>
@@ -56,6 +56,7 @@
 <style>
   #app {
     font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    font-size: .8rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;

@@ -38,7 +38,7 @@ appEmitter.on('test:trade', (start, end) => {
 
 async function pushTrades() {
     let trades = await getTrades();
-    // trades=_.filter(trades,(t,k)=>({symbol:k}));
+    trades = _.filter(trades, t => t && t.symbol);
     socketSend(JSON.stringify({ type: 'trades', trades, start: this === 'start', end: this === 'end' }))
 }
 

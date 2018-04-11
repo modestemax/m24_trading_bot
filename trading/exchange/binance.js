@@ -236,9 +236,9 @@ module.exports = function (exchange) {
         });
 
         function testOrder(order) {
-            return _.extend(order, {
+            return _.extend({},order, {
                 // "symbol": symbol,
-                "orderId": _.uniq(),
+                "orderId": _.uniqueId(),
                 "clientOrderId": order.newClientOrderId,
                 "transactTime": new Date().getTime(),
                 "price": order.price || order.stopPrice,

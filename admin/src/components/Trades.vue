@@ -31,12 +31,13 @@
         appEmitter.on('trades', ({ trades, start, end }) => {
           me.sound = start ? startSound : null;
           me.sound = me.sound || (end ? endSound : null);
-          me.trades = _.mapValues(trades, t => (_.extend(t, {
+          // debugger;
+          me.trades = _.values(trades).map(t => _.extend(t, {
             time: time(t.timestamp),
             minGain: fix(t.minGain),
             gainOrLoss: fix(t.gainOrLoss),
             maxGain: fix(t.maxGain),
-          })));
+          }));
         });
       });
     },
