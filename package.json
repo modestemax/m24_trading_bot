@@ -4,7 +4,7 @@
   "description": "",
   "main": "trading/app.js",
   "scripts": {
-    "test": "DEBUG=* QUOTE_CUR=BTC EXCHANGE=binance TIMEFRAME=15 API_KEY=keys  node --inspect=0.0.0.0:5858 trading/app",
+    "test": "cd trading && DEBUG=* QUOTE_CUR=BTC EXCHANGE=binance TIMEFRAME=15 API_KEY=keys  node --inspect=0.0.0.0:5858 app",
     "deploy-dev":"cd admin && npm run build  && cd .. && pm2 deploy ecosystem.config.js dev"
 
   },
