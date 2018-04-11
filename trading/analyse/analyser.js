@@ -3,7 +3,7 @@ const _ = require('lodash');
 const { checkers: indicatorCheckers, settings: indicatorSettings } = require('./indicators');
 
 
-function analyseSignal({ ticker, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
+function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
 
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
@@ -12,7 +12,7 @@ function analyseSignal({ ticker, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
         if (!stopCheck && check) {
 
             let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
-                weight, ticker, depth, signal, longSignal,
+                weight, signal24h, depth, signal, longSignal,
                 options
             });
             indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
@@ -47,34 +47,39 @@ function analyseSignal({ ticker, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
 const symbolsData = {};
 const MAX_LENGTH = 10, MIN_BUY_WEIGHT = 70 / 100;
 
-function getSignalResult({ ticker, depth, signal, longSignal }) {
+function getNewIndicators(signal, prevSignal) {
+    return _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
+        if (!_.isArray(prevIndicators[indKey])) {
+            prevIndicators[indKey] = [  prevIndicators[indKey] ];
+        }
+
+        if (signal.open !== prevSignal.open) {
+            prevIndicators[indKey] = prevIndicators[indKey]
+                .concat(  indValue ).slice(-MAX_LENGTH);
+        } else {
+            prevIndicators[indKey].pop();
+            prevIndicators[indKey].push(  indValue );
+        }
+        if (prevIndicators[indKey].length > 1) {
+            let [ oldValue ,  newValue ] = prevIndicators[indKey].slice(-2);
+            prevSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
+            prevSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
+        }
+        return prevIndicators;
+    }, prevSignal.indicators);
+}
+
+function getSignalResult({ signal24h, depth, signal, longSignal }) {
     let { symbol } = signal;
     let prevSignal = symbolsData[symbol] || signal;
 
     let lastSignal = symbolsData[symbol] = _.extend(prevSignal, _.omit(signal, 'indicators'));
-    prevSignal.indicators = _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
-        if (!_.isArray(prevIndicators[indKey])) {
-            prevIndicators[indKey] = [{ value: prevIndicators[indKey], time: signal.time }];
-        }
-        let { value: lastValue } = _.last(prevIndicators[indKey]);
-        let newValue = indValue;
+    prevSignal.indicators = getNewIndicators(signal, prevSignal);
 
-        if (lastValue !== newValue) {
-            prevIndicators[indKey] = prevIndicators[indKey]
-                .concat({
-                    value: indValue,
-                    time: signal.time
-                }).slice(-MAX_LENGTH);
-            prevSignal.indicators[indKey + '_trendingUp'] = lastValue < newValue;
-            prevSignal.indicators[indKey + '_trendingDown'] = lastValue > newValue;
-        }
-        return prevIndicators;
-    }, prevSignal.indicators);
-
-    let signalResult = analyseSignal({ ticker, depth, signal: lastSignal, longSignal, MIN_BUY_WEIGHT });
+    let signalResult = analyseSignal({ signal24h, depth, signal: lastSignal, longSignal, MIN_BUY_WEIGHT });
 
     return {
-        ticker,
+        signal24h,
         depth,
         signal: lastSignal,
         longSignal,

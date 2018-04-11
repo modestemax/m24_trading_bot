@@ -10,14 +10,14 @@ const {
     getStopLossPercent
 } = require('./utils')();
 
-const { QUOTE_CUR } = env;
+const { QUOTE_CUR, START_TRADE_BUY_PERCENT } = env;
 
 const tradings = {};
 
 const exchange = global.exchange;
 
 async function listenToTradeBuyEvent() {
-    appEmitter.on('analyse:try_trade', async ({ market, ticker }) => {
+    appEmitter.on('analyse:try_trade', async ({ market }) => {
         let { symbol } = market;
         if (!tradings[symbol]) {
             tradings[symbol] = true;
@@ -31,11 +31,13 @@ async function listenToTradeBuyEvent() {
                 if (remainingQuoteBalance < quoteTradeBalance) {
                     quoteTradeBalance += remainingQuoteBalance;
                 }
-                let amount = quoteTradeBalance / ticker.bid;
+                let buyPrice = updatePrice({ price: market.close, percent: START_TRADE_BUY_PERCENT });
 
-                appEmitter.emit('trade:buy', { symbol, amount, price: ticker.bid });
+                let amount = quoteTradeBalance / buyPrice;
 
-                log(`${symbol} is good to buy, price: ${ticker.bid}`, debug);
+                appEmitter.emit('trade:buy', { symbol, amount, price: buyPrice });
+
+                log(`${symbol} is good to buy, price: ${buyPrice}`, debug);
             }
         }
     });

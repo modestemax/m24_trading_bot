@@ -149,6 +149,9 @@ const fn = {
     fetchLongTrend() {
         appEmitter.emit('app:fetch_long_trend');
     },
+    fetch24HTrend() {
+        appEmitter.emit('app:fetch_24h_trend');
+    },
     getLastBuyOrder(orders) {
         return _(orders)
             .filter(o => /BUY/i.test(o.side))

@@ -3,19 +3,19 @@ const curl = require('curl');
 const _ = require('lodash');
 const appEmitter = require('./events');
 
-let {QUOTE_CUR, EXCHANGE, TIMEFRAME} = env;
+let { QUOTE_CUR, EXCHANGE, TIMEFRAME } = env;
 
 
 const debug2 = _.throttle((msg) => debug(msg), 30e3);
 const exchange = global.exchange;
 
-const params = ({timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE} = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
+const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
     "filter": [
-        {"left": "change" + timeframe, "operation": "nempty"},
-        {"left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase()},
-        {"left": "name,description", "operation": "match", "right": tradingCurrency + "$"}
+        { "left": "change" + timeframe, "operation": "nempty" },
+        { "left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase() },
+        { "left": "name,description", "operation": "match", "right": tradingCurrency + "$" }
     ],
-    "symbols": {"query": {"types": []}},
+    "symbols": { "query": { "types": [] } },
     "columns": [
         "name"
         , "close" + timeframe
@@ -40,14 +40,14 @@ const params = ({timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXC
         , "open" + timeframe
         , "change_from_open" + timeframe
     ],
-    "sort": {"sortBy": "change" + timeframe, "sortOrder": "desc"},
-    "options": {"lang": "en"},
+    "sort": { "sortBy": "change" + timeframe, "sortOrder": "desc" },
+    "options": { "lang": "en" },
     "range": [0, 150]
 });
 
 const beautify = (data) => {
     let time = new Date().getTime();
-    return _(data).map(({d}) => {
+    return _(data).map(({ d }) => {
             let candleColor;
             return {
                 symbol: exchange.marketsById[d[0]].symbol,
@@ -110,7 +110,7 @@ const beautify = (data) => {
     ).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
-function getSignals({data = params(), longTimeframe = false} = {}) {
+function getSignals({ data = params(), longTimeframe = false, signal24h = false, indicator = 'SIGNAL_TREND', rate = 1e3 } = {}) {
     const args = arguments;
     const url = 'https://scanner.tradingview.com/crypto/scan';
     curl.postJSON(url, data, (err, res, data) => {
@@ -119,11 +119,13 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
                     let beautifyData = beautify(jsonData.data);
-                    debug2('signals ' + (longTimeframe ? ' long ' : '') + _.keys(beautifyData).length + ' symbols');
+                    debug2(`signals ${indicator} ${_.keys(beautifyData).length} symbols loaded`);
                     if (longTimeframe) {
-                        return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', {markets: beautifyData}))
+                        return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', { markets: beautifyData }))
+                    } else if (signal24h) {
+                        return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: beautifyData }))
                     } else {
-                        return setImmediate(() => appEmitter.emit('tv:signals', {markets: beautifyData}))
+                        return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData }))
                     }
                 }
                 err = jsonData.error;
@@ -131,31 +133,36 @@ function getSignals({data = params(), longTimeframe = false} = {}) {
             throw err;
         } catch (ex) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-            log('signals exception:' + (longTimeframe ? ' LONG_TREND' : 'SIGNAL_TREND') + ex);
+            log('signals exception:' + indicator + ex);
             emitException(ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), longTimeframe ? 120e3 : 1e3);
+            setTimeout(() => getSignals.apply(null, args), rate);
         }
     })
 }
 
-function getLongsignal() {
+function getOthersSignals({ indicator, rate }) {
+
+    appEmitter.once('app:fetch_24h_trend', function () {
+        getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+    });
+
     appEmitter.once('app:fetch_long_trend', function () {
         switch (Number(TIMEFRAME)) {
             case 15:
-                getSignals({data: params({timeframe: 60}), longTimeframe: true});
+                getSignals({ data: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
                 break;
             case 60:
-                getSignals({data: params({timeframe: 240}), longTimeframe: true});
+                getSignals({ data: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
                 break;
         }
     });
 }
 
+getSignals({ data: params({ timeframe: TIMEFRAME }) });
 
-getSignals({data: params({timeframe: TIMEFRAME})});
 
-getLongsignal();
+getOthersSignals({ indicator: 'LONG_TREND', rate: 60e3 * 2 });
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
