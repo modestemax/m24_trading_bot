@@ -13,7 +13,7 @@
   import appEmitter from '../data';
 
   const time = st => (new Date(st)).toTimeString().split(':').slice(0, 2)
-    .join('H ');
+    .join('H');
   const fix = v => `${(+v).toFixed(2)}%`;
   export default {
     name: 'trades',
@@ -21,7 +21,7 @@
       return {
         sound: null,
         trades: [],
-        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain', 'tradeDuration'],
+        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain', 'stopPercent', 'tradeDuration'],
       };
     },
     // components: { Trade },

@@ -18,7 +18,7 @@ function isCrossing({ indic1, indic2 }) {
 module.exports = {
     settings: [
         {
-            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .05 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
             indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 1 }
@@ -82,7 +82,7 @@ module.exports = {
                     reset(ema20);
                     indicators.ema_crossing = true;
                 } else {
-                    let ema10_cur = _.last(ema10;
+                    let ema10_cur = _.last(ema10);
                     let ema20_cur = _.last(ema20);
                     let ema10_0 = _.head(ema10);
                     let ema20_0 = _.head(ema20);

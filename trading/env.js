@@ -34,7 +34,7 @@ module.exports = Model.Settings.load().then(async settings => {
         }, appStartupParams, settings,
         {
             QUOTE_CUR_QTY: .006,
-            START_TRADE_BUY_PERCENT: -.4,
+            START_TRADE_BUY_PERCENT: 0,//-.4,
             STOP_LOSS_PERCENT: -1,
             TRADE_RATIO: 40 / 100,
             TRAILING_CHANGE_PERCENT: .5

@@ -71,14 +71,15 @@ async function listenToEvents() {
         let order = tradings[symbol];
         if (order && order.symbol) {
             if (error) {
+                emitException("Trade " + symbol + " dont have a stoploss");
                 //let ticker = await getTicker({ symbol });
                 //  putStopLoss({ symbol, buyPrice: order.price, amount: order.quantity, lastPrice: ticker.last })
             } else {
-                if (_.isObject(order)) {
-                    order.stopLossOrder = stopLossOrder;
-                    order.stopLossOrderId = stopLossOrder.id;
-                    order.BuyQuantity = stopLossOrder.quantity;
-                }
+                order.stopLossOrder = stopLossOrder;
+                order.stopLossOrderId = stopLossOrder.id;
+                order.buyQuantity = stopLossOrder.quantity;
+                order.stopPrice = stopLossOrder.price;
+                order.stopPercent = getChangePercent(order.price, stopLossOrder.price);
             }
         }
     });
@@ -101,16 +102,26 @@ async function listenToEvents() {
 
 function doTrade({ trade, ticker }) {
     // putStopLoss({order});
-    trade.gainOrLoss = trade.gainOrLoss || 0;
-    trade.maxGain = trade.maxGain || 0;
-    trade.minGain = trade.minGain || 0;
-    trade.tradeDuration = moment.duration(new Date().getTime() - trade.timestamp).humanize();
-    trade.price = trade.price || ticker.last;
-    trade.gainOrLoss = getChangePercent(trade.price, ticker.last);
-    trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
-    trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
-    updateTrailingStopLoss({ trade, ticker })
-    appEmitter.emit('trade:do_trade')
+    if (stopLossHasBeenRich({ trade, ticker })) {
+        trade.gainOrLoss = trade.gainOrLoss || 0;
+        trade.maxGain = trade.maxGain || 0;
+        trade.minGain = trade.minGain || 0;
+        trade.tradeDuration = moment.duration(new Date().getTime() - trade.timestamp).humanize();
+        trade.price = trade.price || ticker.last;
+        trade.gainOrLoss = getChangePercent(trade.price, ticker.last);
+        trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
+        trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
+        updateTrailingStopLoss({ trade, ticker })
+        appEmitter.emit('trade:do_trade')
+    }
+}
+
+function stopLossHasBeenRich({ trade, ticker }) {
+    if (env.PRODUCTION) {
+        return false;
+    } else {
+        return trade.stopPrice <= ticker.last;
+    }
 }
 
 async function putStopLoss({ symbol, buyPrice, stopLossOrderId, amount, lastPrice }) {
@@ -130,9 +141,9 @@ async function updateTrailingStopLoss({ trade, ticker }) {
     trade.prevMaxGain = trade.prevMaxGain || 0;
     let change = trade.maxGain - trade.prevMaxGain;
     let trailingChangePercent = await getTrailingChangePercent();
-    let { stopLossOrderId, BuyQuantity, symbol, price: buyPrice, amount } = trade;
+    let { stopLossOrderId, buyQuantity, symbol, price: buyPrice, amount } = trade;
     if (change >= trailingChangePercent) {
-        putStopLoss({ symbol, buyPrice, stopLossOrderId, amount: BuyQuantity || amount, lastPrice: ticker.last });
+        putStopLoss({ symbol, buyPrice, stopLossOrderId, amount: buyQuantity || amount, lastPrice: ticker.last });
     } else if (!stopLossOrderId) {
         emitException("Trade " + symbol + " dont have a stoploss");
         // putStopLoss({ symbol, buyPrice, amount: amount, lastPrice: ticker.last });
