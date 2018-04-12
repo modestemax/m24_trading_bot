@@ -32,11 +32,19 @@
           me.sound = start ? startSound : null;
           me.sound = me.sound || (end ? endSound : null);
           // debugger;
+          if (_.values(trades) > _.values(me.trades)) {
+            me.sound = startSound;
+          } else if (_.values(trades) < _.values(me.trades)) {
+            me.sound = endSound;
+          } else {
+            me.sound = null;
+          }
           me.trades = _.values(trades).map(t => _.extend(t, {
             time: time(t.timestamp),
             minGain: fix(t.minGain),
             gainOrLoss: fix(t.gainOrLoss),
             maxGain: fix(t.maxGain),
+            stopPercent: fix(t.stopPercent),
           }));
         });
       });

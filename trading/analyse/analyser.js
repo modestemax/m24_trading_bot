@@ -52,41 +52,43 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 const symbolsData = {};
 const MAX_LENGTH = 10, MIN_BUY_WEIGHT = 70 / 100;
 
-function getNewIndicators(signal, prevSignal) {
+function isNewCandle({ signal, lastSignal }) {
+    return signal.open !== lastSignal.open;
+}
+
+function getNewIndicators({ signal, lastSignal }) {
     return _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
         if (!_.isArray(prevIndicators[indKey])) {
             prevIndicators[indKey] = [prevIndicators[indKey]];
         }
 
-        if (signal.open !== prevSignal.open) {
-            prevIndicators[indKey] = prevIndicators[indKey]
-                .concat(indValue).slice(-MAX_LENGTH);
+        if (isNewCandle({ signal, lastSignal })) {
+            prevIndicators[indKey] = prevIndicators[indKey].concat(indValue).slice(-MAX_LENGTH);
         } else {
-            prevIndicators[indKey].pop();
+            prevIndicators[indKey].length > 1 && prevIndicators[indKey].pop();
             prevIndicators[indKey].push(indValue);
         }
         if (prevIndicators[indKey].length > 1) {
             let [oldValue, newValue] = prevIndicators[indKey].slice(-2);
-            prevSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
-            prevSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
+            lastSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
+            lastSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
         }
         return prevIndicators;
-    }, prevSignal.indicators);
+    }, lastSignal.indicators);
 }
 
 function getSignalResult({ signal24h, depth, signal, longSignal }) {
     let { symbol } = signal;
-    let prevSignal = symbolsData[symbol] || signal;
-
-    let lastSignal = symbolsData[symbol] = _.extend(prevSignal, _.omit(signal, 'indicators'));
-    prevSignal.indicators = getNewIndicators(signal, prevSignal);
-
-    let signalResult = analyseSignal({ signal24h, depth, signal: lastSignal, longSignal, MIN_BUY_WEIGHT });
+    let lastSignal = symbolsData[symbol] = symbolsData[symbol] || signal;
+    lastSignal.indicators = getNewIndicators({ signal, lastSignal });
+    isNewCandle({ lastSignal, signal }) && _.extend(lastSignal, _.omit(signal, 'indicators'));
+    signal.indicators = lastSignal.indicators;
+    let signalResult = analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT });
 
     return {
         signal24h,
         depth,
-        signal: lastSignal,
+        signal,
         longSignal,
         buy: signalResult.buy,
         signalResult
@@ -96,7 +98,7 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
 function logSignalResult(signalResult) {
     let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
     let ok = signalResult.buy ? 'OK' : 'NOK';
-    signalResult.signalWeight > 2 && debug(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} ${ok}`);
+    signalResult.signalWeight > 2 && debug(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} -> ${ok}`);
 }
 
 

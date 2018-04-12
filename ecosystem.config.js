@@ -8,7 +8,8 @@ module.exports = {
         // First application
         {
             name: 'bot',
-            script: 'trading/app.js',
+            script: 'app.js',
+            cwd: 'trading',
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG: '*',

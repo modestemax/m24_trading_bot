@@ -77,7 +77,7 @@ async function listenToEvents() {
             } else {
                 order.stopLossOrder = stopLossOrder;
                 order.stopLossOrderId = stopLossOrder.id;
-                order.buyQuantity = stopLossOrder.quantity;
+                order.buyQuantity = stopLossOrder.quantity||stopLossOrder.amount;
                 order.stopPrice = stopLossOrder.price;
                 order.stopPercent = getChangePercent(order.price, stopLossOrder.price);
             }
@@ -102,7 +102,7 @@ async function listenToEvents() {
 
 function doTrade({ trade, ticker }) {
     // putStopLoss({order});
-    if (stopLossHasBeenRich({ trade, ticker })) {
+    if (!stopLossHasBeenRich({ trade, ticker })) {
         trade.gainOrLoss = trade.gainOrLoss || 0;
         trade.maxGain = trade.maxGain || 0;
         trade.minGain = trade.minGain || 0;
@@ -120,7 +120,7 @@ function stopLossHasBeenRich({ trade, ticker }) {
     if (env.PRODUCTION) {
         return false;
     } else {
-        return trade.stopPrice <= ticker.last;
+        return trade.stopPrice > ticker.last;
     }
 }
 
@@ -211,7 +211,7 @@ function startTrade({ trade }) {
         let { symbol } = trade;
         tradings[symbol] = trade;
         fetchTicker({ symbol });
-        putStopLoss({ symbol, buyPrice: trade.price, amount: trade.quantity || trade.amount })
+        setTimeout(() => putStopLoss({ symbol, buyPrice: trade.price, amount: trade.quantity || trade.amount }), 2e3);
         appEmitter.emit('trade:new_trade', { trade });
     }
 }

@@ -3,15 +3,15 @@ const sorted = require('is-sorted')
 const { getChangePercent, updatePrice } = require('../utils')();
 
 
-function reset(array) {
-    array.splice(0, array.length - 1)
+function reset(array, minCount) {
+    array.splice(0, array.length - minCount)
 }
 
 function isCrossing({ indic1, indic2 }) {
     let [ind1_pre, ind1_cur] = indic1.slice(-2);
     let [ind2_pre, ind2_cur] = indic2.slice(-2);
-    let crossing_up = ind1_pre <= ind2_pre && ind1_cur > ind2_cur;
-    let crossing_down = ind1_pre >= ind2_pre && ind1_cur < ind2_cur;
+    let crossing_up = ind1_pre <= ind2_pre && ind1_cur >= ind2_cur;
+    let crossing_down = ind1_pre >= ind2_pre && ind1_cur <= ind2_cur;
     return crossing_up || crossing_down;
 }
 
@@ -30,10 +30,10 @@ module.exports = {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 2 }
+            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 2 }
         },
         {
-            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .2, minCount: 2 }
+            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 2 }
         },
         {
             indicator: 'AROON', check: true, weight: 1, mandatory: false,
@@ -78,28 +78,32 @@ module.exports = {
         EMA({ weight, signal, options }) {
             let { indicators } = signal;
             let { ema10, ema20 } = indicators;
+
+            if (isCrossing({ indic1: ema10, indic2: ema20 })) {
+                reset(ema10, options.minCount);
+                reset(ema20, options.minCount);
+                indicators.ema_crossing = true;
+            }
+
             let ok = false;
             if (_.min([ema10.length, ema20.length]) >= options.minCount) {
-                if (isCrossing({ indic1: ema10, indic2: ema20 })) {
-                    reset(ema10);
-                    reset(ema20);
-                    indicators.ema_crossing = true;
-                } else {
-                    let ema10_cur = _.last(ema10);
-                    let ema20_cur = _.last(ema20);
-                    let ema10_0 = _.head(ema10);
-                    let ema20_0 = _.head(ema20);
-                    indicators.ema_distance = distance(ema10_cur, ema20_cur);
-                    indicators.ema_0_distance = distance(ema10_0, ema20_0);
-                    ok = ema10_cur > ema20_cur
-                        && indicators.ema10_trendingUp
-                        && isSorted((indicators.ema10), options.minCount)
-                        && indicators.ema20_trendingUp
-                        && isSorted((indicators.ema20), options.minCount)
-                        // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
-                        && indicators.ema_distance > options.minDistance
-                        && indicators.ema_distance >= indicators.ema_0_distance;
-                }
+
+                let ema10_cur = _.last(ema10);
+                let ema20_cur = _.last(ema20);
+                let ema10_0 = _.head(ema10);
+                let ema20_0 = _.head(ema20);
+                indicators.ema_distance = distance(ema10_cur, ema20_cur);
+                indicators.ema_0_distance = distance(ema10_0, ema20_0);
+                ok = ema10_cur > ema20_cur
+                    && indicators.ema10_trendingUp
+                    && isSorted((indicators.ema10), options.minCount)
+                    && indicators.ema20_trendingUp
+                    && isSorted((indicators.ema20), options.minCount)
+                    // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
+                    && indicators.ema_distance > options.minDistance
+                    && indicators.ema_distance >= indicators.ema_0_distance;
+
+
             }
             return +ok && weight;
 
@@ -127,29 +131,33 @@ module.exports = {
             //macd >macd_signal
             let { indicators } = signal;
             let { macd, macd_signal } = indicators;
+
+            if (isCrossing({ indic1: macd, indic2: macd_signal })) {
+                reset(macd, options.minCount);
+                reset(macd_signal, options.minCount);
+                indicators.macd_crossing = true;
+            }
+
             let ok = false;
             if (_.min([macd.length, macd_signal.length]) >= options.minCount) {
 
-                if (isCrossing({ indic1: macd, indic2: macd_signal })) {
-                    reset(macd);
-                    reset(macd_signal);
-                    indicators.macd_crossing = true;
-                } else {
-                    let macd_cur = _.last(macd);
-                    let macd_signal_cur = _.last(macd_signal);
-                    let macd_0 = _.head(macd);
-                    let macd_signal_0 = _.head(macd_signal);
-                    indicators.macd_distance = distance(macd_cur, macd_signal_cur);
-                    indicators.macd_0_distance = distance(macd_0, macd_signal_0);
-                    ok = macd_cur > macd_signal_cur
-                        && indicators.macd_trendingUp
-                        && isSorted((indicators.macd), options.minCount)
-                        && indicators.macd_signal_trendingUp
-                        && isSorted((indicators.macd_signal), options.minCount)
-                        // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
-                        && indicators.macd_distance > options.minDistance
-                        && indicators.macd_distance >= indicators.macd_0_distance;
-                }
+
+                let macd_cur = _.last(macd);
+                let macd_signal_cur = _.last(macd_signal);
+                let macd_0 = _.head(macd);
+                let macd_signal_0 = _.head(macd_signal);
+                indicators.macd_distance = distance(macd_cur, macd_signal_cur);
+                indicators.macd_0_distance = distance(macd_0, macd_signal_0);
+                ok = macd_cur > macd_signal_cur
+                    && indicators.macd_trendingUp
+                    && isSorted((indicators.macd), options.minCount)
+                    && indicators.macd_signal_trendingUp
+                    && isSorted((indicators.macd_signal), options.minCount)
+                    // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
+                    && indicators.macd_distance > options.minDistance
+                    && indicators.macd_distance >= indicators.macd_0_distance;
+
+
             }
             return +ok && weight;
 
@@ -157,26 +165,30 @@ module.exports = {
         AROON({ weight, signal, options }) {
             let { indicators } = signal;
             let { aroon_up, aroon_down } = indicators;
+
+            if (isCrossing({ indic1: aroon_up, indic2: aroon_down })) {
+                reset(aroon_up, options.minCount);
+                reset(aroon_down, options.minCount);
+                indicators.aroon_crossing = true;
+            }
+
             let ok = false;
             if (_.min([aroon_up.length, aroon_down.length]) >= options.minCount) {
 
-                if (isCrossing({ indic1: aroon_up, indic2: aroon_down })) {
-                    reset(aroon_up);
-                    reset(aroon_down);
-                    indicators.aroon_crossing = true;
-                } else {
-                    let aroon_up_cur = _.last(aroon_up);
-                    let aroon_down_cur = _.last(aroon_down);
-                    indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
-                    ok = aroon_up_cur > aroon_down_cur
-                        && aroon_up_cur >= options.upReference
-                        && aroon_down_cur < options.downReference
-                        && indicators.aroon_distance >= options.minDistance;
 
-                    // if (ok && _.min([aroon_up.length, aroon_down.length]) > 1) {
-                    //     ok = indicators.aroon_up_trendingUp && indicators.aroon_down_trendingDown
-                    // }
-                }
+                let aroon_up_cur = _.last(aroon_up);
+                let aroon_down_cur = _.last(aroon_down);
+                indicators.aroon_distance = aroon_up_cur - aroon_down_cur;
+                ok = aroon_up_cur > aroon_down_cur
+                    && aroon_up_cur >= options.upReference
+                    && aroon_down_cur < options.downReference
+                    && indicators.aroon_distance >= options.minDistance;
+
+                // if (ok && _.min([aroon_up.length, aroon_down.length]) > 1) {
+                //     ok = indicators.aroon_up_trendingUp && indicators.aroon_down_trendingDown
+                // }
+
+
             }
             return +ok && weight;
         },
@@ -184,33 +196,36 @@ module.exports = {
 
             let { indicators } = signal;
             let { adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di } = indicators;
+
+            if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
+                reset(adx_plus_di, options.minCount);
+                reset(adx_minus_di, options.minCount);
+                indicators.adx_crossing = true;
+            }
+
             let ok = false;
             if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= options.minCount) {
 
-                if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
-                    reset(adx_plus_di);
-                    reset(adx_minus_di);
-                    indicators.adx_crossing = true;
-                } else {
-                    let minus_di_cur = _.last(adx_minus_di);
-                    let plus_di_cur = _.last(adx_plus_di);
-                    let plus_di_0 = _.head(adx_plus_di);
-                    let minus_di_0 = _.head(adx_minus_di);
 
-                    indicators.adx_di_distance = plus_di_cur - minus_di_cur;
-                    indicators.adx_di_0_distance = plus_di_0, minus_di_0;
-                    ok = _.last(adx) > options.buyReference
-                        && plus_di_cur > minus_di_cur
-                        && indicators.adx_di_distance > options.minDIDistance
-                        && indicators.adx_di_distance > options.adx_di_0_distance
-                        && adx_plus_di_trendingUp
-                        && adx_minus_di_trendingDown
-                        && adx_trendingUp
-                        && isSorted((adx), options.minCount)
-                        && isSorted((adx_plus_di), options.minCount)
-                        && isSorted((adx_minus_di), options.minCount, { reverse: true })
-                    // && isCrossingReference()
-                }
+                let minus_di_cur = _.last(adx_minus_di);
+                let plus_di_cur = _.last(adx_plus_di);
+                let plus_di_0 = _.head(adx_plus_di);
+                let minus_di_0 = _.head(adx_minus_di);
+
+                indicators.adx_di_distance = plus_di_cur - minus_di_cur;
+                indicators.adx_di_0_distance = plus_di_0 - minus_di_0;
+                ok = _.last(adx) > options.buyReference
+                    && plus_di_cur > minus_di_cur
+                    && indicators.adx_di_distance > options.minDIDistance
+                    && indicators.adx_di_distance > indicators.adx_di_0_distance
+                    && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
+                    && adx_trendingUp
+                    && isSorted((adx), options.minCount)
+                    && isSorted((adx_plus_di), options.minCount)
+                    && isSorted((adx_minus_di), options.minCount, { reverse: true })
+                // && isCrossingReference()
+
+
             }
             return +ok && weight;
 
