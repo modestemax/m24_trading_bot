@@ -1,6 +1,6 @@
 const debug = require('debug')('analyse:index');
 const _ = require('lodash');
-const { checkers: indicatorCheckers, settings: indicatorSettings } = require('./indicators');
+const { checkers: indicatorCheckers, settings: indicatorSettings, mandatoryIndicators } = require('./indicators');
 
 
 function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
@@ -38,6 +38,11 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
         indicatorsResult: {},
         buy: false
     });
+    if (signalResult.buy) {
+        signalResult.buy = _.reduce(mandatoryIndicators, (buy, mInd) => {
+            return buy && signalResult.indicatorsResult[mInd];
+        }, true)
+    }
     signalResult.symbol = signal.symbol;
     logSignalResult(signalResult);
     return signalResult;
@@ -50,18 +55,18 @@ const MAX_LENGTH = 10, MIN_BUY_WEIGHT = 70 / 100;
 function getNewIndicators(signal, prevSignal) {
     return _.reduce(signal.indicators, (prevIndicators, indValue, indKey) => {
         if (!_.isArray(prevIndicators[indKey])) {
-            prevIndicators[indKey] = [  prevIndicators[indKey] ];
+            prevIndicators[indKey] = [prevIndicators[indKey]];
         }
 
         if (signal.open !== prevSignal.open) {
             prevIndicators[indKey] = prevIndicators[indKey]
-                .concat(  indValue ).slice(-MAX_LENGTH);
+                .concat(indValue).slice(-MAX_LENGTH);
         } else {
             prevIndicators[indKey].pop();
-            prevIndicators[indKey].push(  indValue );
+            prevIndicators[indKey].push(indValue);
         }
         if (prevIndicators[indKey].length > 1) {
-            let [ oldValue ,  newValue ] = prevIndicators[indKey].slice(-2);
+            let [oldValue, newValue] = prevIndicators[indKey].slice(-2);
             prevSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
             prevSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
         }

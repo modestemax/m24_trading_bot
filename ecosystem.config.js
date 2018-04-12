@@ -9,6 +9,7 @@ module.exports = {
         {
             name: 'bot',
             script: 'trading/app.js',
+            "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG: '*',
                 QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys'

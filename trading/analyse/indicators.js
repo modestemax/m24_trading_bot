@@ -53,6 +53,9 @@ module.exports = {
     get settingsByIndicators() {
         return _.reduce(this.settings, (byInd, setting) => (byInd[setting.indicator] = setting, byInd), {});
     },
+    get mandatoryIndicators() {
+        return _.filter(this.settings, s => s.mandatory).map(s => s.indicator)
+    },
     checkers: {
         CANDLE_COLOR({ weight, signal, options }) {
             let ok = signal.candleColor > options.minChangePercent;
