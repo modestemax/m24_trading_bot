@@ -37,7 +37,7 @@ async function listenToTradeBuyEvent() {
 
                 appEmitter.emit('trade:buy', { symbol, amount, price: buyPrice });
 
-                log(`${symbol} is good to buy, price: ${buyPrice}`, debug);
+                log(`${symbol} just bided, price: ${buyPrice}`, debug);
             }
         }
     });
@@ -77,7 +77,7 @@ async function listenToEvents() {
             } else {
                 order.stopLossOrder = stopLossOrder;
                 order.stopLossOrderId = stopLossOrder.id;
-                order.buyQuantity = stopLossOrder.quantity||stopLossOrder.amount;
+                order.buyQuantity = stopLossOrder.quantity || stopLossOrder.amount;
                 order.stopPrice = stopLossOrder.price;
                 order.stopPercent = getChangePercent(order.price, stopLossOrder.price);
             }
@@ -123,6 +123,7 @@ function stopLossHasBeenRich({ trade, ticker }) {
         return trade.stopPrice > ticker.last;
     }
 }
+
 
 async function putStopLoss({ symbol, buyPrice, stopLossOrderId, amount, lastPrice }) {
     let price = _.max([buyPrice, lastPrice]);
@@ -201,9 +202,8 @@ function continueTrade({ trade }) {
 function endTrade({ symbol, trade }) {
     if (symbol in tradings) {
         trade = tradings[symbol];
-        delete tradings[symbol];
     }
-    trade && trade.symbol && appEmitter.emit('trade:end_trade', { trade })
+    trade && trade.symbol && delete tradings[trade.symbol] && appEmitter.emit('trade:end_trade', { trade })
 }
 
 function startTrade({ trade }) {
