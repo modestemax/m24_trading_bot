@@ -70,8 +70,8 @@ function getNewIndicators({ signal, lastSignal }) {
         }
         if (prevIndicators[indKey].length > 1) {
             let [oldValue, newValue] = prevIndicators[indKey].slice(-2);
-            lastSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
-            lastSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
+            // lastSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
+            // lastSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
         }
         return prevIndicators;
     }, lastSignal.indicators);

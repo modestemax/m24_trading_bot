@@ -6,7 +6,7 @@ const apijson = process.env.HOME + '/.api.json';
 // const api = require(apijson).max;
 
 
-const { QUOTE_CUR_QTY, START_TRADE_BUY_PERCENT, STOP_LOSS_PERCENT, TRADE_RATIO, TRAILING_CHANGE_PERCENT, NODE_ENV } = process.env;
+const { QUOTE_CUR_QTY, START_TRADE_BUY_PERCENT, TRADING_STRATEGY, SELL_LIMIT_PERCENT, STOP_LOSS_PERCENT, TRADE_RATIO, TRAILING_CHANGE_PERCENT, NODE_ENV } = process.env;
 
 const api = require(apijson)[appStartupParams.API_KEY];
 
@@ -14,6 +14,8 @@ module.exports = Model.Settings.load().then(async settings => {
     settings = _.defaults({
             QUOTE_CUR_QTY,
             START_TRADE_BUY_PERCENT,
+            TRADING_STRATEGY,
+            SELL_LIMIT_PERCENT,
             STOP_LOSS_PERCENT,
             TRADE_RATIO,
             TRAILING_CHANGE_PERCENT,
@@ -35,6 +37,9 @@ module.exports = Model.Settings.load().then(async settings => {
         {
             QUOTE_CUR_QTY: .006,
             START_TRADE_BUY_PERCENT: 0,//-.4,
+            // TRADING_STRATEGY:'TRAILLING_STOP_LOSS',
+            TRADING_STRATEGY: 'SELL_LIMIT',
+            SELL_LIMIT_PERCENT: 1,
             STOP_LOSS_PERCENT: -1,
             TRADE_RATIO: 40 / 100,
             TRAILING_CHANGE_PERCENT: .5

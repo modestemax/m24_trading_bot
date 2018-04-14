@@ -8,7 +8,7 @@ const {
     getLastBuyOrder, getLastStopLossOrder, getBalances, fetchTicker,
     getTradeRatio, getQuoteTradableQuantity, getTrailingChangePercent,
     getStopLossPercent
-} = require('./utils')();
+} = require('../utils')();
 
 const { QUOTE_CUR, START_TRADE_BUY_PERCENT } = env;
 

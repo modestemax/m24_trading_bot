@@ -87,6 +87,9 @@ const fn = {
     async getFreeBalance({ cur }) {
         return fn.getBalance({ cur, part: 'free' });
     },
+    async getUsedBalance({ cur }) {
+        return fn.getBalance({ cur, part: 'used' });
+    },
 
     async getBalance({ cur, part }) {
         return (await fn.getBalances()) [cur.toUpperCase()][part];
@@ -135,6 +138,20 @@ const fn = {
     async getQuoteTradableQuantity() {
         return (await Model.Settings.load())['QUOTE_CUR_QTY'];
     },
+    async getTradeAmount({ symbol, price }) {
+        let quoteTradableQuantity = await fn.getQuoteTradableQuantity();
+        let quoteTradeBalance = quoteTradableQuantity * await fn.getTradeRatio({ symbol });
+        let quoteAvailableBalance = await fn.getFreeBalance({ cur: QUOTE_CUR });
+        if (quoteAvailableBalance >= quoteTradeBalance) {
+            let remainingQuoteBalance = (quoteAvailableBalance - quoteTradeBalance);
+            if (remainingQuoteBalance < quoteTradeBalance) {
+                quoteTradeBalance += remainingQuoteBalance;
+            }
+            return quoteTradeBalance / price;
+        }
+        return 0;
+    },
+
     async getTrailingChangePercent() {
         return (await Model.Settings.load())['TRAILING_CHANGE_PERCENT'];
     },
@@ -143,6 +160,9 @@ const fn = {
     },
     fetchTicker({ symbol }) {
         appEmitter.emit('app:fetch_ticker', { symbol });
+    },
+    noFetchTicker({ symbol }) {
+        appEmitter.emit('app:no_fetch_ticker', { symbol });
     },
     fetchDepth({ symbol }) {
         appEmitter.emit('app:fetch_depth', { symbol });

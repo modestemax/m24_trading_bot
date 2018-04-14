@@ -95,6 +95,11 @@ module.exports = loadExchange().then(function ({ exchange, internal }) {
 
         exchangeEmitter.on('buy_ok', ({ symbol, trade }) => {
             appEmitter.emit('exchange:buy_ok', { symbol, trade })
+            appEmitter.emit('exchange:buy_ok:' + symbol, { symbol, trade })
+        });
+        exchangeEmitter.on('sell_ok', ({ symbol, trade }) => {
+            appEmitter.emit('exchange:sell_ok', { symbol, trade })
+            appEmitter.emit('exchange:sell_ok:' + symbol, { symbol, trade })
         });
     }
 });

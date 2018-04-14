@@ -1,3 +1,4 @@
+require('./override');
 (async (env) => {
     let { EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY } = env;
     try {

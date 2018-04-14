@@ -21,10 +21,10 @@ module.exports = {
             indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
-            indicator: 'LONG_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 1 }
+            indicator: 'LONG_TREND', check: false, weight: .5, mandatory: true, options: { minChangePercent: 1 }
         },
         {
-            indicator: '24H_TREND', check: true, weight: .5, mandatory: true, options: { minChangePercent: 2 }
+            indicator: '24H_TREND', check: false, weight: .5, mandatory: true, options: { minChangePercent: 2 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
@@ -54,7 +54,10 @@ module.exports = {
         return _.reduce(this.settings, (byInd, setting) => (byInd[setting.indicator] = setting, byInd), {});
     },
     get mandatoryIndicators() {
-        return _.filter(this.settings, s => s.mandatory).map(s => s.indicator)
+        return _
+            .filter(this.settings, s => s.mandatory)
+            .filter(s => s.check)
+            .map(s => s.indicator)
     },
     checkers: {
         CANDLE_COLOR({ weight, signal, options }) {
@@ -72,7 +75,8 @@ module.exports = {
         },
 
         BID_ASK_VOLUME({ weight, depth, options }) {
-            let ok = Boolean(depth) && (depth.allBid > depth.allAsk);
+            let ok = Boolean(depth) && (depth.allBid > depth.allAsk)
+            ;
             return +ok && weight;
         },
         EMA({ weight, signal, options }) {
@@ -95,9 +99,9 @@ module.exports = {
                 indicators.ema_distance = distance(ema10_cur, ema20_cur);
                 indicators.ema_0_distance = distance(ema10_0, ema20_0);
                 ok = ema10_cur > ema20_cur
-                    && indicators.ema10_trendingUp
+                    // && indicators.ema10_trendingUp
                     && isSorted((indicators.ema10), options.minCount)
-                    && indicators.ema20_trendingUp
+                    // && indicators.ema20_trendingUp
                     && isSorted((indicators.ema20), options.minCount)
                     // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
                     && indicators.ema_distance > options.minDistance
@@ -149,9 +153,9 @@ module.exports = {
                 indicators.macd_distance = distance(macd_cur, macd_signal_cur);
                 indicators.macd_0_distance = distance(macd_0, macd_signal_0);
                 ok = macd_cur > macd_signal_cur
-                    && indicators.macd_trendingUp
+                    // && indicators.macd_trendingUp
                     && isSorted((indicators.macd), options.minCount)
-                    && indicators.macd_signal_trendingUp
+                    // && indicators.macd_signal_trendingUp
                     && isSorted((indicators.macd_signal), options.minCount)
                     // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
                     && indicators.macd_distance > options.minDistance
@@ -195,7 +199,7 @@ module.exports = {
         ADX({ weight, signal, options }) {
 
             let { indicators } = signal;
-            let { adx, adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, adx_minus_di, adx_plus_di } = indicators;
+            let { adx, /* adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, */adx_minus_di, adx_plus_di } = indicators;
 
             if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
                 reset(adx_plus_di, options.minCount);
@@ -217,13 +221,12 @@ module.exports = {
                 ok = _.last(adx) > options.buyReference
                     && plus_di_cur > minus_di_cur
                     && indicators.adx_di_distance > options.minDIDistance
-                    && indicators.adx_di_distance > indicators.adx_di_0_distance
+                    // && indicators.adx_di_distance > indicators.adx_di_0_distance
                     // && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
-                    && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
-                    && adx_trendingUp
+                    // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
+                    // && adx_trendingUp
                     && isSorted((adx), options.minCount)
-                    && isSorted((adx_plus_di), options.minCount)
-                    && isSorted((adx_minus_di), options.minCount, { reverse: true })
+                    && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
                 // && isCrossingReference()
 
 
@@ -265,7 +268,7 @@ module.exports = {
 function isSorted(list, minCount, { reverse = false } = {}) {
     let slist = _.slice(list, -minCount);
     let trendingUp = getChangePercent(_.head(list), _.last(list));
-    trendingUp = reverse ? trendingUp < 0 : trendingUp > 0;
+    trendingUp = reverse ? trendingUp <= 0 : trendingUp >= 0;
     return sorted(slist, reverse ? (a, b) => b - a : void 0) || trendingUp;
 }
 

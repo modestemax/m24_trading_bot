@@ -135,6 +135,10 @@ module.exports = function (exchange) {
                         //new buy filled
                         exchangeEmitter.emit('buy_ok', ({ symbol: trade.symbol, trade }));
                     }
+                    if (/SELL/i.test(msg.side) && /FILLED/i.test(msg.orderStatus) && /TRADE/i.test(msg.executionType)) {
+                        //new buy filled
+                        exchangeEmitter.emit('sell_ok', ({ symbol: trade.symbol, trade }));
+                    }
                 }
             }
         });
@@ -168,6 +172,20 @@ module.exports = function (exchange) {
     }
 
 
+    async function emitTestOrderEvent(side, parsedOrder) {
+        await exchange.sleep(Math.random() * 50 * 1e3);
+
+        if (/buy/i.test(side)) {
+            exchangeEmitter.emit('buy_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
+        } else {
+            exchangeEmitter.emit('sell_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
+            exchangeEmitter.emit('stop_loss_updated', ({
+                symbol: parsedOrder.symbol,
+                stopLossOrder: parsedOrder
+            }))
+        }
+    }
+
     function overrideExchange() {
         let rateLimits = [];
         const ORDERS_PER_SECOND = 10, SECOND = 1e3;
@@ -183,6 +201,17 @@ module.exports = function (exchange) {
                 }
                 rateLimits.shift();
                 rateLimits.push(time);
+            }
+        }
+
+        function retryTimeOut(fn) {
+            try {
+                return fn();
+            } catch (ex) {
+                if (/request timed out/i.test(ex.toString())) {
+                    return retryTimeOut(fn);
+                }
+                throw ex;
             }
         }
 
@@ -209,33 +238,33 @@ module.exports = function (exchange) {
                 let newClientOrderId = getClientOrderId({ symbol });
                 ({ symbol, quantity, price, stopPrice } = newValues);
                 _.extend(args[0], { price, stopPrice, quantity, newClientOrderId });
+                return retryTimeOut(postOrder);
+            } else {
+                throw new Error('Check price & quantity')
+            }
+
+            async function postOrder() {
                 if (PRODUCTION) {
                     return privatePostOrder.apply(exchange, args)
                 } else {
                     await exchange.privatePostOrderTest.apply(exchange, args);
-                    let order = testOrder(args[0]);
+                    let order = makeTestOrder(args[0]);
                     let pOrder = exchange.parseOrder(order);
-                    if (/buy/i.test(side)) {
-                        exchangeEmitter.emit('buy_ok', ({ symbol: pOrder.symbol, trade: pOrder }));
-                    } else {
-                        exchangeEmitter.emit('stop_loss_updated', ({ symbol: pOrder.symbol, stopLossOrder: pOrder }))
-                    }
+                    emitTestOrderEvent(side, pOrder);
                     return order;
                 }
-            } else {
-                throw new Error('Check price & quantity')
             }
         });
         exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
             await orderSync();
-            return privateDeleteOrder.apply(exchange, args)
+            return retryTimeOut(() => privateDeleteOrder.apply(exchange, args))
         });
         exchange.privateGetOrder = _.wrap(exchange.privateGetOrder, async (privateGetOrder, ...args) => {
             await orderSync();
-            return privateGetOrder.apply(exchange, args)
+            return retryTimeOut(() => privateGetOrder.apply(exchange, args))
         });
 
-        function testOrder(order) {
+        function makeTestOrder(order) {
             return _.extend({}, order, {
                 // "symbol": symbol,
                 "orderId": _.uniqueId(),
@@ -308,12 +337,6 @@ module.exports = function (exchange) {
                         return this.buyMarket({
                             symbol, stopLossStopPrice, stopLossLimitPrice,
                             amount: --amount,
-                            essay: --essay
-                        })
-                    } else if (/timed\s*out/i.test(ex.message)) {
-                        return this.buyMarket({
-                            symbol, stopLossStopPrice, stopLossLimitPrice,
-                            amount: amount,
                             essay: --essay
                         })
                     }

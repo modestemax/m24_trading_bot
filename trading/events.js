@@ -3,7 +3,9 @@ const logToFile = require('log-to-file');
 const EventEmitter = require('events');
 const emitter = new EventEmitter();
 
+emitter.setMaxListeners(Infinity);
 global.appEmitter = module.exports = emitter;
+
 
 global.log = _.wrap(_.bind(logToFile, null, _, `logs/${global.appKey}_${new Date().toLocaleString()}.txt`),
     (log, txt, debug) => {
