@@ -10,7 +10,7 @@ const {
     getStopLossPercent, getTradeAmount, getUsedBalance, fetchTicker, noFetchTicker
 } = require('../utils')();
 
-const { SELL_LIMIT_PERCENT, START_TRADE_BUY_PERCENT } = env;
+const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME } = env;
 
 const tradings = {};
 const closedTrades = [];
@@ -36,7 +36,7 @@ appEmitter.on('analyse:try_trade', async ({ market }) => {
 
         if (amount) {
             //prepare canceling order if not buy on time
-            let waitOrCancelOrder = prepareOrder({ symbol, waitSecond: 60 });
+            let waitOrCancelOrder = prepareOrder({ symbol, maxWait:MAX_WAIT_BUY_TIME });
 
             //bid
             order = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
@@ -53,7 +53,12 @@ appEmitter.on('analyse:try_trade', async ({ market }) => {
             let sellState = checkSellState({ symbol });
 
             // cancel sell order and sell in market price ->stop loss
-            let priceDown = sellIfPriceIsGoingDown({ symbol, amount, stopPrice })
+            let priceDown = sellIfPriceIsGoingDownOrTakingTooMuchTime({
+                symbol,
+                amount,
+                stopPrice,
+                maxWait: MAX_WAIT_TRADE_TIME
+            });
 
             //place the sell order
             let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
@@ -84,7 +89,7 @@ appEmitter.on('analyse:try_trade', async ({ market }) => {
 });
 
 
-function prepareOrder({ symbol, waitSecond = 60 }) {
+function prepareOrder({ symbol, maxWait = 60 }) {
     let order, waitTimeout;
 
     //symbol buy listener creator
@@ -131,7 +136,7 @@ function prepareOrder({ symbol, waitSecond = 60 }) {
                 } finally {
                     appEmitter.removeListener('exchange:buy_ok:' + symbol, onBuySymbol)
                 }
-            }, waitSecond * 1e3);
+            }, maxWait );
 
 
         })
@@ -154,10 +159,10 @@ async function checkSellState({ symbol }) {
 
 }
 
-function sellIfPriceIsGoingDown({ symbol, amount, stopPrice }) {
-    let sellOrder;
+function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
+    let sellOrder, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
-        if (ticker.last <= stopPrice) {
+        if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);
