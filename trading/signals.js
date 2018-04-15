@@ -141,10 +141,23 @@ function getSignals({ data = params(), longTimeframe = false, signal24h = false,
     })
 }
 
+async function fetchTickers() {
+    try {
+        let tickers = await exchange.fetchTickers();
+        debug2(`signals 24H_TREND ${_.keys(tickers).length} symbols loaded`);
+        return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: tickers }))
+    } catch (ex) {
+        emitException(ex)
+    } finally {
+        setTimeout(fetchTickers, 60e3 * 10);
+    }
+}
+
 function getOthersSignals({ indicator, rate }) {
 
     appEmitter.once('app:fetch_24h_trend', function () {
-        getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+        // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+        fetchTickers();
     });
 
     appEmitter.once('app:fetch_long_trend', function () {
