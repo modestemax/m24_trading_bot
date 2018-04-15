@@ -12,6 +12,23 @@ const app = express();
 const { getTrades } = require('./utils')();
 
 
+appEmitter.on('trade:started', trade => {
+    socketSend(JSON.stringify({ type: 'trade_start', trade, }))
+});
+
+appEmitter.on('trade:updated', trade => {
+    socketSend(JSON.stringify({ type: 'trade_update', trade, }))
+});
+
+appEmitter.on('trade:ended', trade => {
+    socketSend(JSON.stringify({ type: 'trade_end', trade, }))
+});
+
+appEmitter.on('trade:changed', trade => {
+    socketSend(JSON.stringify({ type: 'trade_change', trade, }))
+});
+
+
 appEmitter.on('trade:new_trade', pushTrades.bind('start'));
 appEmitter.on('trade:do_trade', pushTrades);
 // appEmitter.on('analyse:try_trade', pushTrades);

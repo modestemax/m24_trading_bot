@@ -16,7 +16,7 @@ const {
 
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME } = env;
 
-const MIN_GAIN_TO_CONTINUE_TRADE= 0.5;
+const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
 const tradings = {};
 const closedTrades = [];
 
@@ -24,7 +24,7 @@ const closedTrades = [];
  * cet evenement effectue un trade complet
  * achat, vente mise à jour et stop des pertes
  */
-appEmitter.on('analyse:try_trade', async ({ market }) => {
+appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
     let { symbol, close: buyPrice } = market;
 
     //for debug
@@ -89,7 +89,7 @@ appEmitter.on('analyse:try_trade', async ({ market }) => {
 
             //place the sell order
             let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
-            let updateTrade = getTradeUpdater({ sellOrder, sellState });
+            let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
 
             _.extend(trade, {
                 started: true,
@@ -207,19 +207,20 @@ async function checkSellState({ symbol }) {
 }
 
 function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
-    let sellOrder, startTime = Date.now();
+    let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
         if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);
         }
+        logChange({ trade, ticker })
     };
 
     addTickerListener();
 
     function addTickerListener() {
-        appEmitter.on('exchange:ticker:' + symbol, tickerListener);
+        appEmitter.prependListener('exchange:ticker:' + symbol, tickerListener);
     }
 
     function removeTickerListener() {
@@ -232,11 +233,19 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
         sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
     }
 
-    return function getTradeUpdater({ sellOrder: order, sellState }) {
+    return function getTradeUpdater({ sellOrder: order, sellState, trade: thisTrade }) {
         sellOrder = order;
+        trade = thisTrade;
         Promise.resolve(sellState).finally(removeTickerListener);
         return tradeUpdater;
     }
+}
+
+function logChange({ trade, ticker }) {
+    trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
+    trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
+    trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
+    emit('changed', trade);
 }
 
 function emit(event, trade) {
