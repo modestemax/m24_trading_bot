@@ -173,7 +173,7 @@ module.exports = function (exchange) {
 
 
     async function emitTestOrderEvent(side, parsedOrder) {
-        await exchange.sleep(Math.random() * 50 * 1e3);
+        await exchange.sleep(Math.random() * 3601 * 1e3);
 
         if (/buy/i.test(side)) {
             exchangeEmitter.emit('buy_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
