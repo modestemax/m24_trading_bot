@@ -16,7 +16,7 @@ const {
 
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME } = env;
 
-
+const MIN_GAIN_TO_CONTINUE_TRADE= 0.5;
 const tradings = {};
 const closedTrades = [];
 
@@ -120,7 +120,7 @@ appEmitter.on('analyse:try_trade', async ({ market }) => {
     async function updateTrade() {
 
         let gainOrLoss = getChangePercent(_.last(trade.buyPrices), buyPrice);
-        if (gainOrLoss > 0.5) {
+        if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE) {
             emit('updating', trade);
             //get the sell price
             let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });

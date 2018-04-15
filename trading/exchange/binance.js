@@ -257,7 +257,16 @@ module.exports = function (exchange) {
         });
         exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
             await orderSync();
-            return retryTimeOut(() => privateDeleteOrder.apply(exchange, args))
+            return retryTimeOut(deleteOrder);
+
+            async function deleteOrder() {
+                if (PRODUCTION) {
+                    return privateDeleteOrder.apply(exchange, args)
+                } else {
+                    let order = makeTestOrder(args[0]);
+                    return order;
+                }
+            }
         });
         exchange.privateGetOrder = _.wrap(exchange.privateGetOrder, async (privateGetOrder, ...args) => {
             await orderSync();
