@@ -98,7 +98,8 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
 function logSignalResult(signalResult) {
     let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
     let ok = signalResult.buy ? 'OK' : 'NOK';
-    signalResult.signalWeight > 2 && debug(`${signalResult.symbol} ${signalResult.signalWeight} ${strIndicators} -> ${ok}`);
+    let buyRatio = signalResult.signalWeight / signalResult.totalWeight;
+    buyRatio > 49 / 100 && debug(`${signalResult.symbol} ${signalResult.signalWeight}/${signalResult.totalWeight} ${strIndicators} -> ${ok}`);
 }
 
 

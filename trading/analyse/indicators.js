@@ -27,7 +27,7 @@ module.exports = {
             indicator: '24H_TREND', check: false, weight: .5, mandatory: true, options: { minChangePercent: 2 }
         },
         {
-            indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
+            indicator: 'BID_ASK_VOLUME', check: false, weight: 1, mandatory: false,
         },
         {
             indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 2 }
@@ -226,7 +226,8 @@ module.exports = {
                     // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
                     // && adx_trendingUp
                     && isSorted((adx), options.minCount)
-                    && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                    && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
                 // && isCrossingReference()
 
 
