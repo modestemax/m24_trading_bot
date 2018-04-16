@@ -32,6 +32,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
 
     let trade = tradings[symbol];
 
+    if (!isGoingUp({ symbol, price: market.close })) return;
+
     if (trade && trade.updateTrade) {
         await updateTrade();
     }
@@ -263,6 +265,18 @@ function logChange({ trade, ticker }) {
 function emit(event, trade) {
     trade && appEmitter.emit(event = 'trade:' + event, trade);
     debug('emit ' + event, trade && trade.symbol)
+}
+
+function isGoingUp({ symbol, price }) {
+    return true;
+    // let nominés = isGoingUp.nominés = isGoingUp.nominés || {};
+    // let test = nominés[symbol];
+    // if (!test) {
+    //     test = nominés[symbol] = { symbol, testPrice: price, change: 0 };
+    // } else {
+    //     test.change = getChangePercent(test.testPrice, price);
+    // }
+    // return test.change >= MIN_GAIN_TO_CONTINUE_TRADE
 }
 
 appEmitter.on('app:get_currently_tradings_symbols', () => {

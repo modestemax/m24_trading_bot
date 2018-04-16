@@ -2,6 +2,7 @@ const _ = require('lodash');
 const logToFile = require('log-to-file');
 const EventEmitter = require('events');
 const emitter = new EventEmitter();
+const formatError = require('format-error').format;
 
 emitter.setMaxListeners(Infinity);
 global.appEmitter = module.exports = emitter;
@@ -24,12 +25,12 @@ global.emitException = function (ex) {
 
 
 process.on('uncaughtException', (err) => {
-    log(`hdf Uncaught Exception ${err.message} ${ err.stack || 'no stack'}`, console.error);
+    log(`m24->\nUncaught Exception ${formatError(err)}`, console.error);
     emitException(err);
 });
 
 process.on('unhandledRejection', (reason, p) => {
-    log(`Unhandled Rejection at: Promise: ${p && p.toString()}\n\nreason: ${reason && reason.toString()}`, console.error);
+    log(`m24->\nUnhandled Rejection  ${formatError(reason)}`, console.error);
     emitException(reason);
 });
 

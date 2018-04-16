@@ -226,14 +226,14 @@ module.exports = {
                     && plus_di_cur > minus_di_cur
                     && indicators.adx_di_distance > options.minDIDistance
                     && indicators.adx_di_distance > indicators.adx_di_0_distance
-                    // && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
-                    // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
-                    // && adx_trendingUp
-                    && isSorted((adx), options.minCount)
+                // && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
+                // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
+                // && adx_trendingUp
+                ok = ok && isSorted((adx), options.minCount)
                     && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
-                    // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
-                    // && isCrossingReference()
-                    && isSorted(ecarts)
+                // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                // && isCrossingReference()
+                ok = ok && isSorted(ecarts)
 
 
             }
