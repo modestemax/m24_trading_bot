@@ -91,7 +91,7 @@ function formatTrade(trade) {
         gainOrLoss: (+trade.gainOrLoss).toFixed(2) + '%',
         maxGain: (+trade.maxGain).toFixed(2) + '%',
         tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
-        _rowVariant: trade.maxGain >= 1 ? 'success' : (trade.minGain < -1.5 ? 'danger' : '')
+        _rowVariant: trade.maxGain >= trade.target ? 'success' : (trade.minGain < -1.5 ? 'danger' : '')
     });
 }
 

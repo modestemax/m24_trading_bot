@@ -37,7 +37,14 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
     }
     else if (!trade) {
         //one trade at once
-        trade = tradings[symbol] = { symbol, update: 0, maxGain: 0, minGain: 0, gainOrLoss: 0 };
+        trade = tradings[symbol] = {
+            symbol,
+            update: 0,
+            maxGain: 0,
+            minGain: 0,
+            gainOrLoss: 0,
+            target: SELL_LIMIT_PERCENT
+        };
 
         trade.status = startTrade().catch(emitException).finally(endTrade);
     }
@@ -127,7 +134,12 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
             //get the stop loss price
             let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
             await trade.updateTrade({ sellPrice, stopPrice });
-            _.extend(trade, { sellPrice, stopPrice, buyPrices: trade.buyPrices.concat(buyPrice) });
+            _.extend(trade, {
+                sellPrice,
+                stopPrice,
+                buyPrices: trade.buyPrices.concat(buyPrice),
+                target: getChangePercent(trade.buyPrice, sellPrice)
+            });
             trade.update++;
             emit('updated', trade)
         }
