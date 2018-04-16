@@ -24,7 +24,7 @@
       return {
         sound: null,
         trades: [],
-        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain', 'target', 'tradeDuration', 'update'],
+        fields: ['time', 'symbol', 'buyPrice', 'sellPrice', 'lastPrice', 'minGain', 'gainOrLoss', 'maxGain', 'target', 'tradeDuration', 'update'],
       };
     },
     // components: { Trade },

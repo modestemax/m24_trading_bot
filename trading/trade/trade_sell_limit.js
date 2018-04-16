@@ -256,6 +256,7 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
 }
 
 function logChange({ trade, ticker }) {
+    trade.lastPrice=ticker.last;
     trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
     trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
     trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
