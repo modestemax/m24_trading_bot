@@ -7,7 +7,7 @@
       <router-view name="Hello"></router-view>
     </div>
 
-    <b-card-group deck cols="7" class="px-3">
+    <b-card-group deck1 cols="7" class="px-3">
       <b-card class="trades" title="Trades">
         <router-view name="Trades"></router-view>
       </b-card>

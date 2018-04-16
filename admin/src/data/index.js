@@ -27,6 +27,18 @@ export default appEmitter;
       case 'error':
         appEmitter.emit('error', clientData.error);
         break;
+      case 'trade_start':
+        appEmitter.emit('trade_start', clientData.trade);
+        break;
+      case 'trade_update':
+        appEmitter.emit('trade_update', clientData.trade);
+        break;
+      case 'trade_end':
+        appEmitter.emit('trade_end', clientData.trade);
+        break;
+      case 'trade_change':
+        appEmitter.emit('trade_change', clientData.trade);
+        break;
       default:
 
     }
