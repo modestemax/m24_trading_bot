@@ -214,7 +214,7 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);
         }
-        logChange({ trade, ticker })
+        trade && logChange({ trade, ticker })
     };
 
     addTickerListener();

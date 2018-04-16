@@ -37,50 +37,52 @@
         this.listenToEvents();
       });
     },
-    addTrade(trade) {
-      const t = trade;
-      this.trades = this.trades.concat(_.extend(t, {
-        time: time(t.timestamp),
-        minGain: fix(t.minGain),
-        gainOrLoss: fix(t.gainOrLoss),
-        maxGain: fix(t.maxGain),
-        stopPercent: fix(t.stopPercent),
-      }));
-    },
-    endTrade(trade) {
-      this.trades.splice(_.findIndex(this.trades, t => t.symbol === trade.symbol), 1);
-    },
+    methods: {
+      addTrade(trade) {
+        const t = trade;
+        this.trades = this.trades.concat(_.extend(t, {
+          time: time(t.timestamp),
+          minGain: fix(t.minGain),
+          gainOrLoss: fix(t.gainOrLoss),
+          maxGain: fix(t.maxGain),
+          stopPercent: fix(t.stopPercent),
+        }));
+      },
+      endTrade(trade) {
+        this.trades.splice(_.findIndex(this.trades, t => t.symbol === trade.symbol), 1);
+      },
 
-    changeTrade(trade) {
-      this.endTrade(trade);
-      this.addTrade(trade);
-    },
+      changeTrade(trade) {
+        this.endTrade(trade);
+        this.addTrade(trade);
+      },
 
-    addTrades({ trades, start, end }) {
-      const me = this;
-      me.sound = start ? startSound : null;
-      me.sound = me.sound || (end ? endSound : null);
-      // debugger;
-      if (_.values(trades) > _.values(me.trades)) {
-        me.sound = startSound;
-      } else if (_.values(trades) < _.values(me.trades)) {
-        me.sound = endSound;
-      } else {
-        me.sound = null;
-      }
-      me.trades = _.values(trades).map(t => _.extend(t, {
-        time: time(t.timestamp),
-        minGain: fix(t.minGain),
-        gainOrLoss: fix(t.gainOrLoss),
-        maxGain: fix(t.maxGain),
-        stopPercent: fix(t.stopPercent),
-      }));
-    },
-    listenToEvents() {
-      appEmitter.on('trades', this.addTrades);
-      appEmitter.on('trade_start', this.addTrade);
-      appEmitter.on('trade_end', this.endTrade);
-      appEmitter.on('trade_change', this.changeTrade);
+      addTrades({ trades, start, end }) {
+        const me = this;
+        me.sound = start ? startSound : null;
+        me.sound = me.sound || (end ? endSound : null);
+        // debugger;
+        if (_.values(trades) > _.values(me.trades)) {
+          me.sound = startSound;
+        } else if (_.values(trades) < _.values(me.trades)) {
+          me.sound = endSound;
+        } else {
+          me.sound = null;
+        }
+        me.trades = _.values(trades).map(t => _.extend(t, {
+          time: time(t.timestamp),
+          minGain: fix(t.minGain),
+          gainOrLoss: fix(t.gainOrLoss),
+          maxGain: fix(t.maxGain),
+          stopPercent: fix(t.stopPercent),
+        }));
+      },
+      listenToEvents() {
+        appEmitter.on('trades', this.addTrades);
+        appEmitter.on('trade_start', this.addTrade);
+        // appEmitter.on('trade_end', this.endTrade);
+        appEmitter.on('trade_change', this.changeTrade);
+      },
     },
   };
 </script>
