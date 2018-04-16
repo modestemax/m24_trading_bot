@@ -9,6 +9,7 @@ module.exports = {
         {
             name: 'bot',
             script: 'app.js',
+            "exec_mode": "cluster",
             cwd: 'trading',
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
