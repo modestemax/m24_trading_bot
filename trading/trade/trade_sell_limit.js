@@ -37,7 +37,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
     }
     else if (!trade) {
         //one trade at once
-        trade = tradings[symbol] = { symbol, update: 0 };
+        trade = tradings[symbol] = { symbol, update: 0, maxGain: 0, minGain: 0, gainOrLoss: 0 };
 
         trade.status = startTrade().catch(emitException).finally(endTrade);
     }
@@ -252,3 +252,7 @@ function emit(event, trade) {
     trade && appEmitter.emit(event = 'trade:' + event, trade);
     debug('emit ' + event, trade && trade.symbol)
 }
+
+appEmitter.on('app:get_currently_tradings_symbols', () => {
+    appEmitter.emit('trade:symbols', { symbols: tradings })
+});

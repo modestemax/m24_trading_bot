@@ -5,9 +5,8 @@
   "main": "trading/app.js",
   "scripts": {
     "test": "cd trading && DEBUG=* QUOTE_CUR=BTC EXCHANGE=binance TIMEFRAME=15 API_KEY=keys  node --inspect=0.0.0.0:5858 app",
-    "build-push":"cd admin && npm run build && git add . && git commit -m 'publishing'>>/dev/null && git push origin master>>/dev/null && cd .. ",
-    "deploy-dev":"npm run build-push && pm2 deploy ecosystem.config.js dev"
-
+    "build-push": "cd admin && npm run build && git add . && git commit -m 'publishing'>>/dev/null && git push origin master>>/dev/null && cd .. ",
+    "deploy-dev": "npm run build-push && pm2 deploy ecosystem.config.js dev"
   },
   "repository": {
     "type": "git",
@@ -18,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/modestemax/m24_trading_bot/issues"
   },
-  "homepage": "https://github.com/modestemax/m24_trading_bot#readme"
+  "homepage": "https://github.com/modestemax/m24_trading_bot#readme",
+  "dependencies": {
+    "format-error": "^1.0.0"
+  }
 }

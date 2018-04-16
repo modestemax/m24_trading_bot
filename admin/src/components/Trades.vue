@@ -17,10 +17,6 @@
   import endSound from '../assets/mp3/plucky.mp3';
   import appEmitter from '../data';
 
-  const time = st => (new Date(st)).toTimeString().split(':').slice(0, 2)
-    .join('H');
-  const fix = v => `${(+v).toFixed(2)}%`;
-
 
   export default {
     name: 'trades',
@@ -28,7 +24,7 @@
       return {
         sound: null,
         trades: [],
-        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain', 'tradeDuration'],
+        fields: ['time', 'symbol', 'minGain', 'gainOrLoss', 'maxGain', 'tradeDuration', 'update'],
       };
     },
     // components: { Trade },
@@ -39,22 +35,16 @@
     },
     methods: {
       addTrade(trade) {
-        const t = trade;
-        this.trades = this.trades.concat(_.extend(t, {
-          time: time(t.timestamp),
-          minGain: fix(t.minGain),
-          gainOrLoss: fix(t.gainOrLoss),
-          maxGain: fix(t.maxGain),
-          stopPercent: fix(t.stopPercent),
-        }));
+        this.trades = this.trades.concat(trade).sort(t => t.timestamp);
       },
       endTrade(trade) {
         this.trades.splice(_.findIndex(this.trades, t => t.symbol === trade.symbol), 1);
       },
 
       changeTrade(trade) {
-        this.endTrade(trade);
-        this.addTrade(trade);
+        const oldTrade = _.find(this.trades, t => t.symbol === trade.symbol);
+        _.extend(oldTrade, trade);
+        this.trades = [].concat(this.trades);
       },
 
       addTrades({ trades, start, end }) {
@@ -69,13 +59,7 @@
         } else {
           me.sound = null;
         }
-        me.trades = _.values(trades).map(t => _.extend(t, {
-          time: time(t.timestamp),
-          minGain: fix(t.minGain),
-          gainOrLoss: fix(t.gainOrLoss),
-          maxGain: fix(t.maxGain),
-          stopPercent: fix(t.stopPercent),
-        }));
+        me.trades = _.values(trades);
       },
       listenToEvents() {
         appEmitter.on('trades', this.addTrades);

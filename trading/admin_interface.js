@@ -1,8 +1,10 @@
 const _ = require('lodash');
 const curl = require('curl');
 var path = require('path');
-
+const moment = require('moment');
 const Server = require('simple-websocket/server')
+const formatError = require('format-error').format;
+
 const server = new Server({ port: 12345 }) // see `ws` docs for other options
 
 const express = require('express');
@@ -13,19 +15,19 @@ const { getTrades } = require('./utils')();
 
 
 appEmitter.on('trade:started', trade => {
-    socketSend(JSON.stringify({ type: 'trade_start', trade, }))
+    socketSend(JSON.stringify({ type: 'trade_start', trade: formatTrade(trade) }))
 });
 
 appEmitter.on('trade:updated', trade => {
-    socketSend(JSON.stringify({ type: 'trade_update', trade, }))
+    socketSend(JSON.stringify({ type: 'trade_update', trade: formatTrade(trade), }))
 });
 
 appEmitter.on('trade:ended', trade => {
-    socketSend(JSON.stringify({ type: 'trade_end', trade, }))
+    socketSend(JSON.stringify({ type: 'trade_end', trade: formatTrade(trade), }))
 });
 
 appEmitter.on('trade:changed', trade => {
-    socketSend(JSON.stringify({ type: 'trade_change', trade, }))
+    socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
 });
 
 
@@ -33,7 +35,7 @@ appEmitter.on('trade:new_trade', pushTrades.bind('start'));
 appEmitter.on('trade:do_trade', pushTrades);
 // appEmitter.on('analyse:try_trade', pushTrades);
 appEmitter.on('trade:end_trade', pushTrades.bind('end'));
-appEmitter.on('analyse:tracking', pushTracking);
+// appEmitter.on('analyse:tracking', pushTracking);
 appEmitter.on('app:error', pushError);
 appEmitter.on('test:trade', (start, end) => {
     socketSend(JSON.stringify({
@@ -55,7 +57,7 @@ appEmitter.on('test:trade', (start, end) => {
 
 async function pushTrades() {
     let trades = await getTrades();
-    trades = _.filter(trades, t => t && t.symbol);
+    trades = _.map(trades, formatTrade);
     socketSend(JSON.stringify({ type: 'trades', trades, start: this === 'start', end: this === 'end' }))
 }
 
@@ -64,7 +66,9 @@ async function pushTracking({ symbol, signalResult }) {
 }
 
 function pushError(error) {
-    socketSend(JSON.stringify({ type: 'error', error: error && error.toString() }))
+
+    socketSend(JSON.stringify({ type: 'error', error: { time: moment().format('HH:mm'), error: formatError(error) } }))
+
 }
 
 let sockets = [];
@@ -72,14 +76,28 @@ let sockets = [];
 function socketSend(data) {
     sockets = _.compact(sockets).filter(socket => {
         if ((socket.connected)) {
-            socket.send(data)
+            socket.send(data);
             return true
         }
-    })
+    });
+}
+
+function formatTrade(trade) {
+    return _.extend({}, trade, {
+        timestamp: trade.time,
+        update: trade.update ? '+' + trade.update : '',
+        time: moment(new Date(trade.time)).format('HH:mm'),
+        minGain: (+trade.minGain).toFixed(2) + '%',
+        gainOrLoss: (+trade.gainOrLoss).toFixed(2) + '%',
+        maxGain: (+trade.maxGain).toFixed(2) + '%',
+        tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
+        _rowVariant: trade.maxGain >= 1 ? 'success' : (trade.minGain < -1.5 ? 'danger' : '')
+    });
 }
 
 server.on('connection', function (socket) {
     sockets.push(socket);
+    pushTrades();
 
     //  debugger
     // socket.write('pong')

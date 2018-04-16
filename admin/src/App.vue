@@ -7,15 +7,35 @@
       <router-view name="Hello"></router-view>
     </div>
 
-    <b-card-group deck1 cols="7" class="px-3">
-      <b-card class="trades" title="Trades">
-        <router-view name="Trades"></router-view>
-      </b-card>
-      <b-card class="errors" no-body header="<b>Errors</b>">
-        <router-view name="Errors"></router-view>
-      </b-card>
+    <b-container fluid>
+      <b-tabs pills card vertical>
+        <b-tab class="trades" title="Trades">
+          <router-view name="Trades"></router-view>
+        </b-tab>
+        <b-tab class="errors" title="Errors">
+          <template slot="title">
 
-    </b-card-group>
+            <b-button   :variant="'outline-danger'">
+              Errors
+            </b-button>
+            <b-badge pill variant="danger">{{errorsCount||''}}</b-badge>
+          </template>
+          <router-view name="Errors"></router-view>
+        </b-tab>
+      </b-tabs>
+      <!--<b-row deck1  class="px-3">-->
+      <!--<b-col cols="9">-->
+      <!--<b-card class="trades    </e="Trades">-->
+      <!--<router-view name="Trades"></router-view>-->
+      <!--</b-card>-->
+      <!--</b-col>-->
+      <!--<b-col>-->
+      <!--<b-card class="errors" no-body header="<b>Errors</b>">-->
+      <!--<router-view name="Errors"></router-view>-->
+      <!--</b-card>-->
+      <!--</b-col>-->
+      <!--</b-row>-->
+    </b-container>
   </div>
 </template>
 
@@ -29,7 +49,7 @@
   export default {
     name: 'app',
     data() {
-      return { online: false };
+      return { online: false, errorsCount: '' };
     },
     computed: {
       logo() {
@@ -47,6 +67,9 @@
         });
         appEmitter.on('online', () => {
           me.online = true;
+        });
+        appEmitter.on('error_count', (count) => {
+          me.errorsCount = count;
         });
       });
     },
@@ -82,7 +105,7 @@
   }
 
   .errors {
-    background: #ff1d0052;
-    opacity: .8;
+    /*background: #000000;*/
+    /*opacity: .8;*/
   }
 </style>
