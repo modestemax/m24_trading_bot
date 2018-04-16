@@ -44,7 +44,7 @@ module.exports = Model.Settings.load().then(async settings => {
             SELL_LIMIT_PERCENT: 1,
             MAX_WAIT_BUY_TIME: 60 * 1e3, //1 min
             MAX_WAIT_TRADE_TIME: 3600 * 1e3, //1 hour
-            STOP_LOSS_PERCENT: -1.5,
+            STOP_LOSS_PERCENT: -1,
             TRADE_RATIO: 40 / 100,
             TRAILING_CHANGE_PERCENT: .5
         });

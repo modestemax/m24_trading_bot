@@ -50,7 +50,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 
 
 const symbolsData = {};
-const MAX_LENGTH = 10, MIN_BUY_WEIGHT = 70 / 100;
+const MAX_LENGTH = 4, MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
     return signal.open !== lastSignal.open;
