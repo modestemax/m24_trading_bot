@@ -29,7 +29,8 @@ appEmitter.on('trade:ended', trade => {
 });
 
 appEmitter.on('trade:changed', trade => {
-    !(trade._end_ || trade._moon_) && socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    // !(trade._end_ || trade._moon_) && socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
 });
 
 
@@ -104,12 +105,15 @@ function formatTrade(trade) {
         tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
         // _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
         _rowVariant: (() => {
-            if (!trade._moon_) {
+            if (!trade._moon_ || trade._moon_ === 'danger') {
                 let moon;
                 if (trade.maxGain >= trade.target) moon = 'info';
                 else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
                 else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
-                trade._moon_ = moon;
+                if (moon !== 'danger' || trade._moon_ === 'danger') {
+                    trade._moon_ = 'warning';
+                } else
+                    trade._moon_ = moon;
             }
             return trade._moon_;
         })()

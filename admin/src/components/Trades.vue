@@ -94,7 +94,7 @@
 </style>
 <style>
 
-  .trades tr.table-success, .trades tr.table-danger, .trades tr.table-info {
+  .trades tr.table-success, .trades tr.table-danger, .trades tr.table-info, .trades tr.table-warning {
     color: #000;
   }
 </style>

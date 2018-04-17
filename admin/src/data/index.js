@@ -1,6 +1,7 @@
 import Events from 'events';
 import Socket from 'simple-websocket';
 import moment from 'moment';
+import _ from 'lodash';
 
 const appEmitter = new Events();
 let startTime;
@@ -26,8 +27,12 @@ export default appEmitter;
     const clientData = JSON.parse(`${data}`);
     const trade = clientData.trade;
     if (trade) {
-      trade.time = moment(new Date(trade.time)).format('HH:mm');
+      clientData.trades = [trade];
     }
+    _.forEach(clientData.trades, (t) => {
+      _.extend(t, { time: moment(new Date(t.time)).format('HH:mm') });
+    });
+
 
     switch (clientData.type) {
       case 'trades':
