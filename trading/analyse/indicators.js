@@ -14,6 +14,7 @@ function isCrossing({ indic1, indic2 }) {
     let crossing_down = ind1_pre >= ind2_pre && ind1_cur <= ind2_cur;
     return { crossing: crossing_up || crossing_down, crossing_up, crossing_down };
 }
+const minCount=2;
 
 module.exports = {
     settings: [
@@ -31,10 +32,10 @@ module.exports = {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 3 }
+            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: minCount }
         },
         {
-            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 3 }
+            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: minCount }
         },
         {
             indicator: 'AROON', check: true, weight: 1, mandatory: false,
@@ -42,7 +43,7 @@ module.exports = {
         },
         {
             indicator: 'ADX', check: true, weight: 1, mandatory: true,
-            options: { buyReference: 20, minDIDistance: 5, minCount: 3 }
+            options: { buyReference: 20, minDIDistance: 5, minCount: minCount }
         },
         {
             indicator: 'VWMA', check: true, weight: 1, mandatory: false,

@@ -25,133 +25,163 @@ const closedTrades = [];
  * achat, vente mise à jour et stop des pertes
  */
 appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
-    let { symbol, close: buyPrice } = market;
+    doIntelligentTrade();
 
-    //for debug
-    // if (_.keys(tradings).length) return;
+    function doIntelligentTrade({ simulation = true } = {}) {
+        let { symbol, close: buyPrice } = market;
 
-    let trade = tradings[symbol];
+        //for debug
+        // if (_.keys(tradings).length) return;
 
-    // if (!isGoingUp({ symbol, price: market.close })) return;
+        let trade = tradings[symbol];
 
-    if (trade && trade.updateTrade) {
-        await updateTrade();
-    }
-    else if (!trade) {
-        //one trade at once
-        trade = tradings[symbol] = {
-            symbol,
-            update: 0,
-            maxGain: 0,
-            minGain: 0,
-            gainOrLoss: 0,
-            target: SELL_LIMIT_PERCENT
-        };
+        // if (!isGoingUp({ symbol, price: market.close })) return;
 
-        trade.status = startTrade().catch(emitException).finally(endTrade);
-    }
-
-
-    function endTrade() {
-
-        delete  tradings[symbol];
-        //log trade
-        trade && trade.started && closedTrades.push(trade) && emit('ended', trade);
-        noFetchTicker({ symbol })
-    }
-
-    async function startTrade() {
-
-        emit('starting', trade);
-
-        //get trade start time
-        let time = Date.now();
-
-        //get quantity of symbol to buy for this trade
-        let amount = await getTradeAmount({ symbol, price: buyPrice });
-
-        if (amount) {
-            //prepare canceling order if not buy on time
-            let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
-
-            //bid
-            let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
-
-            //for the bid to succeed or cancal it after some time
-            await waitOrCancelOrder(buyOrder);
-
-            fetchTicker({ symbol });
-            //get the sell price
-            let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
-            //get the stop loss price
-            let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
-
-            //check the sell in user data socket
-            let sellState = checkSellState({ symbol });
-
-            // cancel sell order and sell in market price ->stop loss
-            let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
+        if (trade && trade.updateTrade) {
+            return updateTrade();
+        }
+        else if (!trade) {
+            //one trade at once
+            trade = tradings[symbol] = {
                 symbol,
-                amount,
-                stopPrice,
-                maxWait: MAX_WAIT_TRADE_TIME
-            });
+                update: 0,
+                maxGain: 0,
+                minGain: 0,
+                gainOrLoss: 0,
+                target: SELL_LIMIT_PERCENT
+            };
 
-            //place the sell order
-            let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
-            let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
+            overrideExchange({ trade });
 
-            _.extend(trade, {
-                started: true,
-                time,
-                amount,
-                buyOrder,
-                sellOrder,
-                updateTrade,
-                buyPrice,
-                sellPrice,
-                stopPrice,
-                buyPrices: [buyPrice],
-                sellState
-            });
-
-            emit('started', trade);
-            //get the final sell price
-            trade.finalSellPrice = await sellState;
-            return trade;
-        } else {
-            emitException('Insufficient Quote balance');
-            // return;
+            trade.status = startTrade().catch(emitException).finally(endTrade);
         }
 
-        // return trade.status;
-    }
-
-    async function updateTrade() {
-
-        let gainOrLoss = getChangePercent(_.last(trade.buyPrices), buyPrice);
-        if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE * (trade.update + 1)) {
-            emit('updating', trade);
-            //get the sell price
-            let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
-            //get the stop loss price
-            let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
-            await trade.updateTrade({ sellPrice, stopPrice });
-            _.extend(trade, {
-                sellPrice,
-                stopPrice,
-                buyPrices: trade.buyPrices.concat(buyPrice),
-                target: getChangePercent(trade.buyPrice, sellPrice)
-            });
-            trade.update++;
-            emit('updated', trade)
+        function overrideExchange({ trade }) {
+            if (simulation) {
+                trade.cancelOrder = _.noop;
+                trade.createMarketSellOrder = _.noop;
+                trade.createLimitBuyOrder = _.noop;
+                trade.createLimitSellOrder = _.noop;
+                getFreeBalance = () => Infinity;
+            } else {
+                trade.cancelOrder = exchange.cancelOrder.bind(exchange);
+                trade.createMarketSellOrder = exchange.createMarketSellOrder.bind(exchange);
+                trade.createLimitBuyOrder = exchange.createLimitBuyOrder.bind(exchange);
+                trade.createLimitSellOrder = exchange.createLimitSellOrder.bind(exchange);
+            }
         }
 
+        function endTrade() {
+
+            delete  tradings[symbol];
+            //log trade
+            trade && trade.started && closedTrades.push(trade) && emit('ended', trade);
+            noFetchTicker({ symbol })
+        }
+
+        async function startTrade() {
+
+            emit('starting', trade);
+
+            //get trade start time
+            let time = Date.now();
+
+            //get quantity of symbol to buy for this trade
+            let amount = await getTradeAmount({ symbol, price: buyPrice });
+
+            if (amount) {
+                //prepare canceling order if not buy on time
+                let waitOrCancelOrder = prepareOrder({
+                    symbol,
+                    maxWait: MAX_WAIT_BUY_TIME,
+                    cancelOrder: trade.cancelOrder
+                });
+
+                //bid
+                let buyOrder = await trade.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+
+                //for the bid to succeed or cancal it after some time
+                await waitOrCancelOrder(buyOrder);
+
+                fetchTicker({ symbol });
+                //get the sell price
+                let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                //get the stop loss price
+                let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
+
+                //check the sell in user data socket
+                let sellState = checkSellState({ symbol });
+
+                // cancel sell order and sell in market price ->stop loss
+                let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
+                    symbol,
+                    amount,
+                    stopPrice,
+                    maxWait: MAX_WAIT_TRADE_TIME,
+                    cancelOrder: trade.cancelOrder,
+                    createMarketSellOrder: trade.createMarketSellOrder,
+                });
+
+                //place the sell order
+                let sellOrder = await trade.createLimitSellOrder(symbol, amount, sellPrice);
+                let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
+
+                _.extend(trade, {
+                    started: true,
+                    time,
+                    amount,
+                    buyOrder,
+                    sellOrder,
+                    updateTrade,
+                    buyPrice,
+                    sellPrice,
+                    stopPrice,
+                    buyPrices: [buyPrice],
+                    sellState
+                });
+
+                emit('started', trade);
+                //get the final sell price
+                trade.finalSellPrice = await sellState;
+                return trade;
+            } else {
+                emitException('Insufficient Quote balance');
+                // return;
+            }
+
+            // return trade.status;
+        }
+
+        async function updateTrade() {
+
+            let gainOrLoss = getChangePercent(_.last(trade.buyPrices), buyPrice);
+            if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE * (trade.update + 1)) {
+                if (simulation) {
+                    endTrade();
+                    return doIntelligentTrade({ simulation: false });
+                }
+                emit('updating', trade);
+                //get the sell price
+                let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                //get the stop loss price
+                let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
+                await trade.updateTrade({ sellPrice, stopPrice });
+                _.extend(trade, {
+                    sellPrice,
+                    stopPrice,
+                    buyPrices: trade.buyPrices.concat(buyPrice),
+                    target: getChangePercent(trade.buyPrice, sellPrice)
+                });
+                trade.update++;
+                emit('updated', trade)
+            }
+
+        }
     }
 });
 
 
-function prepareOrder({ symbol, maxWait = 60 }) {
+function prepareOrder({ symbol, maxWait = 60, cancelOrder }) {
     let order, waitTimeout;
 
     //symbol buy listener creator
@@ -186,7 +216,7 @@ function prepareOrder({ symbol, maxWait = 60 }) {
                         if (balance < order.amount) {
                             //pas de balance libre, ya un ordre encours
                             //annuler l'ordre
-                            order && await   exchange.cancelOrder(order.id, symbol);
+                            order && await   cancelOrder(order.id, symbol);
 
                             reject('Order to buy ' + symbol + ' was cancelled due to delay');
                         } else {
@@ -204,7 +234,7 @@ function prepareOrder({ symbol, maxWait = 60 }) {
         })
     }
 
-    let canceller = cancelBuyIfTimeout();
+    let canceller = cancelOrder && cancelBuyIfTimeout();
 
     return async function setBuyOrder(buyOrder) {
         order = buyOrder;
@@ -218,16 +248,19 @@ async function checkSellState({ symbol }) {
             resolve(trade.price);
         })
     })
-
 }
 
-function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
+function sellIfPriceIsGoingDownOrTakingTooMuchTime({
+                                                       symbol, amount, stopPrice, maxWait,
+                                                       cancelOrder = _.noop,
+                                                       createMarketSellOrder = _.noop,
+                                                   }) {
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
         if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
             removeTickerListener();
-            sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
-            exchange.createMarketSellOrder(symbol, amount);
+            sellOrder && await  cancelOrder(sellOrder.id, symbol);
+            createMarketSellOrder(symbol, amount);
         }
         trade && logChange({ trade, ticker })
     };
