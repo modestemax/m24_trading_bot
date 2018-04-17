@@ -51,25 +51,9 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                 target: SELL_LIMIT_PERCENT
             };
 
-            overrideExchange({ trade });
-
             trade.status = startTrade().catch(emitException).finally(endTrade);
         }
 
-        function overrideExchange({ trade }) {
-            if (simulation) {
-                trade.cancelOrder = _.noop;
-                trade.createMarketSellOrder = _.noop;
-                trade.createLimitBuyOrder = _.noop;
-                trade.createLimitSellOrder = _.noop;
-                getFreeBalance = () => Infinity;
-            } else {
-                trade.cancelOrder = exchange.cancelOrder.bind(exchange);
-                trade.createMarketSellOrder = exchange.createMarketSellOrder.bind(exchange);
-                trade.createLimitBuyOrder = exchange.createLimitBuyOrder.bind(exchange);
-                trade.createLimitSellOrder = exchange.createLimitSellOrder.bind(exchange);
-            }
-        }
 
         function endTrade() {
 
@@ -90,19 +74,14 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
             let amount = await getTradeAmount({ symbol, price: buyPrice });
 
             if (amount) {
-                //prepare canceling order if not buy on time
-                let waitOrCancelOrder = prepareOrder({
-                    symbol,
-                    maxWait: MAX_WAIT_BUY_TIME,
-                    cancelOrder: trade.cancelOrder
-                });
+                    //prepare canceling order if not buy on time
+                    let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
 
-                //bid
-                let buyOrder = await trade.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+                    //bid
+                    let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
 
-                //for the bid to succeed or cancal it after some time
-                await waitOrCancelOrder(buyOrder);
-
+                    //for the bid to succeed or cancal it after some time
+                    await waitOrCancelOrder(buyOrder);
                 fetchTicker({ symbol });
                 //get the sell price
                 let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
@@ -117,13 +96,11 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                     symbol,
                     amount,
                     stopPrice,
-                    maxWait: MAX_WAIT_TRADE_TIME,
-                    cancelOrder: trade.cancelOrder,
-                    createMarketSellOrder: trade.createMarketSellOrder,
+                    maxWait: MAX_WAIT_TRADE_TIME
                 });
 
-                //place the sell order
-                let sellOrder = await trade.createLimitSellOrder(symbol, amount, sellPrice);
+                    //place the sell order
+            let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
                 let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
 
                 _.extend(trade, {
@@ -137,10 +114,10 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                     sellPrice,
                     stopPrice,
                     buyPrices: [buyPrice],
-                    sellState
+                sellState
                 });
 
-                emit('started', trade);
+            emit('started', trade);
                 //get the final sell price
                 trade.finalSellPrice = await sellState;
                 return trade;
@@ -181,7 +158,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
 });
 
 
-function prepareOrder({ symbol, maxWait = 60, cancelOrder }) {
+function prepareOrder({ symbol, maxWait = 60 }) {
     let order, waitTimeout;
 
     //symbol buy listener creator
@@ -216,7 +193,7 @@ function prepareOrder({ symbol, maxWait = 60, cancelOrder }) {
                         if (balance < order.amount) {
                             //pas de balance libre, ya un ordre encours
                             //annuler l'ordre
-                            order && await   cancelOrder(order.id, symbol);
+                            order && await   exchange.cancelOrder(order.id, symbol);
 
                             reject('Order to buy ' + symbol + ' was cancelled due to delay');
                         } else {
@@ -234,7 +211,7 @@ function prepareOrder({ symbol, maxWait = 60, cancelOrder }) {
         })
     }
 
-    let canceller = cancelOrder && cancelBuyIfTimeout();
+    let canceller = cancelBuyIfTimeout();
 
     return async function setBuyOrder(buyOrder) {
         order = buyOrder;
@@ -250,17 +227,13 @@ async function checkSellState({ symbol }) {
     })
 }
 
-function sellIfPriceIsGoingDownOrTakingTooMuchTime({
-                                                       symbol, amount, stopPrice, maxWait,
-                                                       cancelOrder = _.noop,
-                                                       createMarketSellOrder = _.noop,
-                                                   }) {
+function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
         if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
             removeTickerListener();
-            sellOrder && await  cancelOrder(sellOrder.id, symbol);
-            createMarketSellOrder(symbol, amount);
+            sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
+            exchange.createMarketSellOrder(symbol, amount);
         }
         trade && logChange({ trade, ticker })
     };
