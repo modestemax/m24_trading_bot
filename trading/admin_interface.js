@@ -87,12 +87,16 @@ function formatTrade(trade) {
         timestamp: trade.time,
         update: trade.update ? '+' + trade.update : '',
         time: moment(new Date(trade.time)).format('HH:mm'),
+        sellPrice: (+trade.sellPrice).toFixed(8),
+        lastPrice: (+trade.lastPrice).toFixed(8),
+        buyPrice: (+trade.buyPrice).toFixed(8),
         minGain: (+trade.minGain).toFixed(2) + '%',
         gainOrLoss: (+trade.gainOrLoss).toFixed(2) + '%',
         maxGain: (+trade.maxGain).toFixed(2) + '%',
         target: (+trade.target).toFixed(2) + '%',
         tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
-        _rowVariant: trade.maxGain >= trade.target ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
+        _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
+        // _rowVariant: trade.maxGain >= trade.target ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
     });
 }
 
