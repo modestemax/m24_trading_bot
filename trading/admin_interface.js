@@ -110,7 +110,7 @@ function formatTrade(trade) {
                 if (trade.maxGain >= trade.target) moon = 'info';
                 else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
                 else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
-                if (moon !== 'danger' || trade._moon_ === 'danger') {
+                if (moon !== 'danger' && trade._moon_ === 'danger') {
                     trade._moon_ = 'warning';
                 } else
                     trade._moon_ = moon;

@@ -36,7 +36,7 @@ function listenToEvents() {
         tickerData[prop] = data;
     }
 
-  //  const trying = {};
+    //  const trying = {};
 
     async function checkSignal({ signal24h, depth, signal, longSignal }) {
         let { symbol } = signal;
@@ -59,6 +59,7 @@ function listenToEvents() {
         } else {
             if (signalResult.signalWeightPercent > 49 / 100) {
                 appEmitter.emit('analyse:tracking', { symbol, signalResult });
+                appEmitter.emit('analyse:tracking:' + symbol, { symbol, signalResult });
             }
 
             if (indicatorSettings.LONG_TREND.check && !longSignal) {

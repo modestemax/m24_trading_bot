@@ -37,14 +37,17 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
 
         // if (!isGoingUp({ symbol, price: market.close })) return;
 
-        if (trade && trade.updateTrade) {
+        if (trade && (trade.updateTrade || trade.simulation)) {
             return updateTrade();
         }
         else if (!trade) {
             //one trade at once
             trade = tradings[symbol] = {
                 symbol,
-                update: 0,
+                buyPrice,
+                simulation,
+                buyPrices: [buyPrice],
+                update: +!simulation,
                 maxGain: 0,
                 minGain: 0,
                 gainOrLoss: 0,
@@ -56,15 +59,23 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
 
 
         function endTrade() {
-
-            delete  tradings[symbol];
-            //log trade
-            trade && trade.started && closedTrades.push(trade) && emit('ended', trade);
-            noFetchTicker({ symbol })
+            // trade = tradings[symbol];
+            if (trade && !trade.simulation) {
+                delete tradings[symbol];
+                //log trade
+                trade.started && closedTrades.push(trade) && emit('ended', trade);
+                noFetchTicker({ symbol })
+            }
         }
 
         async function startTrade() {
-
+            if (simulation) {
+                // appEmitter.on('analyse:tracking:' + symbol, (signalResult) => {
+                //     if (signalResult.signalWeightPercent <) {
+                //     }
+                // });
+                return
+            }
             emit('starting', trade);
 
             //get trade start time
@@ -74,14 +85,14 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
             let amount = await getTradeAmount({ symbol, price: buyPrice });
 
             if (amount) {
-                    //prepare canceling order if not buy on time
-                    let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
+                //prepare canceling order if not buy on time
+                let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
 
-                    //bid
-                    let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+                //bid
+                let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
 
-                    //for the bid to succeed or cancal it after some time
-                    await waitOrCancelOrder(buyOrder);
+                //for the bid to succeed or cancal it after some time
+                await waitOrCancelOrder(buyOrder);
                 fetchTicker({ symbol });
                 //get the sell price
                 let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
@@ -99,8 +110,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                     maxWait: MAX_WAIT_TRADE_TIME
                 });
 
-                    //place the sell order
-            let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
+                //place the sell order
+                let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
                 let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
 
                 _.extend(trade, {
@@ -114,10 +125,10 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                     sellPrice,
                     stopPrice,
                     buyPrices: [buyPrice],
-                sellState
+                    sellState
                 });
 
-            emit('started', trade);
+                emit('started', trade);
                 //get the final sell price
                 trade.finalSellPrice = await sellState;
                 return trade;
@@ -133,7 +144,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
 
             let gainOrLoss = getChangePercent(_.last(trade.buyPrices), buyPrice);
             if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE * (trade.update + 1)) {
-                if (simulation) {
+                if (trade.simulation) {
+                    delete trade.simulation;
                     endTrade();
                     return doIntelligentTrade({ simulation: false });
                 }
@@ -151,6 +163,13 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                 });
                 trade.update++;
                 emit('updated', trade)
+            } else {
+                if (trade.simulation) {
+                    if (Date.now() - trade.time >= env.TIMEFRAME * 60e3) {
+                        endTrade();
+                        return doIntelligentTrade({ simulation: true });
+                    }
+                }
             }
 
         }
@@ -288,5 +307,9 @@ function isGoingUp({ symbol, price }) {
 }
 
 appEmitter.on('app:get_currently_tradings_symbols', () => {
-    appEmitter.emit('trade:symbols', { symbols: tradings })
+    let trades = _.reduce(tradings, (trades, trade) => {
+        trade.simulation || (trades[trade.symbol] = trade);
+        return trades
+    }, {});
+    appEmitter.emit('trade:symbols', { symbols: trades })
 });
