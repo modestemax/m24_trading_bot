@@ -21,13 +21,14 @@ module.exports = {
             indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
-            indicator: 'LONG_TREND', check: false, weight: .5, mandatory: true, options: { minChangePercent: 1 }
+            indicator: 'LONG_TREND', check: true, weight: .5, bonus: true, mandatory: false,
+            options: { minChangePercent: 1 }
         },
         {
             indicator: '24H_TREND', check: true, weight: 1, mandatory: true, options: { minChangePercent: 2 }
         },
         {
-            indicator: 'BID_ASK_VOLUME', check: false, weight: 1, mandatory: false,
+            indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
             indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: 3 }
@@ -295,3 +296,11 @@ function getEcarts(list) {
 function distance(pointA, pointB) {
     return +((pointA - pointB) / pointB * 100).toFixed(2)
 }
+
++function validateSettings() {
+    _.forEach(settings, s => {
+        if (s.bonus && s.mandatory) {
+            emitException("Indicator " + s.indicator + " has bad config BONUS+MANDATORY")
+        }
+    })
+}();

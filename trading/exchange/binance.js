@@ -6,6 +6,8 @@ const exchangeEmitter = new EventEmitter();
 
 const { PRODUCTION, APIKEY, SECRET } = env;
 
+const DEPTH_LEVEL = 10;
+
 const Binance = require('binance-api-node').default
 const client = Binance({ apiKey: APIKEY, apiSecret: SECRET });
 
@@ -56,7 +58,7 @@ module.exports = function (exchange) {
 
     function depth({ symbol }) {
         let pairs = getTradablePairs(symbol ? [getPair({ symbol })] : getQuotePairs())
-            .map(symbol => ({ symbol, level: 5 }));
+            .map(symbol => ({ symbol, level: DEPTH_LEVEL }));
         if (pairs.length) {
             let logDepth = _.throttle((depth) => debug('depth', depth.symbol, 'BID', depth.allBid, 'ASK', depth.allAsk), 30e3);
 

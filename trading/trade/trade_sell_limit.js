@@ -129,7 +129,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
     async function updateTrade() {
 
         let gainOrLoss = getChangePercent(_.last(trade.buyPrices), buyPrice);
-        if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE) {
+        if (gainOrLoss > MIN_GAIN_TO_CONTINUE_TRADE * (trade.update + 1)) {
             emit('updating', trade);
             //get the sell price
             let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
@@ -256,7 +256,7 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
 }
 
 function logChange({ trade, ticker }) {
-    trade.lastPrice=ticker.last;
+    trade.lastPrice = ticker.last;
     trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
     trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
     trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
