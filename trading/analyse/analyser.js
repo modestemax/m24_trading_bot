@@ -7,37 +7,37 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 
     let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
 
-        let { check, weight, indicator, mandatory, options } = indicatorStetting;
-        let { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy } = signalResult;
-        if (!stopCheck && check) {
+            let { check, weight, indicator, mandatory, bonus, options } = indicatorStetting;
+            let { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy } = signalResult;
+            if (!stopCheck && check) {
 
-            let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
-                weight, signal24h, depth, signal, longSignal,
-                options
-            });
-            indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
-            if (mandatory && !indicatorsResult[indicator]) {
-                stopCheck = true;
-            } else {
-                signalWeight += thisIndicatorSignalWeight;
-                totalWeight += weight;
-                signalWeightPercent = signalWeight / totalWeight;
-                buy = signalWeightPercent >= MIN_BUY_WEIGHT;
+                let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
+                    weight, signal24h, depth, signal, longSignal,
+                    options
+                });
+                indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
+                if (mandatory && !indicatorsResult[indicator]) {
+                    stopCheck = true;
+                } else {
+                    signalWeight += thisIndicatorSignalWeight;
+                    totalWeight += bonus ? 0 : weight; //bonus do not count in final weight
+                    signalWeightPercent = signalWeight / totalWeight;
+                    buy = signalWeightPercent >= MIN_BUY_WEIGHT;
+                }
             }
-        }
-        if (stopCheck) {
-            buy = false;
-        }
+            if (stopCheck) {
+                buy = false;
+            }
 
-        return { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy };
-    }, {
-        totalWeight: 0,
-        signalWeight: 0,
-        signalWeightPercent: 0,
-        stopCheck: false,
-        indicatorsResult: {},
-        buy: false
-    });
+            return { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy };
+        },
+        //initial result value
+        {
+            totalWeight: 0, signalWeight: 0, signalWeightPercent: 0, stopCheck: false, buy: false,
+            indicatorsResult: {},
+        }
+    );
+
     if (signalResult.buy) {
         signalResult.buy = _.reduce(mandatoryIndicators, (buy, mInd) => {
             return buy && signalResult.indicatorsResult[mInd];
