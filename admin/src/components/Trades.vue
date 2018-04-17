@@ -90,4 +90,11 @@
   a {
     color: #42b983;
   }
+
+</style>
+<style>
+
+  .trades tr.table-success, .trades tr.table-danger, .trades tr.table-info {
+    color: #000;
+  }
 </style>

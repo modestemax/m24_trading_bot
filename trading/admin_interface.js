@@ -10,6 +10,7 @@ const server = new Server({ port: 12345 }) // see `ws` docs for other options
 const express = require('express');
 const app = express();
 
+const serverStartTime = Date.now();
 
 const { getTrades } = require('./utils')();
 
@@ -23,11 +24,12 @@ appEmitter.on('trade:updated', trade => {
 });
 
 appEmitter.on('trade:ended', trade => {
+    trade._end_ = true;
     socketSend(JSON.stringify({ type: 'trade_end', trade: formatTrade(trade), }))
 });
 
 appEmitter.on('trade:changed', trade => {
-    socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    !(trade._end_ || trade._moon_) && socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
 });
 
 
@@ -67,7 +69,7 @@ async function pushTracking({ symbol, signalResult }) {
 
 function pushError(error) {
 
-    socketSend(JSON.stringify({ type: 'error', error: { time: moment().format('HH:mm'), error: formatError(error) } }))
+    socketSend(JSON.stringify({ type: 'error', error: { time: Date.now(), error: formatError(error) } }))
 
 }
 
@@ -82,11 +84,16 @@ function socketSend(data) {
     });
 }
 
+function sendStartTime() {
+    let time = JSON.stringify({ type: 'time', time: serverStartTime });
+    socketSend(time);
+}
+
 function formatTrade(trade) {
     return _.extend({}, trade, {
         timestamp: trade.time,
         update: trade.update ? '+' + trade.update : '',
-        time: moment(new Date(trade.time)).format('HH:mm'),
+        // time: moment(new Date(trade.time)).format('HH:mm'),
         sellPrice: (+trade.sellPrice).toFixed(8),
         lastPrice: (+trade.lastPrice).toFixed(8),
         buyPrice: (+trade.buyPrice).toFixed(8),
@@ -95,15 +102,24 @@ function formatTrade(trade) {
         maxGain: (+trade.maxGain).toFixed(2) + '%',
         target: (+trade.target).toFixed(2) + '%',
         tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
-        _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
-        // _rowVariant: trade.maxGain >= trade.target ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
+        // _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
+        _rowVariant: (() => {
+            if (!trade._moon_) {
+                let moon;
+                if (trade.maxGain >= trade.target) moon = 'info';
+                else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
+                else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
+                trade._moon_ = moon;
+            }
+            return trade._moon_;
+        })()
     });
 }
 
 server.on('connection', function (socket) {
     sockets.push(socket);
     pushTrades();
-
+    sendStartTime();
     //  debugger
     // socket.write('pong')
     socket.on('data', function (data) {

@@ -15,7 +15,7 @@
         <b-tab class="errors" title="Errors">
           <template slot="title">
 
-            <b-button   :variant="'outline-danger'">
+            <b-button :variant="'outline-danger'">
               Errors
             </b-button>
             <b-badge pill variant="danger">{{errorsCount||''}}</b-badge>

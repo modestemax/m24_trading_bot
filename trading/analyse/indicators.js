@@ -298,7 +298,7 @@ function distance(pointA, pointB) {
 }
 
 +function validateSettings() {
-    _.forEach(settings, s => {
+    _.forEach(module.exports.settings, s => {
         if (s.bonus && s.mandatory) {
             emitException("Indicator " + s.indicator + " has bad config BONUS+MANDATORY")
         }

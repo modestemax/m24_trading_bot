@@ -1,7 +1,12 @@
 import Events from 'events';
 import Socket from 'simple-websocket';
+import moment from 'moment';
 
 const appEmitter = new Events();
+let startTime;
+
+setInterval(() => appEmitter.emit('time', { start: startTime.format('HH:mm'), duration: startTime.fromNow(true) }),
+  60e3);
 
 export default appEmitter;
 
@@ -19,10 +24,19 @@ export default appEmitter;
   socket.on('data', (data) => {
     // console.log(`got message: ${data}`);
     const clientData = JSON.parse(`${data}`);
+    const trade = clientData.trade;
+    if (trade) {
+      trade.time = moment(new Date(trade.time)).format('HH:mm');
+    }
+
     switch (clientData.type) {
       case 'trades':
         // debugger;
         appEmitter.emit('trades', clientData);
+        break;
+      case 'time':
+        startTime = moment(new Date(clientData.time));
+        appEmitter.emit('time', { start: startTime.format('HH:mm'), duration: startTime.fromNow(true) });
         break;
       case 'error':
         appEmitter.emit('error', clientData.error);
