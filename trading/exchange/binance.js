@@ -178,12 +178,12 @@ module.exports = function (exchange) {
             await exchange.sleep(Math.random() * 5 * 1e3);
             exchangeEmitter.emit('buy_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
         } else {
-            await exchange.sleep(Math.random() * 3601 * 1e3);
-            exchangeEmitter.emit('sell_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
-            exchangeEmitter.emit('stop_loss_updated', ({
-                symbol: parsedOrder.symbol,
-                stopLossOrder: parsedOrder
-            }))
+            // await exchange.sleep(Math.random() * 3601 * 1e3);
+            // exchangeEmitter.emit('sell_ok', ({ symbol: parsedOrder.symbol, trade: parsedOrder }));
+            // exchangeEmitter.emit('stop_loss_updated', ({
+            //     symbol: parsedOrder.symbol,
+            //     stopLossOrder: parsedOrder
+            // }))
         }
     }
 
