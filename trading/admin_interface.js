@@ -33,11 +33,11 @@ appEmitter.on('trade:ended', trade => {
 });
 
 appEmitter.on('trade:changed', trade => {
-    !(trade._end_ || (trade._moon_ && trade._moon_ === 'danger')) && socketSend(JSON.stringify({
-        type: 'trade_change',
-        trade: formatTrade(trade),
-    }))
-    // socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    // !(trade._end_ || (trade._moon_ && trade._moon_ === 'danger')) && socketSend(JSON.stringify({
+    //     type: 'trade_change',
+    //     trade: formatTrade(trade),
+    // }))
+    socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
 });
 
 
