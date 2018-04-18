@@ -14,7 +14,7 @@ function isCrossing({ indic1, indic2 }) {
     let crossing_down = ind1_pre >= ind2_pre && ind1_cur <= ind2_cur;
     return { crossing: crossing_up || crossing_down, crossing_up, crossing_down };
 }
-const minCount=3;
+const minCount=process.env.MIN_COUNT||2;
 
 module.exports = {
     settings: [

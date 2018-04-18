@@ -14,7 +14,27 @@ module.exports = {
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys'
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
+                PORT: 12346,
+                MIN_COUNT: 3,
+                SIMUL_FIRST_ENTRY: true,
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
+        {
+            name: 'bot2',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            "node_args": "--inspect=0.0.0.0:5859",
+            env: {
+                DEBUG: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
+                PORT: 12345,
+                MIN_COUNT: 2,
+                NO_STOP_LOSS: true,
             },
             env_production: {
                 NODE_ENV: 'production'

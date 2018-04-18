@@ -14,7 +14,8 @@ export default appEmitter;
 (function connect() {
   // debugger;
   const host = window.location.hostname;
-  const socket = new Socket(`ws://${host}:12345`);
+  const port = window.location.port;
+  const socket = new Socket(`ws://${host}:${port * 2}`);
 
   socket.on('connect', () => {
     // socket is connected!

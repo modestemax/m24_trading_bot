@@ -25,7 +25,7 @@ const closedTrades = [];
  * achat, vente mise à jour et stop des pertes
  */
 appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
-    doIntelligentTrade();
+    doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
         let { symbol, close: buyPrice } = market;
@@ -47,7 +47,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                 buyPrice,
                 simulation,
                 buyPrices: [buyPrice],
-                update: +!simulation,
+                update: process.env.SIMUL_FIRST_ENTRY ? +!simulation : 0,
                 maxGain: 0,
                 minGain: 0,
                 gainOrLoss: 0,
@@ -249,6 +249,7 @@ async function checkSellState({ symbol }) {
 function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
+        stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
         if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);

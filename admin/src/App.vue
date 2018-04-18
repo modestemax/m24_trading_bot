@@ -8,16 +8,13 @@
     </div>
 
     <b-container fluid>
-      <b-tabs pills card vertical>
+      <b-tabs pills card vertical1>
         <b-tab class="trades" title="Trades">
           <router-view name="Trades"></router-view>
         </b-tab>
         <b-tab class="errors" title="Errors">
           <template slot="title">
-
-            <b-button :variant="'outline-danger'">
-              Errors
-            </b-button>
+            Errors
             <b-badge pill variant="danger">{{errorsCount||''}}</b-badge>
           </template>
           <router-view name="Errors"></router-view>

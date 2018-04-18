@@ -5,7 +5,11 @@ const moment = require('moment');
 const Server = require('simple-websocket/server')
 const formatError = require('format-error').format;
 
-const server = new Server({ port: 12345 }) // see `ws` docs for other options
+const PORT = process.env.PORT || 9090;
+const SOCKET_PORT = process.env.PORT ? PORT * 2 : 8080 * 2;
+
+
+const server = new Server({ port: SOCKET_PORT }) // see `ws` docs for other options
 
 const express = require('express');
 const app = express();
@@ -147,4 +151,4 @@ app.get('/', async (req, res) => {
     res.sendFile(path.resolve(__dirname + "/../admin/dist/index.html"))
 })
 // server.close() return
-app.listen(12346);
+app.listen(PORT);
