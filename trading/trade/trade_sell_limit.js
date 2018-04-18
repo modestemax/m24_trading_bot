@@ -43,6 +43,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
         else if (!trade) {
             //one trade at once
             trade = tradings[symbol] = {
+                id: _.uniqueId(symbol),
                 symbol,
                 buyPrice,
                 simulation,

@@ -14,12 +14,13 @@ function isCrossing({ indic1, indic2 }) {
     let crossing_down = ind1_pre >= ind2_pre && ind1_cur <= ind2_cur;
     return { crossing: crossing_up || crossing_down, crossing_up, crossing_down };
 }
-const minCount=process.env.MIN_COUNT||2;
+
+const minCount = process.env.MIN_COUNT || 2;
 
 module.exports = {
     settings: [
         {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
             indicator: 'LONG_TREND', check: true, weight: .5, bonus: true, mandatory: false,
@@ -35,7 +36,11 @@ module.exports = {
             indicator: 'EMA', check: true, weight: 1, mandatory: true, options: { minDistance: .1, minCount: minCount }
         },
         {
-            indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: minCount }
+            indicator: 'MACD',
+            check: true,
+            weight: 1,
+            mandatory: false,
+            options: { minDistance: .1, minCount: minCount }
         },
         {
             indicator: 'AROON', check: true, weight: 1, mandatory: false,
@@ -103,6 +108,9 @@ module.exports = {
                 let ema20_0 = _.head(ema20);
                 indicators.ema_distance = distance(ema10_cur, ema20_cur);
                 indicators.ema_0_distance = distance(ema10_0, ema20_0);
+                let ecarts10 = getEcarts(ema10);
+                let ecarts20 = getEcarts(ema20);
+
                 ok = ema10_cur > ema20_cur
                     // && indicators.ema10_trendingUp
                     && isSorted((indicators.ema10), options.minCount)
@@ -112,7 +120,7 @@ module.exports = {
                     && indicators.ema_distance > options.minDistance
                     && indicators.ema_distance >= indicators.ema_0_distance;
 
-
+                ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
             }
             return +ok && weight;
 

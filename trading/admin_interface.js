@@ -124,6 +124,7 @@ function formatTrade(trade) {
                     trade._moon_ = moon;
             }
             trade._moon_ && (trade.effectiveDuration = trade.effectiveDuration || trade.tradeDuration);
+            trade._moon_ && appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade: { price: trade.sellPrice } }));
             return trade._moon_;
         })()
     });

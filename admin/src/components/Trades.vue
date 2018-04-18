@@ -37,15 +37,15 @@
     methods: {
       addTrade(trade) {
         _.extend(trade, { tradeDuration: trade.effectiveDuration || trade.tradeDuration });
-        this.trades = this.trades.concat(trade).sort(t => t.timestamp);
+        this.trades.unshift(trade);
         this.sendResume();
       },
       endTrade(trade) {
-        this.trades.splice(_.findIndex(this.trades, t => t.symbol === trade.symbol), 1);
+        this.trades.splice(_.findIndex(this.trades, { id: trade.id }), 1);
       },
 
       changeTrade(trade) {
-        const oldTrade = _.find(this.trades, t => t.symbol === trade.symbol);
+        const oldTrade = _.find(this.trades, { id: trade.id });
         _.extend(oldTrade, trade);
         this.trades = [].concat(this.trades);
         this.sendResume();
