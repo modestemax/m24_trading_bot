@@ -18,6 +18,8 @@ module.exports = {
                 PORT: 12346,
                 MIN_COUNT: 3,
                 SIMUL_FIRST_ENTRY: true,
+                NO_STOP_LOSS: true,
+                STOP_LOSS_PERCENT: -1.5,
             },
             env_production: {
                 NODE_ENV: 'production'
@@ -35,6 +37,7 @@ module.exports = {
                 PORT: 12345,
                 MIN_COUNT: 2,
                 NO_STOP_LOSS: true,
+                STOP_LOSS_PERCENT: -1.5,
             },
             env_production: {
                 NODE_ENV: 'production'

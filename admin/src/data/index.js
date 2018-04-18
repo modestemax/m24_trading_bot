@@ -6,8 +6,11 @@ import _ from 'lodash';
 const appEmitter = new Events();
 let startTime;
 
-setInterval(() => appEmitter.emit('time', { start: startTime.format('HH:mm'), duration: startTime.fromNow(true) }),
-  60e3);
+setInterval(() => appEmitter.emit('time', {
+  start: startTime.format('HH:mm'),
+  duration: startTime.fromNow(true),
+}), 60e3);
+export const formatTime = (time, format) => moment(new Date(time)).format(format || 'HH:mm');
 
 export default appEmitter;
 
@@ -31,7 +34,7 @@ export default appEmitter;
       clientData.trades = [trade];
     }
     _.forEach(clientData.trades, (t) => {
-      _.extend(t, { time: moment(new Date(t.time)).format('HH:mm') });
+      _.extend(t, { time: formatTime(t.time) });
     });
 
 
@@ -42,9 +45,13 @@ export default appEmitter;
         break;
       case 'time':
         startTime = moment(new Date(clientData.time));
-        appEmitter.emit('time', { start: startTime.format('HH:mm'), duration: startTime.fromNow(true) });
+        appEmitter.emit('time', {
+          start: formatTime(clientData.time, 'HH:mm  DD MMM'),
+          duration: startTime.fromNow(true),
+        });
         break;
       case 'error':
+        clientData.error.time = formatTime(clientData.error.time);
         appEmitter.emit('error', clientData.error);
         break;
       case 'trade_start':

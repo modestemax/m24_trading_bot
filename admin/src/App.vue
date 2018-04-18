@@ -10,6 +10,10 @@
     <b-container fluid>
       <b-tabs pills card vertical1>
         <b-tab class="trades" title="Trades">
+          <template slot="title">
+            Trades
+            <b-badge pill variant="warning">{{tradeResume}}</b-badge>
+          </template>
           <router-view name="Trades"></router-view>
         </b-tab>
         <b-tab class="errors" title="Errors">
@@ -46,7 +50,7 @@
   export default {
     name: 'app',
     data() {
-      return { online: false, errorsCount: '' };
+      return { online: false, errorsCount: '', tradeResume: '' };
     },
     computed: {
       logo() {
@@ -67,6 +71,9 @@
         });
         appEmitter.on('error_count', (count) => {
           me.errorsCount = count;
+        });
+        appEmitter.on('trade_resume', (resume) => {
+          me.tradeResume = resume;
         });
       });
     },

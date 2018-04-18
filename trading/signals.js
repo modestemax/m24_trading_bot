@@ -49,7 +49,7 @@ const beautify = (data) => {
     let time = new Date().getTime();
     return _(data).map(({ d }) => {
             let candleColor;
-            return {
+            return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
                 time,
                 close: d[1],
@@ -107,7 +107,7 @@ const beautify = (data) => {
                 return (strength(int) === 1 ? 'Strong ' : '') + signal(int)
             }
         }
-    ).groupBy('symbol').mapValues(([v]) => v).value()
+    ).filter(d=>d).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
 function getSignals({ data = params(), longTimeframe = false, signal24h = false, indicator = 'SIGNAL_TREND', rate = 1e3 } = {}) {

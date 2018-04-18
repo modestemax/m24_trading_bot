@@ -32,7 +32,7 @@ module.exports = {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
-            indicator: 'EMA', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: minCount }
+            indicator: 'EMA', check: true, weight: 1, mandatory: true, options: { minDistance: .1, minCount: minCount }
         },
         {
             indicator: 'MACD', check: true, weight: 1, mandatory: false, options: { minDistance: .1, minCount: minCount }

@@ -11,6 +11,7 @@
 </template>
 
 <script>
+  /* eslint no-underscore-dangle: "off" */
   // import Trade from '@/components/Trade';
   import _ from 'lodash';
   import startSound from '../assets/mp3/echoed-ding.mp3';
@@ -35,7 +36,9 @@
     },
     methods: {
       addTrade(trade) {
+        _.extend(trade, { tradeDuration: trade.effectiveDuration || trade.tradeDuration });
         this.trades = this.trades.concat(trade).sort(t => t.timestamp);
+        this.sendResume();
       },
       endTrade(trade) {
         this.trades.splice(_.findIndex(this.trades, t => t.symbol === trade.symbol), 1);
@@ -45,6 +48,7 @@
         const oldTrade = _.find(this.trades, t => t.symbol === trade.symbol);
         _.extend(oldTrade, trade);
         this.trades = [].concat(this.trades);
+        this.sendResume();
       },
 
       addTrades({ trades, start, end }) {
@@ -66,6 +70,13 @@
         appEmitter.on('trade_start', this.addTrade);
         // appEmitter.on('trade_end', this.endTrade);
         appEmitter.on('trade_change', this.changeTrade);
+      },
+      sendResume() {
+        const all = this.trades.length;
+        const win = _(this.trades).filter(t => t._moon_).reject(t => t._moon_ === 'danger').value().length;
+        const lost = _(this.trades).filter(t => t._moon_).filter(t => t._moon_ === 'danger').value().length;
+        const gain = (win + lost) && ((win - lost) / (win + lost)).toFixed(2);
+        appEmitter.emit('trade_resume', `Win: ${win} Lost: ${lost} All: ${all} Gain: ${gain}%`);
       },
     },
   };
