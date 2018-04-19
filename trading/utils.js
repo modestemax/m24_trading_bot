@@ -132,6 +132,14 @@ const fn = {
             appEmitter.emit('app:get_currently_tradings_symbols')
         })
     },
+    async getFinishedTrades() {
+        return new Promise((resolve, reject) => {
+            appEmitter.once('trade:symbols:finish', ({ symbols }) => {
+                resolve(symbols);
+            });
+            appEmitter.emit('app:get_finished_tradings_symbols')
+        })
+    },
     async getTradeRatio({ symbol }) {
         return await Model.TradeRatio.load({ symbol });
     },

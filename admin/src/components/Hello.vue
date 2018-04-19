@@ -1,19 +1,55 @@
 <template>
+
   <div>
-    <span class="time">Started at {{startTime}}  [{{duration}}]</span>
-    <h3 class="float-right pr-3 card-title">{{msg}}</h3>
+    <div class="pb-5">
+      <img class="m24-logo" :src="logo">
+      <audio :src="sound" autoplay controls1></audio>
+
+      <span class="time">Started at {{startTime}}  [{{duration}}]</span>
+      <h3 class="float-right pr-3 card-title">{{msg}}</h3>
+    </div>
+    <b-container fluid>
+      <b-tabs pills card vertical1>
+        <b-tab class="trades" title="Open Trades">
+          <router-view name="OpenTrades"></router-view>
+        </b-tab>
+        <b-tab class="trades" title="Closed Trades">
+          <router-view name="ClosedTrades"></router-view>
+        </b-tab>
+        <b-tab class="errors" title="Errors">
+          <template slot="title">
+            Errors
+            <b-badge pill variant="danger">{{errorsCount}}</b-badge>
+          </template>
+          <router-view name="Errors"></router-view>
+        </b-tab>
+      </b-tabs>
+    </b-container>
+
   </div>
 </template>
 
 <script>
+  import logoOn from '../assets/images/m24_on.gif';
+  import logoOff from '../assets/images/m24_off.png';
+  import soundOn from '../assets/mp3/msn-online.mp3';
+  import soundOff from '../assets/mp3/yahoo_door.mp3';
   import appEmitter from '../data';
 
   export default {
     name: 'hello',
     data() {
       return {
-        msg: 'Bot Admin', startTime: '', duration: '',
+        msg: 'Bot Admin', startTime: '', duration: '', online: false, errorsCount: '', tradeResume: '', appDetails: '',
       };
+    },
+    computed: {
+      logo() {
+        return this.online ? logoOn : logoOff;
+      },
+      sound() {
+        return this.online ? soundOn : soundOff;
+      },
     },
     mounted() {
       const me = this;
@@ -21,6 +57,18 @@
         appEmitter.on('time', ({ start, duration }) => {
           me.startTime = start;
           me.duration = duration;
+        });
+        appEmitter.on('offline', () => {
+          me.online = false;
+        });
+        appEmitter.on('online', () => {
+          me.online = true;
+        });
+        appEmitter.on('error_count', (count) => {
+          me.errorsCount = count;
+        });
+        appEmitter.on('time', ({ details }) => {
+          me.appDetails = details;
         });
       });
     },

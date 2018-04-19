@@ -5,11 +5,7 @@
     <!--Dismissible Alert! Click the close button over there <b>&rArr;</b>-->
     <!--</b-alert>-->
     <!--</div>-->
-    <b-table striped hover :items="trades" :fields="fields" caption-top>
-      <template slot="table-caption">
-        {{_.startCase(tradeType)}} Trades
-      </template>
-    </b-table>
+    <b-table striped hover :items="allTrades" :fields="fields"></b-table>
   </div>
 
 </template>
@@ -18,41 +14,19 @@
   /* eslint no-underscore-dangle: "off" */
   // import Trade from '@/components/Trade';
   import _ from 'lodash';
-  import moment from 'moment';
   import startSound from '../assets/mp3/echoed-ding.mp3';
   import endSound from '../assets/mp3/plucky.mp3';
-  import appEmitter, {formatTime, fixed8, fixed2} from '../data'; // eslint-disable-line object-curly-spacing
+  import appEmitter from '../data';
 
 
   export default {
     name: 'trades',
     data() {
       return {
-        // open/closed
-        tradeType: '',
         sound: null,
         trades: [],
-        fields: [
-          { key: 'time', formatter: formatTime },
-          'symbol',
-          { key: 'buyPrice', formatter: fixed8 },
-          { key: 'sellPrice', formatter: fixed8 },
-          { key: 'lastPrice', formatter: fixed8 },
-          { key: 'minGain', formatter: fixed2 },
-          {
-            key: 'gainOrLoss',
-            formatter: (value, key, item) => {
-              Object.assign(item, { _cellVariants: { gainOrLoss: value < 0 ? 'danger' : 'success' } });
-              return fixed2(value);
-            },
-          },
-          { key: 'maxGain', formatter: fixed2 },
-          { key: 'target', formatter: fixed2 },
-          { key: 'tradeDuration', formatter: (v, k, item) => moment.duration(Date.now() - item.time).humanize() },
-          {
-            key: 'update', formatter: update => update ? `+${update}` : '', // eslint-disable-line no-confusing-arrow
-          },
-        ],
+        finishedTrades: [],
+        fields: ['time', 'symbol', 'buyPrice', 'sellPrice', 'lastPrice', 'minGain', 'gainOrLoss', 'maxGain', 'target', 'tradeDuration', 'update'],
       };
     },
     // components: { Trade },
@@ -62,9 +36,9 @@
       });
     },
     computed: {
-      // allTrades() {
-      //   return [].concat(this.trades, this.finishedTrades);
-      // },
+      allTrades() {
+        return [].concat(this.trades, this.finishedTrades);
+      },
     },
     watch: {
       trades(newTrades, oldTrades) {
@@ -99,11 +73,12 @@
           this.sound = null;
         }
       },
-      addTrades({ trades }) {
+      addTrades({ trades, finishedTrades }) {
         this.trades = _.values(trades);
+        this.finishedTrades = _.values(finishedTrades);
       },
       listenToEvents() {
-        appEmitter.on(`trades:${this.tradeType}`, this.addTrades);
+        appEmitter.on('trades', this.addTrades);
         // appEmitter.on('trade_start', this.addTrade);
         // appEmitter.on('trade_end', this.endTrade);
         // appEmitter.on('trade_change', this.changeTrade);
@@ -113,9 +88,7 @@
         const win = _(this.trades).filter(t => t._moon_).reject(t => t._moon_ === 'danger').value().length;
         const lost = _(this.trades).filter(t => t._moon_).filter(t => t._moon_ === 'danger').value().length;
         const gain = (win + lost) && ((win - lost) / (win + lost)).toFixed(2);
-        if (gain) {
-          appEmitter.emit('trade_resume', `Win: ${win} Lost: ${lost} All: ${all} Gain: ${gain}%`);
-        }
+        appEmitter.emit('trade_resume', `Win: ${win} Lost: ${lost} All: ${all} Gain: ${gain}%`);
       },
     },
   };

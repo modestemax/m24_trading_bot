@@ -78,7 +78,8 @@ module.exports = {
 
         '24H_TREND'({ weight, signal24h, options }) {
             // let ok = Boolean(signal24h) && (signal24h.changePercent >= options.minChangePercent);
-            let ok = Boolean(signal24h) && (signal24h.percentage >= options.minChangePercent);
+            // let ok = Boolean(signal24h) && (signal24h.percentage >= options.minChangePercent);
+            let ok = Boolean(signal24h) && (signal24h.percentage >= signal24h.meanPercentage);
             return +ok && weight;
         },
 

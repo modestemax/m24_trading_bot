@@ -16,20 +16,23 @@ const app = express();
 
 const serverStartTime = Date.now();
 
-const { getTrades } = require('./utils')();
+const { getTrades, getFinishedTrades } = require('./utils')();
 
 
 appEmitter.on('trade:started', trade => {
-    socketSend(JSON.stringify({ type: 'trade_start', trade: formatTrade(trade) }))
+    // socketSend(JSON.stringify({ type: 'trade_start', trade: formatTrade(trade) }));
+    setImmediate(pushTrades);
 });
 
 appEmitter.on('trade:updated', trade => {
-    socketSend(JSON.stringify({ type: 'trade_update', trade: formatTrade(trade), }))
+    // socketSend(JSON.stringify({ type: 'trade_update', trade: formatTrade(trade), }))
+    setImmediate(pushTrades);
 });
 
 appEmitter.on('trade:ended', trade => {
-    trade._end_ = true;
-    socketSend(JSON.stringify({ type: 'trade_end', trade: formatTrade(trade), }))
+    // trade._end_ = true;
+    // socketSend(JSON.stringify({ type: 'trade_end', trade: formatTrade(trade), }));
+    setImmediate(pushTrades);
 });
 
 appEmitter.on('trade:changed', trade => {
@@ -37,7 +40,8 @@ appEmitter.on('trade:changed', trade => {
     //     type: 'trade_change',
     //     trade: formatTrade(trade),
     // }))
-    socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    // socketSend(JSON.stringify({ type: 'trade_change', trade: formatTrade(trade), }))
+    setImmediate(pushTrades);
 });
 
 
@@ -67,8 +71,10 @@ appEmitter.on('test:trade', (start, end) => {
 
 async function pushTrades() {
     let trades = await getTrades();
-    trades = _.map(trades, formatTrade);
-    socketSend(JSON.stringify({ type: 'trades', trades, start: this === 'start', end: this === 'end' }))
+    let finishedTrades = await getFinishedTrades();
+    trades = _(trades).map(formatTrade).orderBy('time', 'desc').value();
+    finishedTrades = _(finishedTrades).map(formatTrade).orderBy('time', 'desc').value();
+    socketSend(JSON.stringify({ type: 'trades', trades, finishedTrades, }));
 }
 
 async function pushTracking({ symbol, signalResult }) {
@@ -93,39 +99,43 @@ function socketSend(data) {
 }
 
 function sendStartTime() {
-    let time = JSON.stringify({ type: 'time', time: serverStartTime });
+    let details = `TimeFrame: ${env.TIMEFRAME} Trade Target: ${(+env.SELL_LIMIT_PERCENT).toFixed(1)}%  
+    Stop Loss:${(+env.STOP_LOSS_PERCENT).toFixed(1)}% Enter On Second Buy:${env.SIMUL_FIRST_ENTRY ? 'Yes' : 'No'}`;
+    let time = JSON.stringify({ type: 'time', time: serverStartTime, details });
     socketSend(time);
 }
 
 function formatTrade(trade) {
-    return _.extend({}, trade, {
-        timestamp: trade.time,
-        update: trade.update ? '+' + trade.update : '',
-        // time: moment(new Date(trade.time)).format('HH:mm'),
-        sellPrice: (+trade.sellPrice).toFixed(8),
-        lastPrice: (+trade.lastPrice).toFixed(8),
-        buyPrice: (+trade.buyPrice).toFixed(8),
-        minGain: (+trade.minGain).toFixed(2) + '%',
-        gainOrLoss: (+trade.gainOrLoss).toFixed(2) + '%',
-        maxGain: (+trade.maxGain).toFixed(2) + '%',
-        target: (+trade.target).toFixed(2) + '%',
-        tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
+    let trades = formatTrade.trades = formatTrade.trades || {};
+    let lastTrade = trades[trade.id] = trades[trade.id] || {};
+
+    _.extend(lastTrade, trade, {
+        // timestamp: trade.time,
+        // update: trade.update ? '+' + trade.update : '',
+        // // time: moment(new Date(trade.time)).format('HH:mm'),
+        // sellPrice: (+trade.sellPrice).toFixed(8),
+        // lastPrice: (+trade.lastPrice).toFixed(8),
+        // buyPrice: (+trade.buyPrice).toFixed(8),
+        // minGain: (+trade.minGain).toFixed(2) + '%',
+        // gainOrLoss: (+trade.gainOrLoss).toFixed(2) + '%',
+        // maxGain: (+trade.maxGain).toFixed(2) + '%',
+        // target: (+trade.target).toFixed(2) + '%',
+        // tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
         // _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
         _rowVariant: (() => {
-            if (!trade._moon_ || trade._moon_ === 'danger') {
+
+            if (!lastTrade._moon_ || lastTrade._moon_ === 'danger') {
                 let moon;
                 if (trade.maxGain >= trade.target) moon = 'info';
                 else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
                 else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
-                if (moon !== 'danger' && trade._moon_ === 'danger') {
-                    trade._moon_ = 'warning';
-                    trade.effectiveDuration = trade.tradeDuration;
-                } else
-                    trade._moon_ = moon;
+                // if (moon !== 'danger' && trade._moon_ === 'danger') {
+                //     trade._moon_ = 'warning';
+                //     trade.effectiveDuration = trade.tradeDuration;
+                // } else
+                lastTrade._moon_ = moon;
             }
-            trade._moon_ && (trade.effectiveDuration = trade.effectiveDuration || trade.tradeDuration);
-            trade._moon_ && appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade: { price: trade.sellPrice } }));
-            return trade._moon_;
+            return lastTrade._moon_;
         })()
     });
 }

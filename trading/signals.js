@@ -107,7 +107,7 @@ const beautify = (data) => {
                 return (strength(int) === 1 ? 'Strong ' : '') + signal(int)
             }
         }
-    ).filter(d=>d).groupBy('symbol').mapValues(([v]) => v).value()
+    ).filter(d => d).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
 function getSignals({ data = params(), longTimeframe = false, signal24h = false, indicator = 'SIGNAL_TREND', rate = 1e3 } = {}) {
@@ -144,7 +144,11 @@ function getSignals({ data = params(), longTimeframe = false, signal24h = false,
 async function fetchTickers() {
     try {
         let tickers = await exchange.fetchTickers();
+        tickers = _.filter(tickers,t => /\/BTC$/i.test(t.symbol));
         debug2(`signals 24H_TREND ${_.keys(tickers).length} symbols loaded`);
+        let pumpings = _.filter(tickers, t => t.percentage > 2);
+        let meanPercentage = _.sumBy(pumpings, 'percentage') / pumpings.length;
+        tickers = _.map(tickers, t => _.extend(t, { meanPercentage }));
         return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: tickers }))
     } catch (ex) {
         emitException(ex)
