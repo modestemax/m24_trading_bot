@@ -30,48 +30,15 @@
 </template>
 
 <script>
-  import logoOn from '../assets/images/m24_on.gif';
-  import logoOff from '../assets/images/m24_off.png';
-  import soundOn from '../assets/mp3/msn-online.mp3';
-  import soundOff from '../assets/mp3/yahoo_door.mp3';
-  import appEmitter from '../data';
-
   export default {
     name: 'hello',
     data() {
       return {
-        msg: 'Bot Admin', startTime: '', duration: '', online: false, errorsCount: '', tradeResume: '', appDetails: '',
+
       };
     },
-    computed: {
-      logo() {
-        return this.online ? logoOn : logoOff;
-      },
-      sound() {
-        return this.online ? soundOn : soundOff;
-      },
-    },
-    mounted() {
-      const me = this;
-      this.$nextTick(() => {
-        appEmitter.on('time', ({ start, duration }) => {
-          me.startTime = start;
-          me.duration = duration;
-        });
-        appEmitter.on('offline', () => {
-          me.online = false;
-        });
-        appEmitter.on('online', () => {
-          me.online = true;
-        });
-        appEmitter.on('error_count', (count) => {
-          me.errorsCount = count;
-        });
-        appEmitter.on('time', ({ details }) => {
-          me.appDetails = details;
-        });
-      });
-    },
+
+
   };
 </script>
 

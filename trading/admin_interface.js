@@ -72,9 +72,13 @@ appEmitter.on('test:trade', (start, end) => {
 async function pushTrades() {
     let trades = await getTrades();
     let finishedTrades = await getFinishedTrades();
-    trades = _(trades).map(formatTrade).orderBy('time', 'desc').value();
-    finishedTrades = _(finishedTrades).map(formatTrade).orderBy('time', 'desc').value();
-    socketSend(JSON.stringify({ type: 'trades', trades, finishedTrades, }));
+    // trades = _(trades)
+        // .map(formatTrade)
+        // .orderBy('time', 'desc').value();
+    // finishedTrades = _(finishedTrades)
+        // .map(formatTrade)
+        // .orderBy('time', 'desc').value();
+    (trades.length || finishedTrades.length) && socketSend(JSON.stringify({ type: 'trades', trades, finishedTrades, }));
 }
 
 async function pushTracking({ symbol, signalResult }) {
@@ -92,8 +96,12 @@ let sockets = [];
 function socketSend(data) {
     sockets = _.compact(sockets).filter(socket => {
         if ((socket.connected)) {
-            socket.send(data);
-            return true
+            try {
+                socket.send(data);
+                return true
+            } catch (ex) {
+
+            }
         }
     });
 }

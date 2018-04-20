@@ -5,9 +5,34 @@
     <!--Dismissible Alert! Click the close button over there <b>&rArr;</b>-->
     <!--</b-alert>-->
     <!--</div>-->
-    <b-table striped hover :items="trades" :fields="fields" caption-top>
+    <b-table striped hover small dark head-variant="dark" responsive :items="trades" :fields="fields" caption-top
+             :sort-by.sync="sortBy"
+             :sort-desc.sync="sortDesc">
       <template slot="table-caption">
-        {{_.startCase(tradeType)}} Trades
+        {{tradeType}} Trades {{resume}}
+      </template>
+      <template slot="commands" slot-scope="row">
+        <!-- we use @click.stop here to prevent emitting of a 'row-clicked' event  -->
+        <b-button size="sm" @click.stop="row.toggleDetails" class="mr-2">
+          {{ /*row.detailsShowing ? 'Hide' : 'Show'*/}} ...
+        </b-button>
+
+      </template>
+      <template slot="row-details" slot-scope="row">
+        <b-card>
+          <b-row class="mb-2">
+            <!--<b-col sm="3" class="text-sm-right"><b>Go Manual</b></b-col>-->
+            <b-col>
+              <b-button size="sm" @click="row.toggleDetails">Go Manual</b-button>
+            </b-col>
+          </b-row>
+          <b-row class="mb-2">
+            <b-col>
+              <b-button size="sm" @click="row.toggleDetails">Sell Now</b-button>
+            </b-col>
+          </b-row>
+          <b-button size="sm" @click="row.toggleDetails">End</b-button>
+        </b-card>
       </template>
     </b-table>
   </div>
@@ -26,71 +51,80 @@
 
   export default {
     name: 'trades',
+    props: ['type'],
     data() {
       return {
-        // open/closed
-        tradeType: '',
         sound: null,
         trades: [],
+        sortBy: 'time',
+        sortDesc: true,
         fields: [
-          { key: 'time', formatter: formatTime },
-          'symbol',
+          { key: 'time', formatter: value => formatTime(value), sortable: true },
+          { key: 'symbol', sortable: true },
           { key: 'buyPrice', formatter: fixed8 },
           { key: 'sellPrice', formatter: fixed8 },
           { key: 'lastPrice', formatter: fixed8 },
-          { key: 'minGain', formatter: fixed2 },
-          {
-            key: 'gainOrLoss',
-            formatter: (value, key, item) => {
-              Object.assign(item, { _cellVariants: { gainOrLoss: value < 0 ? 'danger' : 'success' } });
-              return fixed2(value);
-            },
-          },
-          { key: 'maxGain', formatter: fixed2 },
-          { key: 'target', formatter: fixed2 },
+          { key: 'minGain', formatter: fixed2, sortable: true },
+          { key: 'gainOrLoss', formatter: fixed2, sortable: true },
+          { key: 'maxGain', formatter: fixed2, sortable: true },
+          { key: 'target', formatter: fixed2, sortable: true },
           { key: 'tradeDuration', formatter: (v, k, item) => moment.duration(Date.now() - item.time).humanize() },
           {
-            key: 'update', formatter: update => update ? `+${update}` : '', // eslint-disable-line no-confusing-arrow
+            key: 'update', formatter: update => update ? `+${update}` : '', sortable: true, // eslint-disable-line no-confusing-arrow
           },
+          'commands',
         ],
       };
     },
     // components: { Trade },
     mounted() {
       this.$nextTick(() => {
-        this.listenToEvents();
+        // this.listenToEvents();
       });
     },
     computed: {
-      // allTrades() {
-      //   return [].concat(this.trades, this.finishedTrades);
-      // },
+      tradeType() {
+        this.listenToEvents();
+        return _.startCase(this.type);
+      },
+      resume() {
+        if (this.type === 'closed') {
+          const all = this.trades.length;
+          const win = _(this.trades).filter(t => t._moon_).reject(t => t._moon_ === 'danger').value().length;
+          const lost = _(this.trades).filter(t => t._moon_).filter(t => t._moon_ === 'danger').value().length;
+          const gain = (win + lost) && ((win - lost) / (win + lost)).toFixed(2);
+          if (gain) {
+            return `Win: ${win} Lost: ${lost} All: ${all} Gain: ${gain}%`;
+          }
+        }
+        return '';
+      },
     },
     watch: {
+      type() {
+        this.listenToEvents();
+      },
       trades(newTrades, oldTrades) {
-        this.sendResume();
         this.emitSound(newTrades, oldTrades);
+        this.setColor();
       },
     },
     methods: {
-      // addTrade(trade) {
-      //   _.extend(trade, { tradeDuration: trade.effectiveDuration || trade.tradeDuration });
-      //   this.trades.unshift(trade);
-      // },
-      // endTrade(trade) {
-      //   this.finishedTrades.unshift(trade);
-      //   // this.trades.splice(_.findIndex(this.trades, { id: trade.id }), 1);
-      // },
-      //
-      // changeTrade(trade) {
-      //   const oldTrade = _.find(this.trades, { id: trade.id });
-      //   _.extend(oldTrade, trade);
-      //   this.trades = [].concat(this.trades);
-      // },
-
+      setColor() {
+        _.forEach(this.trades, item => Object.assign(item, {
+          _cellVariants: { gainOrLoss: item.gainOrLoss < 0 ? 'danger' : 'success' },
+          _rowVariant: (() => {
+            let moon;
+            if (item.maxGain >= item.target) moon = 'info';
+            else if (item.maxGain >= 0.4  /* env.SELL_LIMIT_PERCENT */) moon = 'success';
+            else if (item.minGain <= -1 /* env.STOP_LOSS_PERCENT */) moon = 'danger';
+            return moon;
+          })(),
+        }));
+      },
       emitSound(newTrades, oldTrades) {
         const start = newTrades.length > oldTrades.length;
-        const end = newTrades.length < oldTrades.trades.length;
+        const end = newTrades.length < oldTrades.length;
         if (start) {
           this.sound = startSound;
         } else if (end) {
@@ -103,19 +137,7 @@
         this.trades = _.values(trades);
       },
       listenToEvents() {
-        appEmitter.on(`trades:${this.tradeType}`, this.addTrades);
-        // appEmitter.on('trade_start', this.addTrade);
-        // appEmitter.on('trade_end', this.endTrade);
-        // appEmitter.on('trade_change', this.changeTrade);
-      },
-      sendResume() {
-        const all = this.trades.length;
-        const win = _(this.trades).filter(t => t._moon_).reject(t => t._moon_ === 'danger').value().length;
-        const lost = _(this.trades).filter(t => t._moon_).filter(t => t._moon_ === 'danger').value().length;
-        const gain = (win + lost) && ((win - lost) / (win + lost)).toFixed(2);
-        if (gain) {
-          appEmitter.emit('trade_resume', `Win: ${win} Lost: ${lost} All: ${all} Gain: ${gain}%`);
-        }
+        appEmitter.on(`trades:${this.type}`, this.addTrades);
       },
     },
   };

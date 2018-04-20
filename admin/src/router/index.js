@@ -1,47 +1,64 @@
-import _ from 'lodash';
+// import _ from 'lodash';
 import Vue from 'vue';
 import Router from 'vue-router';
-import Hello from '@/components/Hello';
+// import Hello from '@/components/Hello';
 import Trades from '@/components/Trades';
 import Errors from '@/components/Errors';
-// import Hello from '@/components/Hello';
-// import Hello from '@/components/Hello';
-// import Hello from '@/components/Hello';
-// import Hello from '@/components/Hello';
 
 Vue.use(Router);
 
-class OpenTrades extends Trades {
-  data() {
-    return _.extend(super.data(), { tradeType: 'open' });
-  }
-}
+// class OpenTrades extends Trades {
+//   // data() {
+//   //   // return _.extend(super.data(), { tradeType: 'open' });
+//   //   return {};
+//   // }
+// }
+//
+// class ClosedTrades extends Trades {
+//   // data() {
+//   //   // return _.extend(super.data(), { tradeType: 'closed' });
+//   //   return {};
+//   // }
+// }
 
-class ClosedTrades extends Trades {
-  data() {
-    return _.extend(super.data(), { tradeType: 'closed' });
-  }
-}
+// const OpenTrades = Trades;
+// const ClosedTrades = Trades;
 
 export default new Router({
   routes: [
     {
       path: '/',
-      name: 'M24',
-      components: { Hello, OpenTrades, ClosedTrades, Errors },
-      // component: Hello,
-      // children: [
-      //   {
-      //     path: 'open',
-      //     component: Trades,
-      //     props: { tradeType: 'open' },
-      //   },
-      //   {
-      //     path: 'closed',
-      //     component: Trades,
-      //     props: { tradeType: 'closed' },
-      //   },
-      // ],
+      alias: '/open',
+      name: 'open',
+      component: Trades,
+      // props: true,
+      // props: { type1: true },
+      props: { type: 'open' },
     },
+    {
+      name: 'openz',
+      path: 'openz',
+      component: Errors,
+      props: { type: 'open' },
+    },
+    //
+    // path: '/open',
+    // name: 'open',
+    // component: { Hello, OpenTrades, ClosedTrades, Errors },
+    // components: { Hello, OpenTrades, ClosedTrades, Errors },
+    // component: Hello,
+    // children: [
+    //   {
+    //     path: 'open',
+    //     component: Trades,
+    //     props: { tradeType: 'open' },
+    //   },
+    //   {
+    //     path: 'closed',
+    //     component: Trades,
+    //     props: { tradeType: 'closed' },
+    //   },
+    // ],
+
   ],
 });
