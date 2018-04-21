@@ -21,7 +21,7 @@ module.exports = {
     settings: [
 
         {
-            indicator: '24H_TREND', check: true, weight: 1, mandatory: true, options: { minChangePercent: 2 }
+            indicator: '24H_TREND', check: false, weight: 1, mandatory: true, options: { minChangePercent: 2 }
         },
         {
             indicator: 'LONG_TREND', check: true, weight: 1, bonus: false, mandatory: true,
@@ -79,8 +79,8 @@ module.exports = {
         '24H_TREND'({ weight, signal24h, options }) {
             // let ok = Boolean(signal24h) && (signal24h.changePercent >= options.minChangePercent);
             // let ok = Boolean(signal24h) && (signal24h.percentage >= options.minChangePercent);
-            let ok = Boolean(signal24h) && (signal24h.percentage >= signal24h.meanPercentage);
-            return +ok && weight;
+            // let ok = Boolean(signal24h) && (signal24h.percentage >= signal24h.meanPercentage);
+            // return +ok && weight;
         },
 
         BID_ASK_VOLUME({ weight, depth, options }) {
