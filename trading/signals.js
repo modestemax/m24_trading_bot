@@ -160,24 +160,24 @@ async function fetchTickers() {
     }
 }
 
-// function getOthersSignals({ indicator, rate }) {
-//
-//     appEmitter.once('app:fetch_24h_trend', function () {
-//         // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
-//         fetchTickers();
-//     });
-//
-//     appEmitter.once('app:fetch_long_trend', function () {
-//         switch (Number(TIMEFRAME)) {
-//             case 15:
-//                 getSignals({ data: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
-//                 break;
-//             case 60:
-//                 getSignals({ data: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
-//                 break;
-//         }
-//     });
-// }
+function getOthersSignals({ indicator, rate }) {
+
+    appEmitter.once('app:fetch_24h_trend', function () {
+        // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+        fetchTickers();
+    });
+
+    appEmitter.once('app:fetch_long_trend', function () {
+        switch (Number(TIMEFRAME)) {
+            case 15:
+                getSignals({ data: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
+                break;
+            case 60:
+                getSignals({ data: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
+                break;
+        }
+    });
+}
 
 env.timeframes.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
 
@@ -187,7 +187,8 @@ env.timeframes.forEach((timeframe) => getSignals({ options: params({ timeframe }
 // getSignals({ options: params({ timeframe: '1D' }) });
 
 
-// getOthersSignals({ indicator: 'LONG_TREND', rate: 60e3 * 2 });
+
+getOthersSignals({ indicator: 'LONG_TREND', rate: 60e3 * 2 });
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');

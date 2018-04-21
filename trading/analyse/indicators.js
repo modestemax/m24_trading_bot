@@ -20,17 +20,17 @@ const minCount = process.env.MIN_COUNT || 2;
 module.exports = {
     settings: [
         {
-            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .15 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
             indicator: 'LONG_TREND', check: false, weight: .5, bonus: true, mandatory: false,
             options: { minChangePercent: 1 }
         },
         {
-            indicator: '24H_TREND', check: false, weight: 1, mandatory: true, options: { minChangePercent: 2 }
+            indicator: '24H_TREND', check: true, weight: 1, mandatory: true, options: { minChangePercent: 2 }
         },
         {
-            indicator: 'BID_ASK_VOLUME', check: false, weight: 1, mandatory: false,
+            indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
             indicator: 'EMA', check: true, weight: 1, mandatory: true, options: { minDistance: .1, minCount: minCount }
