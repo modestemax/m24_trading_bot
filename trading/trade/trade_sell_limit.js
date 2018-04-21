@@ -11,7 +11,7 @@ const {
     , getTotalBaseCurBalance, getFreeBalance, getTicker, getAllPrices,
     getLastBuyOrder, getLastStopLossOrder, getBalances,
     getTradeRatio, getQuoteTradableQuantity, getTrailingChangePercent,
-    getStopLossPercent, getTradeAmount, getUsedBalance, fetchTicker, noFetchTicker
+    getStopLossPercent, getTradeAmount, getUsedBalance, fetchTicker, noFetchTicker, getTimeframeDuration
 } = require('../utils')();
 
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME } = env;
@@ -24,7 +24,7 @@ const closedTrades = [];
  * cet evenement effectue un trade complet
  * achat, vente mise à jour et stop des pertes
  */
-appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
+appEmitter.prependListener('analyse:try_trade', async ({ market, signal24h }) => {
     doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
@@ -86,6 +86,11 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
             let amount = await getTradeAmount({ symbol, price: buyPrice });
 
             if (amount) {
+                //get the sell price
+                let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                if (sellPrice >= signal24h.high) {
+                    return
+                }
                 //prepare canceling order if not buy on time
                 let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
 
@@ -95,8 +100,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market }) => {
                 //for the bid to succeed or cancal it after some time
                 await waitOrCancelOrder(buyOrder);
                 fetchTicker({ symbol });
-                //get the sell price
-                let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+
                 //get the stop loss price
                 let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
 
@@ -251,7 +255,8 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
         stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
-        if (ticker.last <= stopPrice || (Date.now() - startTime) >= maxWait) {
+        const duration = (Date.now() - startTime);
+        if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) || duration >= maxWait) {
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);

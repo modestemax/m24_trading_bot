@@ -19,15 +19,16 @@ const minCount = process.env.MIN_COUNT || 2;
 
 module.exports = {
     settings: [
-        {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
-        },
-        {
-            indicator: 'LONG_TREND', check: false, weight: .5, bonus: true, mandatory: false,
-            options: { minChangePercent: 1 }
-        },
+
         {
             indicator: '24H_TREND', check: true, weight: 1, mandatory: true, options: { minChangePercent: 2 }
+        },
+        {
+            indicator: 'LONG_TREND', check: true, weight: 1, bonus: false, mandatory: true,
+            options: { minChangePercent: 0.1 }
+        },
+        {
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
@@ -75,10 +76,10 @@ module.exports = {
             let ok = Boolean(longSignal) && (longSignal.changePercent >= options.minChangePercent);
             return +ok && weight
         },
-
         '24H_TREND'({ weight, signal24h, options }) {
             // let ok = Boolean(signal24h) && (signal24h.changePercent >= options.minChangePercent);
-            let ok = Boolean(signal24h) && (signal24h.percentage >= options.minChangePercent);
+            // let ok = Boolean(signal24h) && (signal24h.percentage >= options.minChangePercent);
+            let ok = Boolean(signal24h) && (signal24h.percentage >= signal24h.meanPercentage);
             return +ok && weight;
         },
 
@@ -118,7 +119,7 @@ module.exports = {
                     && isSorted((indicators.ema20), options.minCount)
                     // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
                     && indicators.ema_distance > options.minDistance
-                    && indicators.ema_distance >= indicators.ema_0_distance;
+                    // && indicators.ema_distance >= indicators.ema_0_distance;
 
                 ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
             }
@@ -172,7 +173,7 @@ module.exports = {
                     && isSorted((indicators.macd_signal), options.minCount)
                     // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
                     && indicators.macd_distance > options.minDistance
-                    && indicators.macd_distance >= indicators.macd_0_distance;
+                    // && indicators.macd_distance >= indicators.macd_0_distance;
 
 
             }
@@ -235,7 +236,7 @@ module.exports = {
                     && _.last(_.initial(adx)) > options.buyReference
                     && plus_di_cur > minus_di_cur
                     && indicators.adx_di_distance > options.minDIDistance
-                    && indicators.adx_di_distance > indicators.adx_di_0_distance
+                    // && indicators.adx_di_distance >= indicators.adx_di_0_distance
                 // && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
                 // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
                 // && adx_trendingUp
@@ -310,6 +311,7 @@ function distance(pointA, pointB) {
     _.forEach(module.exports.settings, s => {
         if (s.bonus && s.mandatory) {
             emitException("Indicator " + s.indicator + " has bad config BONUS+MANDATORY")
+            process.exit(1);
         }
     })
 }();

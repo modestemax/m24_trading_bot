@@ -69,16 +69,21 @@ function getNewIndicators({ signal, lastSignal }) {
             prevIndicators[indKey].length > 1 && prevIndicators[indKey].pop();
             prevIndicators[indKey].push(indValue);
         }
-        if (prevIndicators[indKey].length > 1) {
-            let [oldValue, newValue] = prevIndicators[indKey].slice(-2);
-            // lastSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
-            // lastSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
-        }
+        // if (prevIndicators[indKey].length > 1) {
+        //     let [oldValue, newValue] = prevIndicators[indKey].slice(-2);
+        //     // lastSignal.indicators[indKey + '_trendingUp'] = oldValue < newValue;
+        //     // lastSignal.indicators[indKey + '_trendingDown'] = oldValue > newValue;
+        // }
         return prevIndicators;
     }, lastSignal.indicators);
 }
 
 function getSignalResult({ signal24h, depth, signal, longSignal }) {
+    signal24h = signal24h && _.cloneDeep(signal24h);
+    signal = signal && _.cloneDeep(signal);
+    longSignal = longSignal && _.cloneDeep(longSignal);
+    depth = depth && _.cloneDeep(depth);
+
     let { symbol } = signal;
     let lastSignal = symbolsData[symbol] = symbolsData[symbol] || signal;
     lastSignal.indicators = getNewIndicators({ signal, lastSignal });

@@ -21,35 +21,48 @@ function listenToEvents() {
         addSymbolData({ symbol: depth.symbol, prop: 'depth', data: depth });
         // checkSignal(symbolsDta[ticker.symbol])
     });
-    appEmitter.on('tv:signals_long_timeframe', ({ markets }) => {
-        _.forEach(markets, market => {
-            addSymbolData({ symbol: market.symbol, prop: 'longSignal', data: market });
-            // checkSignal(symbolsDta[market.symbol])
-        });
-    });
+    // appEmitter.on('tv:signals:long', ({ markets }) => {
+    //     _.forEach(markets, market => {
+    //         addSymbolData({ symbol: market.symbol, prop: 'longSignal', data: market });
+    //         // checkSignal(symbolsDta[market.symbol])
+    //     });
+    // });
     const signalsTimeframes = {};
-    appEmitter.on('tv:signals', ({ markets, timeframe }) => {
+    appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
         signalsTimeframes[timeframe] = markets;
+        timeframe == env.TIMEFRAME && await analyse();
     });
 
     async function analyse() {
         const [markets] = _.values(signalsTimeframes);
         await Promise.each(_.keys(markets), async (symbol) => {
-            await Promise.each(_.keys(signalsTimeframes), async (timeframe) => {
+            await Promise.each(env.timeframes, async (timeframe) => {
                 let market = signalsTimeframes[timeframe][symbol];
+                let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
+                let longMarket = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol];
                 addSymbolData({ symbol: market.symbol, prop: 'signal', data: market, timeframe });
+                longMarket && addSymbolData({ symbol: market.symbol, prop: 'longSignal', data: longMarket, timeframe });
                 checkSignal(symbolsDta[timeframe][market.symbol]);
                 delete symbolsDta[timeframe][market.symbol].depth;
             });
-        }).finally(() => setTimeout(analyse, 1e3));
+        })
+        //     .finally(gotNewSignal().then(analyse));
+        //
+        // function gotNewSignal() {
+        //     return new Promise(resolve => {
+        //         appEmitter.once('tv:signals', () => {
+        //             resolve();
+        //         });
+        //     })
+        // }
     }
 
-    analyse();
+    // analyse();
 
-    async function addSymbolData({ symbol, prop, data, timeframe }) {
+    async function addSymbolData({ symbol, prop, data, timeframe = env.TIMEFRAME }) {
         symbolsDta[timeframe] = symbolsDta[timeframe] || {};
         let tickerData = symbolsDta[timeframe][symbol] = symbolsDta[timeframe][symbol] || {};
-        tickerData[prop] = Object.assign(data, { timeframe });
+        tickerData[prop] = data && Object.assign(data, { timeframe });
     }
 
 //  const trying = {};
@@ -60,11 +73,7 @@ function listenToEvents() {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
         buyTimeframes[symbol] [timeframe] = true;
 
-        if (_.reduce(timeframes, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true)) {
-            return true;
-        } else {
-            return false
-        }
+        return !!_.reduce(timeframes, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
     function noBuy({ symbol, timeframe }) {
@@ -76,7 +85,7 @@ function listenToEvents() {
         let { symbol, timeframe } = signal;
         let { buy, signal: market, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
         if (buy && tryBuy({ symbol, timeframe })) {
-            appEmitter.emit('analyse:try_trade', { market });
+            appEmitter.emit('analyse:try_trade', { market, signal24h });
             // if (symbol==='BNB/BTC') {
             // fetchTicker({ symbol }); //this is used for trading
             // /*ticker &&*/ appEmitter.emit('analyse:try_trade', { market, /*ticker*/ });
@@ -91,7 +100,7 @@ function listenToEvents() {
             // }
 
         } else if (!buy) {
-            setTimeout(() => noBuy({ symbol, timeframe }), 30e3);
+            noBuy({ symbol, timeframe });
             if (signalResult.signalWeightPercent > 49 / 100) {
                 appEmitter.emit('analyse:tracking', { symbol, signalResult });
                 appEmitter.emit('analyse:tracking:' + symbol, { symbol, signalResult });

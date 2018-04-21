@@ -86,12 +86,12 @@ let sockets = [];
 function socketSend(data) {
     sockets = _.compact(sockets).filter(socket => {
         if ((socket.connected)) {
-           try{
-               socket.send(data);
-               return true
-           }catch (e) {
-               emitException(e)
-           }
+            try {
+                socket.send(data);
+                return true
+            } catch (e) {
+                emitException(e)
+            }
         }
     });
 }
@@ -128,7 +128,7 @@ function formatTrade(trade) {
                     trade._moon_ = moon;
             }
             trade._moon_ && (trade.effectiveDuration = trade.effectiveDuration || trade.tradeDuration);
-            trade._moon_ && appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade: { price: trade.sellPrice } }));
+            trade._moon_ && trade._moon_ !== 'danger' && appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade: { price: trade.sellPrice } }));
             return trade._moon_;
         })()
     });

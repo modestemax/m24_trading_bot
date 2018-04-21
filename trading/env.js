@@ -60,9 +60,10 @@ module.exports = Model.Settings.load().then(async settings => {
         SECRET: api.secret
     });
     global.env.timeframes = [
-        15,
-        60,
-         240,
+        env.TIMEFRAME
+        // 15,
+        // 60,
+        //  240,
         // '1D',
     ];
     return settings;
