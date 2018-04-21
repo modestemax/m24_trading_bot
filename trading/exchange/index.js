@@ -122,11 +122,20 @@ async function loadExchange() {
     });
 
     await exchange.loadMarkets();
-
+    overrideExchange(exchange);
     const internal = require(`./${exchangeId}`)(exchange);
     debug('market loaded for ' + EXCHANGE);
     return { exchange, internal };
 }
 
+function overrideExchange(exchange) {
+    exchange.createStopLimitBuyOrder = async function (symbol, amount,  limitPrice, stopPrice, options) {
+        return exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'buy', amount, void 0, _.extend({
+            stopPrice,
+            price: limitPrice,
+        }, options));
+    }
+
+}
 
 // module.exports.loadExchange = async () => exchangePromise;

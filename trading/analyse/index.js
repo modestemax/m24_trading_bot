@@ -72,7 +72,7 @@ function listenToEvents() {
     function tryBuy({ symbol, timeframe }) {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
         buyTimeframes[symbol] [timeframe] = true;
-
+debugger
         return !!_.reduce(timeframes, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 

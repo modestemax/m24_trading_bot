@@ -14,7 +14,7 @@ const {
     getStopLossPercent, getTradeAmount, getUsedBalance, fetchTicker, noFetchTicker, getTimeframeDuration
 } = require('../utils')();
 
-const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME } = env;
+const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME, START_TRADE_BUY_PERCENT } = env;
 
 const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
 const tradings = {};
@@ -28,7 +28,10 @@ appEmitter.prependListener('analyse:try_trade', async ({ market, signal24h }) =>
     doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
-        let { symbol, close: buyPrice } = market;
+        let { symbol, close } = market;
+
+        let buyPrice = updatePrice({ price: close, percent: START_TRADE_BUY_PERCENT });
+        let stopPrice = buyPrice;
 
         //for debug
         // if (_.keys(tradings).length) return;
@@ -88,14 +91,15 @@ appEmitter.prependListener('analyse:try_trade', async ({ market, signal24h }) =>
             if (amount) {
                 //get the sell price
                 let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
-                if (sellPrice >= signal24h.high) {
-                    return
-                }
+                // if (sellPrice >= signal24h.high) {
+                //     // return
+                // }
                 //prepare canceling order if not buy on time
                 let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
 
                 //bid
-                let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+                // let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+                let buyOrder = await exchange.createStopLimitBuyOrder(symbol, amount, buyPrice, stopPrice, { "timeInForce": "FOK", });
 
                 //for the bid to succeed or cancal it after some time
                 await waitOrCancelOrder(buyOrder);

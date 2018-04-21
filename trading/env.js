@@ -38,7 +38,7 @@ module.exports = Model.Settings.load().then(async settings => {
         }, appStartupParams, settings,
         {
             QUOTE_CUR_QTY: .006,
-            START_TRADE_BUY_PERCENT: 0,//-.4,
+            START_TRADE_BUY_PERCENT: 0.2,//-.4,
             // TRADING_STRATEGY:'TRAILLING_STOP_LOSS',
             TRADING_STRATEGY: 'SELL_LIMIT',
             SELL_LIMIT_PERCENT: 1.1,
