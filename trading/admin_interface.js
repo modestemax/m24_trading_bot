@@ -86,8 +86,12 @@ let sockets = [];
 function socketSend(data) {
     sockets = _.compact(sockets).filter(socket => {
         if ((socket.connected)) {
-            socket.send(data);
-            return true
+           try{
+               socket.send(data);
+               return true
+           }catch (e) {
+               emitException(e)
+           }
         }
     });
 }
