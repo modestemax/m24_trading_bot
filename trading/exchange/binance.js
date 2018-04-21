@@ -192,18 +192,26 @@ module.exports = function (exchange) {
     function overrideExchange() {
         let rateLimits = [];
         const ORDERS_PER_SECOND = 10, SECOND = 1e3;
+        let overflow;
 
         async function orderSync() {
-            let time = new Date().getTime();
-            if (rateLimits.length < ORDERS_PER_SECOND) {
-                rateLimits.push(time)
+
+            if (rateLimits.length < ORDERS_PER_SECOND - 1) {
+                rateLimits.push(Date.now())
             } else {
-                let runTime10 = _.last(rateLimits) - _.first(rateLimits);
-                if (runTime10 < SECOND) {
-                    await exchange.sleep(SECOND - runTime10)
+                if (!overflow) {
+                    overflow = true;
+                    let runTime10 = _.last(rateLimits) - _.first(rateLimits);
+                    if (runTime10 < SECOND) {
+                        await exchange.sleep(SECOND - runTime10)
+                    }
+                } else {
+                    await exchange.sleep(0);
+                    return orderSync();
                 }
                 rateLimits.shift();
-                rateLimits.push(time);
+                rateLimits.push(Date.now());
+                overflow = false;
             }
         }
 

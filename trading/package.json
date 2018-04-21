@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "binance-api-node": "^0.7.4",
+    "bluebird": "^3.5.1",
     "ccxt": "^1.12.10",
     "curl": "^0.1.4",
     "debug": "^3.1.0",

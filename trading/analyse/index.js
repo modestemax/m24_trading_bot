@@ -1,5 +1,6 @@
 const debug = require('debug')('analyse');
 const _ = require('lodash');
+const Promise = require('bluebird');
 const { getSignalResult } = require('../analyse/analyser');
 let { settingsByIndicators: indicatorSettings } = require('./indicators');
 
@@ -8,6 +9,9 @@ const { fetchDepth, fetch24HTrend, fetchLongTrend } = require('../utils')();
 function listenToEvents() {
 
     const symbolsDta = {};
+    const timeframes = env.timeframes;
+
+
     appEmitter.on('tv:signals_24h', ({ markets }) => {
         _.forEach(markets, market => {
             addSymbolData({ symbol: market.symbol, prop: 'signal24h', data: market });
@@ -23,25 +27,55 @@ function listenToEvents() {
             // checkSignal(symbolsDta[market.symbol])
         });
     });
-    appEmitter.on('tv:signals', ({ markets }) => {
-        _.forEach(markets, market => {
-            addSymbolData({ symbol: market.symbol, prop: 'signal', data: market });
-            checkSignal(symbolsDta[market.symbol]);
-            delete symbolsDta[market.symbol].depth;
-        });
+    const signalsTimeframes = {};
+    appEmitter.on('tv:signals', ({ markets, timeframe }) => {
+        signalsTimeframes[timeframe] = markets;
     });
 
-    function addSymbolData({ symbol, prop, data }) {
-        let tickerData = symbolsDta[symbol] = symbolsDta[symbol] || {};
-        tickerData[prop] = data;
+    async function analyse() {
+        const [markets] = _.values(signalsTimeframes);
+        await Promise.each(_.keys(markets), async (symbol) => {
+            await Promise.each(_.keys(signalsTimeframes), async (timeframe) => {
+                let market = signalsTimeframes[timeframe][symbol];
+                addSymbolData({ symbol: market.symbol, prop: 'signal', data: market, timeframe });
+                checkSignal(symbolsDta[timeframe][market.symbol]);
+                delete symbolsDta[timeframe][market.symbol].depth;
+            });
+        }).finally(() => setTimeout(analyse, 1e3));
     }
 
-    //  const trying = {};
+    analyse();
+
+    async function addSymbolData({ symbol, prop, data, timeframe }) {
+        symbolsDta[timeframe] = symbolsDta[timeframe] || {};
+        let tickerData = symbolsDta[timeframe][symbol] = symbolsDta[timeframe][symbol] || {};
+        tickerData[prop] = Object.assign(data, { timeframe });
+    }
+
+//  const trying = {};
+    const buyTimeframes = {}
+
+
+    function tryBuy({ symbol, timeframe }) {
+        buyTimeframes[symbol] = buyTimeframes[symbol] || {};
+        buyTimeframes[symbol] [timeframe] = true;
+
+        if (_.reduce(timeframes, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true)) {
+            return true;
+        } else {
+            return false
+        }
+    }
+
+    function noBuy({ symbol, timeframe }) {
+        buyTimeframes[symbol] && buyTimeframes[symbol][timeframe] && delete buyTimeframes[symbol][timeframe];
+    }
+
 
     async function checkSignal({ signal24h, depth, signal, longSignal }) {
-        let { symbol } = signal;
-        let { buy, signal: market, signalResult } = getSignalResult({ signal24h, depth, signal, longSignal });
-        if (buy) {
+        let { symbol, timeframe } = signal;
+        let { buy, signal: market, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
+        if (buy && tryBuy({ symbol, timeframe })) {
             appEmitter.emit('analyse:try_trade', { market });
             // if (symbol==='BNB/BTC') {
             // fetchTicker({ symbol }); //this is used for trading
@@ -56,7 +90,8 @@ function listenToEvents() {
             // }
             // }
 
-        } else {
+        } else if (!buy) {
+            setTimeout(() => noBuy({ symbol, timeframe }), 30e3);
             if (signalResult.signalWeightPercent > 49 / 100) {
                 appEmitter.emit('analyse:tracking', { symbol, signalResult });
                 appEmitter.emit('analyse:tracking:' + symbol, { symbol, signalResult });

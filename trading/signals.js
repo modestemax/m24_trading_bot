@@ -6,44 +6,51 @@ const appEmitter = require('./events');
 let { QUOTE_CUR, EXCHANGE, TIMEFRAME } = env;
 
 
-const debug2 = _.throttle((msg) => debug(msg), 30e3);
+const debug2 = () => _.throttle((msg) => debug(msg), 30e3);
 const exchange = global.exchange;
 
-const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => ((timeframe = /1d/i.test(timeframe) ? '' : '|' + timeframe), {
-    "filter": [
-        { "left": "change" + timeframe, "operation": "nempty" },
-        { "left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase() },
-        { "left": "name,description", "operation": "match", "right": tradingCurrency + "$" }
-    ],
-    "symbols": { "query": { "types": [] } },
-    "columns": [
-        "name"
-        , "close" + timeframe
-        , "change" + timeframe
-        , "high" + timeframe
-        , "low" + timeframe
-        , "volume" + timeframe
-        , "Recommend.All" + timeframe
-        , "exchange"
-        , "description"
-        , "ADX" + timeframe
-        , "ADX-DI" + timeframe
-        , "ADX+DI" + timeframe
-        , "RSI" + timeframe
-        , "EMA10" + timeframe
-        , "EMA20" + timeframe
-        , "MACD.macd" + timeframe
-        , "MACD.signal" + timeframe
-        , "Aroon.Up" + timeframe
-        , "Aroon.Down" + timeframe
-        , "VWMA" + timeframe
-        , "open" + timeframe
-        , "change_from_open" + timeframe
-    ],
-    "sort": { "sortBy": "change" + timeframe, "sortOrder": "desc" },
-    "options": { "lang": "en" },
-    "range": [0, 150]
-});
+const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => {
+    let timeframeFilter = /1d/i.test(timeframe) ? '' : '|' + timeframe;
+    return {
+        timeframe,
+        data: {
+            "filter": [
+                { "left": "change" + timeframeFilter, "operation": "nempty" },
+                { "left": "exchange", "operation": "equal", "right": exchangeId.toUpperCase() },
+                { "left": "name,description", "operation": "match", "right": tradingCurrency + "$" }
+            ],
+            "symbols": { "query": { "types": [] } },
+            "columns": [
+                "name"
+                , "close" + timeframeFilter
+                , "change" + timeframeFilter
+                , "high" + timeframeFilter
+                , "low" + timeframeFilter
+                , "volume" + timeframeFilter
+                , "Recommend.All" + timeframeFilter
+                , "exchange"
+                , "description"
+                , "ADX" + timeframeFilter
+                , "ADX-DI" + timeframeFilter
+                , "ADX+DI" + timeframeFilter
+                , "RSI" + timeframeFilter
+                , "EMA10" + timeframeFilter
+                , "EMA20" + timeframeFilter
+                , "MACD.macd" + timeframeFilter
+                , "MACD.signal" + timeframeFilter
+                , "Aroon.Up" + timeframeFilter
+                , "Aroon.Down" + timeframeFilter
+                , "VWMA" + timeframeFilter
+                , "open" + timeframeFilter
+                , "change_from_open" + timeframeFilter
+            ],
+            "sort": { "sortBy": "change" + timeframeFilter, "sortOrder": "desc" },
+            "options": { "lang": "en" },
+            "range": [0, 150]
+        }
+    }
+
+};
 
 const beautify = (data) => {
     let time = new Date().getTime();
@@ -107,11 +114,17 @@ const beautify = (data) => {
                 return (strength(int) === 1 ? 'Strong ' : '') + signal(int)
             }
         }
-    ).filter(d=>d).groupBy('symbol').mapValues(([v]) => v).value()
+    ).filter(d => d).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
-function getSignals({ data = params(), longTimeframe = false, signal24h = false, indicator = 'SIGNAL_TREND', rate = 1e3 } = {}) {
+function getSignals({ options = params(), rate = 1e3 } = {}) {
+
     const args = arguments;
+    const { data, timeframe } = options;
+
+    let debug = getSignals.debug = getSignals.debug || {};
+    debug = debug[timeframe] = debug[timeframe] || debug2();
+
     const url = 'https://scanner.tradingview.com/crypto/scan';
     curl.postJSON(url, data, (err, res, data) => {
         try {
@@ -119,21 +132,15 @@ function getSignals({ data = params(), longTimeframe = false, signal24h = false,
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
                     let beautifyData = beautify(jsonData.data);
-                    debug2(`signals ${indicator} ${_.keys(beautifyData).length} symbols loaded`);
-                    if (longTimeframe) {
-                        return setImmediate(() => appEmitter.emit('tv:signals_long_timeframe', { markets: beautifyData }))
-                    } else if (signal24h) {
-                        return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: beautifyData }))
-                    } else {
-                        return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData }))
-                    }
+                    debug(`signals ${timeframe} ${_.keys(beautifyData).length} symbols loaded`);
+                    return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData, timeframe }))
                 }
                 err = jsonData.error;
             }
-            throw err;
+            err && emitException(err)
         } catch (ex) {
             setImmediate(() => appEmitter.emit('tv:signals-error', ex));
-            log('signals exception:' + indicator + ex);
+            log('signals exception:' + timeframe + ' ' + ex);
             emitException(ex)
         } finally {
             setTimeout(() => getSignals.apply(null, args), rate);
@@ -153,29 +160,34 @@ async function fetchTickers() {
     }
 }
 
-function getOthersSignals({ indicator, rate }) {
+// function getOthersSignals({ indicator, rate }) {
+//
+//     appEmitter.once('app:fetch_24h_trend', function () {
+//         // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+//         fetchTickers();
+//     });
+//
+//     appEmitter.once('app:fetch_long_trend', function () {
+//         switch (Number(TIMEFRAME)) {
+//             case 15:
+//                 getSignals({ data: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
+//                 break;
+//             case 60:
+//                 getSignals({ data: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
+//                 break;
+//         }
+//     });
+// }
 
-    appEmitter.once('app:fetch_24h_trend', function () {
-        // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
-        fetchTickers();
-    });
+env.timeframes.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
 
-    appEmitter.once('app:fetch_long_trend', function () {
-        switch (Number(TIMEFRAME)) {
-            case 15:
-                getSignals({ data: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
-                break;
-            case 60:
-                getSignals({ data: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
-                break;
-        }
-    });
-}
-
-getSignals({ data: params({ timeframe: TIMEFRAME }) });
+// getSignals({ options: params({ timeframe: 15 }) });
+// getSignals({ options: params({ timeframe: 60 }) });
+// getSignals({ options: params({ timeframe: 240 }) });
+// getSignals({ options: params({ timeframe: '1D' }) });
 
 
-getOthersSignals({ indicator: 'LONG_TREND', rate: 60e3 * 2 });
+// getOthersSignals({ indicator: 'LONG_TREND', rate: 60e3 * 2 });
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');

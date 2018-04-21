@@ -1,4 +1,5 @@
-const debug = require('debug')('analyse:index');
+const debug = require('debug')('analyse');
+const debug2 = require('debug')('analyse2');
 const _ = require('lodash');
 const { checkers: indicatorCheckers, settings: indicatorSettings, mandatoryIndicators } = require('./indicators');
 
@@ -43,7 +44,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
             return buy && signalResult.indicatorsResult[mInd];
         }, true)
     }
-    signalResult.symbol = signal.symbol;
+    Object.assign(signalResult, _.pick(signal, ['symbol', 'timeframe']));
     logSignalResult(signalResult);
     return signalResult;
 }
@@ -96,10 +97,12 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
 }
 
 function logSignalResult(signalResult) {
-    let strIndicators = _(signalResult.indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
-    let ok = signalResult.buy ? 'OK' : 'NOK';
-    let buyRatio = signalResult.signalWeight / signalResult.totalWeight;
-    buyRatio > 49 / 100 && debug(`${signalResult.symbol} ${signalResult.signalWeight}/${signalResult.totalWeight} ${strIndicators} -> ${ok}`);
+    let { symbol, buy, timeframe, indicatorsResult, signalWeight, totalWeight } = signalResult
+    let strIndicators = _(indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
+    let ok = buy ? 'OK' : 'NOK';
+    let buyRatio = signalWeight / totalWeight;
+    buyRatio > 49 / 100 && buy && debug(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators}  -> ${ok}`);
+    buyRatio > 49 / 100 && !buy && debug2(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators} -> ${ok}`);
 }
 
 
