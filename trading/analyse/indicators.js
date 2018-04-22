@@ -28,7 +28,7 @@ module.exports = {
             options: { minChangePercent: 0.1 }
         },
         {
-            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .15 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
@@ -113,9 +113,10 @@ module.exports = {
 
                 ok = ema10_cur > ema20_cur
                 ok = ok && indicators.ema_distance > options.minDistance
-                ok = ok && isSorted(_.initial(ema10), options.minCount)
+
                 // && indicators.ema_distance >= indicators.ema_0_distance;
                 if (signal.timeframe <= env.TIMEFRAME) {
+                    ok = ok && isSorted(_.initial(ema10), options.minCount)
                     ok = ok && isSorted((ema10), options.minCount)
                     ok = ok && isSorted((ema20), options.minCount)
                     ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
