@@ -62,10 +62,11 @@ module.exports = Model.Settings.load().then(async settings => {
 
     global.env.TIMEFRAMES = [
         // env.TIMEFRAME
-        5,
-        15,
-        60,
         240,
+        60,
+        15,
+        5,
+        // 3,
         // '1D',
     ];
     return settings;

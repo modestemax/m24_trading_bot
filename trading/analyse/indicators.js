@@ -112,12 +112,14 @@ module.exports = {
                 let ecarts20 = getEcarts(ema20);
 
                 ok = ema10_cur > ema20_cur
-                ok = ok && isSorted((ema10), options.minCount)
-                ok = ok && isSorted((ema20), options.minCount)
                 ok = ok && indicators.ema_distance > options.minDistance
+                ok = ok && isSorted(_.initial(ema10), options.minCount)
                 // && indicators.ema_distance >= indicators.ema_0_distance;
-
-                ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
+                if (signal.timeframe <= env.TIMEFRAME) {
+                    ok = ok && isSorted((ema10), options.minCount)
+                    ok = ok && isSorted((ema20), options.minCount)
+                    ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
+                }
             }
             return +ok && weight;
 
@@ -230,13 +232,13 @@ module.exports = {
                 ok = ok && plus_di_cur > minus_di_cur
                 ok = ok && indicators.adx_di_distance > options.minDIDistance
                 // && indicators.adx_di_distance >= indicators.adx_di_0_distance
-                ok = ok && isSorted((adx), options.minCount)
-                    && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
-                // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
-                // && isCrossingReference()
-                ok = ok && isSorted(ecarts)
-
-
+                if (signal.timeframe <= env.TIMEFRAME) {
+                    ok = ok && isSorted((adx), options.minCount)
+                        && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                    // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                    // && isCrossingReference()
+                    ok = ok && isSorted(ecarts)
+                }
             }
             return +ok && weight;
 

@@ -75,9 +75,7 @@ function listenToEvents() {
     const buyTimeframes = {}
 
 
-    function tryBuy({ symbol, timeframe, signalResult }) {
-        buyTimeframes[symbol] = buyTimeframes[symbol] || {};
-        buyTimeframes[symbol] [timeframe] = signalResult;
+    function tryBuy({ symbol, timeframe }) {
         let buySignals = buyTimeframes[symbol];
         let s5 = buySignals[5] || {};
         let s15 = buySignals[15] || {};
@@ -86,63 +84,53 @@ function listenToEvents() {
 
         //debugger
 
-        if (timeframe == TIMEFRAME) {
-            switch (timeframe) {
-                case 15:
-                    // return s5.strongBuy && s15.strongBuy && (s60.buy || s240.buy);
-                    return s5.strongBuy && s15.strongBuy && (s60.buy && s240.buy);
-            }
+        switch (timeframe) {
+            case 15:
+                // return s5.strongBuy && s15.strongBuy && (s60.buy || s240.buy);
+                return s5.strongBuy && s15.strongBuy && (s60.trendingUp && s240.trendingUp);
         }
         // return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
-    function noBuy({ symbol, timeframe }) {
-        buyTimeframes[symbol] && buyTimeframes[symbol][timeframe] && delete buyTimeframes[symbol][timeframe];
+    function accumulateSignalResult({ symbol, timeframe, signalResult }) {
+        buyTimeframes[symbol] = buyTimeframes[symbol] || {};
+        buyTimeframes[symbol] [timeframe] = signalResult;
     }
 
 
     async function checkSignal({ signal24h, depth, signal, longSignal }) {
         let { symbol, timeframe } = signal;
-        let { buy, signal: signalData, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
-        if (buy && tryBuy({ symbol, timeframe, signalResult, })) {
-            appEmitter.emit('analyse:try_trade', { market: signalData, signalData, signal24h });
-            // if (symbol==='BNB/BTC') {
-            // fetchTicker({ symbol }); //this is used for trading
-            // /*ticker &&*/ appEmitter.emit('analyse:try_trade', { market, /*ticker*/ });
-            // if (!ticker) {
-            // if (!trying[symbol]) {
-            //     trying[symbol] = true;
-            //     appEmitter.once('exchange:ticker:' + symbol, ({ ticker }) => {
-            //         delete  trying[symbol];
-            //         appEmitter.emit('analyse:try_trade', { market, ticker });
-            //     });
-            // }
-            // }
+        let { signal: signalData, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
+        let { buy, strongBuy } = signalResult;
+        accumulateSignalResult({ symbol, timeframe, signalResult });
+        if (timeframe == env.TIMEFRAME) {
+            if ((strongBuy) && tryBuy({ symbol, timeframe, signalResult, })) {
+                appEmitter.emit('analyse:try_trade', { market: signalData, signalData, signal24h });
+            } else if (!buy) {
 
-        } else if (!buy) {
-            noBuy({ symbol, timeframe });
-            if (signalResult.signalWeightPercent > 49 / 100) {
-                appEmitter.emit('analyse:tracking', { symbol, signalResult });
-                appEmitter.emit('analyse:tracking:' + symbol, { symbol, signalResult });
-            }
-
-            if (indicatorSettings.LONG_TREND.check && !longSignal) {
-                fetchLongTrend()
-            }
-            if (indicatorSettings['24H_TREND'].check && !signal24h) {
-                fetch24HTrend()
-            }
-            if (indicatorSettings.BID_ASK_VOLUME.check && !depth) {
-                if (!indicatorSettings['24H_TREND'].check || signalResult.indicatorsResult['24H_TREND']) {
-                    fetchDepth({ symbol })
+                if (signalResult.signalWeightPercent > 49 / 100) {
+                    appEmitter.emit('analyse:tracking', { symbol, signalResult });
+                    appEmitter.emit('analyse:tracking:' + symbol, { symbol, signalResult });
                 }
+
+                if (indicatorSettings.LONG_TREND.check && !longSignal) {
+                    fetchLongTrend()
+                }
+                if (indicatorSettings['24H_TREND'].check && !signal24h) {
+                    fetch24HTrend()
+                }
+                if (indicatorSettings.BID_ASK_VOLUME.check && !depth) {
+                    if (!indicatorSettings['24H_TREND'].check || signalResult.indicatorsResult['24H_TREND']) {
+                        fetchDepth({ symbol })
+                    }
+                }
+
+                // if (signalResult.signalWeight === 0) {
+                //     indicatorSettings['24H_TREND'].check && ticker && !(await isCurrentlyTrading({ symbol })) && appEmitter.emit('app:no_fetch_ticker', { symbol });
+                //     indicatorSettings.BID_ASK_VOLUME.check && depth && appEmitter.emit('app:no_fetch_depth', { symbol });
+                // }
+
             }
-
-            // if (signalResult.signalWeight === 0) {
-            //     indicatorSettings['24H_TREND'].check && ticker && !(await isCurrentlyTrading({ symbol })) && appEmitter.emit('app:no_fetch_ticker', { symbol });
-            //     indicatorSettings.BID_ASK_VOLUME.check && depth && appEmitter.emit('app:no_fetch_depth', { symbol });
-            // }
-
         }
     }
 }
