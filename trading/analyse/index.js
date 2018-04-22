@@ -8,17 +8,17 @@ const { fetchDepth, fetch24HTrend, fetchLongTrend } = require('../utils')();
 
 function listenToEvents() {
 
+    let signals24H = {};
     const symbolsDta = {};
-    const timeframes = env.timeframes;
-
+    const depths = {};
+    const TIMEFRAMES = env.TIMEFRAMES;
+    const signalsTimeframes = _.reduce(TIMEFRAMES, (st, tf) => Object.assign(st, { [tf]: {} }), {});
 
     appEmitter.on('tv:signals_24h', ({ markets }) => {
-        _.forEach(markets, market => {
-            addSymbolData({ symbol: market.symbol, prop: 'signal24h', data: market });
-        });
+        signals24H = markets
     });
     appEmitter.on('exchange:depth', ({ depth }) => {
-        addSymbolData({ symbol: depth.symbol, prop: 'depth', data: depth });
+        depths[depth.symbol] = depth;
         // checkSignal(symbolsDta[ticker.symbol])
     });
     // appEmitter.on('tv:signals:long', ({ markets }) => {
@@ -27,28 +27,33 @@ function listenToEvents() {
     //         // checkSignal(symbolsDta[market.symbol])
     //     });
     // });
-    const signalsTimeframes = {};
+
     appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
         signalsTimeframes[timeframe] = markets;
-        timeframe == env.TIMEFRAME && await analyse();
+        timeframe == env.TIMEFRAME && await analyse(markets);
     });
 
-    async function analyse() {
-        const [markets] = _.values(signalsTimeframes);
+    async function analyse(markets) {
+        // const [markets] = _.values(signalsTimeframes);
+
         await Promise.each(_.keys(markets), async (symbol) => {
-            await Promise.each(env.timeframes, async (timeframe) => {
-                let market = signalsTimeframes[timeframe][symbol];
-                let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
-                let longMarket = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol];
-                addSymbolData({ symbol: market.symbol, prop: 'signal', data: market, timeframe });
-                longMarket && addSymbolData({ symbol: market.symbol, prop: 'longSignal', data: longMarket, timeframe });
-                checkSignal(symbolsDta[timeframe][market.symbol]);
-                delete symbolsDta[timeframe][market.symbol].depth;
+            await Promise.each(TIMEFRAMES, async (timeframe) => {
+                let signal = signalsTimeframes[timeframe][symbol];
+                if (signal) {
+                    let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
+                    let longSignal = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol] || signal;
+                    // addSymbolData({ symbol, prop: 'signal', data: signal, timeframe });
+                    // longSignal && addSymbolData({ symbol, prop: 'longSignal', data: longSignal, timeframe });
+                    _.extend(signal, { timeframe, longTimeframe });
+                    checkSignal({ signal, depth: depths[symbol], signal24h: signals24H[symbol], longSignal });
+                    delete depths[symbol];
+                    // delete symbolsDta[timeframe][symbol].depth;
+                }
             });
         })
         //     .finally(gotNewSignal().then(analyse));
         //
-        // function gotNewSignal() {
+        //symbolsDta function gotNewSignal() {
         //     return new Promise(resolve => {
         //         appEmitter.once('tv:signals', () => {
         //             resolve();
@@ -69,11 +74,11 @@ function listenToEvents() {
     const buyTimeframes = {}
 
 
-    function tryBuy({ symbol, timeframe }) {
+    function tryBuy({ symbol, timeframe, signalResult }) {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
-        buyTimeframes[symbol] [timeframe] = true;
-debugger
-        return !!_.reduce(timeframes, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
+        buyTimeframes[symbol] [timeframe] = signalResult;
+        //debugger
+        return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
     function noBuy({ symbol, timeframe }) {
@@ -83,9 +88,9 @@ debugger
 
     async function checkSignal({ signal24h, depth, signal, longSignal }) {
         let { symbol, timeframe } = signal;
-        let { buy, signal: market, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
-        if (buy && tryBuy({ symbol, timeframe })) {
-            appEmitter.emit('analyse:try_trade', { market, signal24h });
+        let { buy, signal: signalData, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
+        if (buy && tryBuy({ symbol, timeframe, signalResult, })) {
+            appEmitter.emit('analyse:try_trade', { market: signalData, signalData, signal24h });
             // if (symbol==='BNB/BTC') {
             // fetchTicker({ symbol }); //this is used for trading
             // /*ticker &&*/ appEmitter.emit('analyse:try_trade', { market, /*ticker*/ });

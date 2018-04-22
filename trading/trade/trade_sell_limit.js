@@ -24,11 +24,11 @@ const closedTrades = [];
  * cet evenement effectue un trade complet
  * achat, vente mise à jour et stop des pertes
  */
-appEmitter.prependListener('analyse:try_trade', async ({ market, signal24h }) => {
+appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }) => {
     doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
-        let { symbol, close } = market;
+        let { symbol, close } = signalData;
 
         let buyPrice = updatePrice({ price: close, percent: START_TRADE_BUY_PERCENT });
         let stopPrice = buyPrice;
@@ -38,7 +38,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ market, signal24h }) =>
 
         let trade = tradings[symbol];
 
-        // if (!isGoingUp({ symbol, price: market.close })) return;
+        // if (!isGoingUp({ symbol, price: signalData.close })) return;
 
         if (trade && (trade.updateTrade || trade.simulation)) {
             return updateTrade();

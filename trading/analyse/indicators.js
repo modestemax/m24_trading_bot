@@ -84,8 +84,7 @@ module.exports = {
         },
 
         BID_ASK_VOLUME({ weight, depth, options }) {
-            let ok = Boolean(depth) && (depth.allBid > depth.allAsk)
-            ;
+            let ok = Boolean(depth) && (depth.allBid > depth.allAsk);
             return +ok && weight;
         },
         EMA({ weight, signal, options }) {
@@ -113,15 +112,12 @@ module.exports = {
                 let ecarts20 = getEcarts(ema20);
 
                 ok = ema10_cur > ema20_cur
-                    // && indicators.ema10_trendingUp
-                    && isSorted((indicators.ema10), options.minCount)
-                    // && indicators.ema20_trendingUp
-                    && isSorted((indicators.ema20), options.minCount)
-                    // && (indicators.ema_distance > EMA_DISTANCE_REF || indicators.ema_crossing_up)
-                    && indicators.ema_distance > options.minDistance
-                    // && indicators.ema_distance >= indicators.ema_0_distance;
+                ok = ok && isSorted((ema10), options.minCount)
+                ok = ok && isSorted((ema20), options.minCount)
+                ok = ok && indicators.ema_distance > options.minDistance
+                // && indicators.ema_distance >= indicators.ema_0_distance;
 
-                ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
+                 ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
             }
             return +ok && weight;
 
@@ -167,13 +163,10 @@ module.exports = {
                 indicators.macd_distance = distance(macd_cur, macd_signal_cur);
                 indicators.macd_0_distance = distance(macd_0, macd_signal_0);
                 ok = macd_cur > macd_signal_cur
-                    // && indicators.macd_trendingUp
-                    && isSorted((indicators.macd), options.minCount)
-                    // && indicators.macd_signal_trendingUp
-                    && isSorted((indicators.macd_signal), options.minCount)
-                    // && (indicators.macd_distance > macd_DISTANCE_REF || indicators.macd_crossing_up)
+                    && isSorted((macd), options.minCount)
+                    && isSorted((macd_signal), options.minCount)
                     && indicators.macd_distance > options.minDistance
-                    // && indicators.macd_distance >= indicators.macd_0_distance;
+                // && indicators.macd_distance >= indicators.macd_0_distance;
 
 
             }
@@ -233,13 +226,10 @@ module.exports = {
                 indicators.adx_di_distance = plus_di_cur - minus_di_cur;
                 indicators.adx_di_0_distance = plus_di_0 - minus_di_0;
                 ok = _.last(adx) > options.buyReference
-                    && _.last(_.initial(adx)) > options.buyReference
-                    && plus_di_cur > minus_di_cur
-                    && indicators.adx_di_distance > options.minDIDistance
-                    // && indicators.adx_di_distance >= indicators.adx_di_0_distance
-                // && (adx_plus_di_trendingUp || adx_minus_di_trendingDown)
-                // && (adx_plus_di_trendingUp && adx_minus_di_trendingDown)
-                // && adx_trendingUp
+                ok = ok  && _.last(_.initial(adx)) > options.buyReference
+                ok = ok  && plus_di_cur > minus_di_cur
+                ok = ok  && indicators.adx_di_distance > options.minDIDistance
+                // && indicators.adx_di_distance >= indicators.adx_di_0_distance
                 ok = ok && isSorted((adx), options.minCount)
                     && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
                 // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))

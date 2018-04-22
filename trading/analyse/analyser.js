@@ -54,6 +54,7 @@ const symbolsData = {};
 const MAX_LENGTH = 4, MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
+    //todo potentiel bug 2 bougies diff peuvent avoir le meme open
     return signal.open !== lastSignal.open;
 }
 
@@ -84,8 +85,9 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
     longSignal = longSignal && _.cloneDeep(longSignal);
     depth = depth && _.cloneDeep(depth);
 
-    let { symbol } = signal;
-    let lastSignal = symbolsData[symbol] = symbolsData[symbol] || signal;
+    let { symbol, timeframe } = signal;
+    symbolsData[timeframe] = symbolsData[timeframe] || {};
+    let lastSignal = symbolsData[timeframe][symbol] = symbolsData[timeframe][symbol] || signal;
     lastSignal.indicators = getNewIndicators({ signal, lastSignal });
     isNewCandle({ lastSignal, signal }) && _.extend(lastSignal, _.omit(signal, 'indicators'));
     signal.indicators = lastSignal.indicators;

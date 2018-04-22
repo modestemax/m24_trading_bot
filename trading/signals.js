@@ -117,7 +117,7 @@ const beautify = (data) => {
     ).filter(d => d).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
-function getSignals({ options = params(), longTimeframe, rate = 1e3 } = {}) {
+function getSignals({ options = params(),/* longTimeframe,*/ rate = 1e3 } = {}) {
 
     const args = arguments;
     const { data, timeframe } = options;
@@ -132,9 +132,9 @@ function getSignals({ options = params(), longTimeframe, rate = 1e3 } = {}) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
                     let beautifyData = beautify(jsonData.data);
-                    let long = longTimeframe ? ':long' : '';
+                    // let long = longTimeframe ? ':long' : '';
                     debug(`signals ${timeframe} ${_.keys(beautifyData).length} symbols loaded`);
-                    setImmediate(() => appEmitter.emit('tv:signals' + long, { markets: beautifyData, timeframe }))
+                    // setImmediate(() => appEmitter.emit('tv:signals' + long, { markets: beautifyData, timeframe }))
                     return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData, timeframe }))
                 }
                 err = jsonData.error;
@@ -186,7 +186,7 @@ function getOthersSignals({ indicator, rate }) {
     });
 }
 
-env.timeframes.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
+env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
 
 // getSignals({ options: params({ timeframe: 15 }) });
 // getSignals({ options: params({ timeframe: 60 }) });
@@ -194,7 +194,7 @@ env.timeframes.forEach((timeframe) => getSignals({ options: params({ timeframe }
 // getSignals({ options: params({ timeframe: '1D' }) });
 
 
-getOthersSignals({ indicator: 'LONG_TREND', rate: 5e3 });
+// getOthersSignals({ indicator: 'LONG_TREND', rate: 5e3 });
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
