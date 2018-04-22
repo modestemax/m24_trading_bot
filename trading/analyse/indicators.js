@@ -31,13 +31,6 @@ module.exports = {
             indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
-            indicator: 'LONG_TREND', check: true, weight: .5, bonus: true, mandatory: false,
-            options: { minChangePercent: 1 }
-        },
-        {
-            indicator: '24H_TREND', check: true, weight: 1, mandatory: true, options: { minChangePercent: 2 }
-        },
-        {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
         },
         {
@@ -56,7 +49,10 @@ module.exports = {
         },
         {
             indicator: 'ADX', check: true, weight: 1, mandatory: true,
-            options: { buyReference: 20, minDIDistance: 5, minCount: minCount }
+            options: {
+                buyReference: 20, minDIDistance: 5, minCount: minCount,
+                minCountTimeframe: { 5: _.max([3, minCount]) }
+            }
         },
         {
             indicator: 'VWMA', check: true, weight: 1, mandatory: false,
@@ -215,7 +211,7 @@ module.exports = {
         },
         ADX({ weight, signal, options }) {
 
-            let { indicators } = signal;
+            let { timeframe, indicators } = signal;
             let { adx, /* adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, */adx_minus_di, adx_plus_di } = indicators;
             //
             // if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
@@ -225,7 +221,8 @@ module.exports = {
             // }
 
             let ok = false;
-            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= options.minCount) {
+            let minCount = options.minCountTimeframe && options.minCountTimeframe[timeframe] || options.minCount;
+            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= minCount) {
 
 
                 let minus_di_cur = _.last(adx_minus_di);
@@ -240,9 +237,9 @@ module.exports = {
                 ok = ok && plus_di_cur > minus_di_cur
                 ok = ok && indicators.adx_di_distance > options.minDIDistance
                 // && indicators.adx_di_distance >= indicators.adx_di_0_distance
-                if (signal.timeframe <= env.TIMEFRAME) {
-                    ok = ok && isSorted((adx), options.minCount)
-                        && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
+                if (timeframe <= env.TIMEFRAME) {
+                    ok = ok && isSorted((adx), minCount)
+                        && (isSorted((adx_plus_di), minCount) && isSorted((adx_minus_di), minCount, { reverse: true }))
                     // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
                     // && isCrossingReference()
                     ok = ok && isSorted(ecarts)

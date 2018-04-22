@@ -38,6 +38,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
             indicatorsResult: {},
         }
     );
+    _.extend(signalResult, { trendingUp: signalResult.indicatorsResult.EMA && signalResult.indicatorsResult.ADX });
 
     if (signalResult.buy) {
         signalResult.strongBuy = _.reduce(mandatoryIndicators, (buy, mInd) => {
@@ -93,7 +94,6 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
     signal.indicators = lastSignal.indicators;
     let signalResult = analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT });
 
-    _.extend(signalResult, { trendingUp: signalResult.indicatorsResult.EMA && signalResult.indicatorsResult.ADX });
     return {
         signal24h,
         depth,
