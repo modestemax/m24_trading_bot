@@ -188,10 +188,6 @@ function getOthersSignals({ indicator, rate }) {
 
 env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
 
-// getSignals({ options: params({ timeframe: 15 }) });
-// getSignals({ options: params({ timeframe: 60 }) });
-// getSignals({ options: params({ timeframe: 240 }) });
-// getSignals({ options: params({ timeframe: '1D' }) });
 
 
 // getOthersSignals({ indicator: 'LONG_TREND', rate: 5e3 });

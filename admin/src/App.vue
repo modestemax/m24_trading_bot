@@ -1,41 +1,59 @@
 <template>
   <div id="app">
     <!--<img class="m24-logo" src="./assets/images/m24_on.gif">-->
-    <div class="pb-5">
-      <img class="m24-logo" :src="logo">
-      <audio :src="sound" autoplay controls1></audio>
-      <router-view name="Hello"></router-view>
-    </div>
+    <!--<div class="pb-5">-->
+    <!--<img class="m24-logo" :src="logo">-->
+    <!--<audio :src="sound" autoplay controls1></audio>-->
+    <!--</div>-->
 
     <b-container fluid>
-      <b-tabs pills card vertical1>
-        <b-tab class="trades" title="Trades">
-          <template slot="title">
-            Trades
-            <b-badge pill variant="warning">{{tradeResume}}</b-badge>
-          </template>
-          <router-view name="Trades"></router-view>
-        </b-tab>
-        <b-tab class="errors" title="Errors">
-          <template slot="title">
-            Errors
-            <b-badge pill variant="danger">{{errorsCount||''}}</b-badge>
-          </template>
-          <router-view name="Errors"></router-view>
-        </b-tab>
-      </b-tabs>
-      <!--<b-row deck1  class="px-3">-->
-      <!--<b-col cols="9">-->
-      <!--<b-card class="trades    </e="Trades">-->
-      <!--<router-view name="Trades"></router-view>-->
-      <!--</b-card>-->
-      <!--</b-col>-->
-      <!--<b-col>-->
-      <!--<b-card class="errors" no-body header="<b>Errors</b>">-->
-      <!--<router-view name="Errors"></router-view>-->
-      <!--</b-card>-->
-      <!--</b-col>-->
-      <!--</b-row>-->
+      <b-navbar toggleable="md" type="dark" variant="dark">
+
+        <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
+
+        <b-navbar-brand to="/">
+          <b-img class="m24-logo" :src="logo"></b-img>
+        </b-navbar-brand>
+
+        <b-collapse is-nav id="nav_collapse">
+
+          <b-navbar-nav>
+            <!--<b-nav-item :to="{ name: 'open', params: { type: 'open' }}">Open</b-nav-item>-->
+            <b-nav-item to="open" type="open">Open</b-nav-item>
+            <b-nav-item to="closed">Closed</b-nav-item>
+            <b-nav-item to="errors">Errors
+              <b-badge variant="light">4</b-badge>
+            </b-nav-item>
+          </b-navbar-nav>
+
+          <!-- Right aligned nav items -->
+          <b-navbar-nav class="ml-auto">
+
+            <b-nav-form>
+              <b-form-input size="sm" class="mr-sm-2" type="text" placeholder="Search"/>
+              <b-button size="sm" class="my-2 my-sm-0" type="submit">Search</b-button>
+            </b-nav-form>
+
+            <b-nav-item-dropdown text="Lang" right>
+              <b-dropdown-item href="#">EN</b-dropdown-item>
+              <b-dropdown-item href="#">ES</b-dropdown-item>
+              <b-dropdown-item href="#">RU</b-dropdown-item>
+              <b-dropdown-item href="#">FA</b-dropdown-item>
+            </b-nav-item-dropdown>
+
+            <b-nav-item-dropdown right>
+              <!-- Using button-content slot -->
+              <template slot="button-content">
+                <em>User</em>
+              </template>
+              <b-dropdown-item href="#">Profile</b-dropdown-item>
+              <b-dropdown-item href="#">Signout</b-dropdown-item>
+            </b-nav-item-dropdown>
+          </b-navbar-nav>
+
+        </b-collapse>
+      </b-navbar>
+      <router-view></router-view>
     </b-container>
   </div>
 </template>
@@ -47,10 +65,19 @@
   import soundOff from './assets/mp3/yahoo_door.mp3';
   import appEmitter from './data';
 
+
   export default {
     name: 'app',
     data() {
-      return { online: false, errorsCount: '', tradeResume: '' };
+      return {
+        msg: 'Bot Admin',
+        startTime: '',
+        duration: '',
+        online: false,
+        errorsCount: '',
+        tradeResume: '',
+        appDetails: '',
+      };
     },
     computed: {
       logo() {
@@ -63,6 +90,10 @@
     mounted() {
       const me = this;
       this.$nextTick(() => {
+        appEmitter.on('time', ({ start, duration }) => {
+          me.startTime = start;
+          me.duration = duration;
+        });
         appEmitter.on('offline', () => {
           me.online = false;
         });
@@ -72,8 +103,8 @@
         appEmitter.on('error_count', (count) => {
           me.errorsCount = count;
         });
-        appEmitter.on('trade_resume', (resume) => {
-          me.tradeResume = resume;
+        appEmitter.on('time', ({ details }) => {
+          me.appDetails = details;
         });
       });
     },
@@ -94,22 +125,22 @@
   }
 
   .m24-logo {
-    height: 40px;
-    width: 120px;
-    float: left;
+
+    width: 80px;
+    height: 27px;
   }
 
   body {
     background-color: black;
   }
 
-  .trades {
-    background: #559929;
-    /*opacity: .5;*/
-  }
+  /*.trades {*/
+  /*background: #559929;*/
+  /*!*opacity: .5;*!*/
+  /*}*/
 
-  .errors {
-    /*background: #000000;*/
-    /*opacity: .8;*/
-  }
+  /*.errors {*/
+  /*!*background: #000000;*!*/
+  /*!*opacity: .8;*!*/
+  /*}*/
 </style>

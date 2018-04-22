@@ -1,29 +1,44 @@
 <template>
+
   <div>
-    <span class="time">Started at {{startTime}}  [{{duration}}]</span>
-    <h3 class="float-right pr-3 card-title">{{msg}}</h3>
+    <div class="pb-5">
+      <img class="m24-logo" :src="logo">
+      <audio :src="sound" autoplay controls1></audio>
+
+      <span class="time">Started at {{startTime}}  [{{duration}}]</span>
+      <h3 class="float-right pr-3 card-title">{{msg}}</h3>
+    </div>
+    <b-container fluid>
+      <b-tabs pills card vertical1>
+        <b-tab class="trades" title="Open Trades">
+          <router-view name="OpenTrades"></router-view>
+        </b-tab>
+        <b-tab class="trades" title="Closed Trades">
+          <router-view name="ClosedTrades"></router-view>
+        </b-tab>
+        <b-tab class="errors" title="Errors">
+          <template slot="title">
+            Errors
+            <b-badge pill variant="danger">{{errorsCount}}</b-badge>
+          </template>
+          <router-view name="Errors"></router-view>
+        </b-tab>
+      </b-tabs>
+    </b-container>
+
   </div>
 </template>
 
 <script>
-  import appEmitter from '../data';
-
   export default {
     name: 'hello',
     data() {
       return {
-        msg: 'Bot Admin', startTime: '', duration: '',
+
       };
     },
-    mounted() {
-      const me = this;
-      this.$nextTick(() => {
-        appEmitter.on('time', ({ start, duration }) => {
-          me.startTime = start;
-          me.duration = duration;
-        });
-      });
-    },
+
+
   };
 </script>
 

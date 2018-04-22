@@ -18,7 +18,7 @@ const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME, START_TRADE_
 
 const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
 const tradings = {};
-const closedTrades = [];
+const closedTrades = {};
 
 /**
  * cet evenement effectue un trade complet
@@ -55,7 +55,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                 maxGain: 0,
                 minGain: 0,
                 gainOrLoss: 0,
-                target: SELL_LIMIT_PERCENT
+                target: SELL_LIMIT_PERCENT,
+                initialTarget: SELL_LIMIT_PERCENT,
             };
 
             trade.status = startTrade().finally(endTrade).catch(emitException);
@@ -67,7 +68,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
             if (trade && !trade.simulation) {
                 delete tradings[symbol];
                 //log trade
-                trade.started && closedTrades.push(trade) && emit('ended', trade);
+                trade.started && (closedTrades[trade.id] = trade) && emit('ended', trade);
                 noFetchTicker({ symbol })
             }
         }
@@ -264,6 +265,12 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);
+        } else {
+            //todo remove this, it is for testing
+            if (trade && ticker.last >= trade.initialTarget) {
+                trade.price = ticker.last;
+                appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+            }
         }
         trade && logChange({ trade, ticker })
     };
@@ -318,9 +325,8 @@ function isGoingUp({ symbol, price }) {
 }
 
 appEmitter.on('app:get_currently_tradings_symbols', () => {
-    let trades = _.reduce(tradings, (trades, trade) => {
-        trade.simulation || (trades[trade.symbol] = trade);
-        return trades
-    }, {});
-    appEmitter.emit('trade:symbols', { symbols: trades })
+    appEmitter.emit('trade:symbols', { symbols: _.reject(_.cloneDeep(tradings), t => t.simulation) })
+});
+appEmitter.on('app:get_finished_tradings_symbols', () => {
+    appEmitter.emit('trade:symbols:finish', { symbols: _.cloneDeep(closedTrades) });
 });
