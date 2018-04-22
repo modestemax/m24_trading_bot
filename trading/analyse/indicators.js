@@ -24,11 +24,11 @@ module.exports = {
             indicator: '24H_TREND', check: false, weight: 1, mandatory: true, options: { minChangePercent: 2 }
         },
         {
-            indicator: 'LONG_TREND', check: true, weight: 1, bonus: false, mandatory: true,
+            indicator: 'LONG_TREND', check: false, weight: 1, bonus: false, mandatory: true,
             options: { minChangePercent: 0.1 }
         },
         {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
+            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .15 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
@@ -117,7 +117,7 @@ module.exports = {
                 ok = ok && indicators.ema_distance > options.minDistance
                 // && indicators.ema_distance >= indicators.ema_0_distance;
 
-                 ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
+                ok = ok && isSorted(ecarts10) && isSorted(ecarts20);
             }
             return +ok && weight;
 
@@ -163,9 +163,9 @@ module.exports = {
                 indicators.macd_distance = distance(macd_cur, macd_signal_cur);
                 indicators.macd_0_distance = distance(macd_0, macd_signal_0);
                 ok = macd_cur > macd_signal_cur
-                    && isSorted((macd), options.minCount)
-                    && isSorted((macd_signal), options.minCount)
-                    && indicators.macd_distance > options.minDistance
+                ok = ok && isSorted((macd), options.minCount)
+                ok = ok && isSorted((macd_signal), options.minCount)
+                ok = ok && indicators.macd_distance > options.minDistance
                 // && indicators.macd_distance >= indicators.macd_0_distance;
 
 
@@ -226,9 +226,9 @@ module.exports = {
                 indicators.adx_di_distance = plus_di_cur - minus_di_cur;
                 indicators.adx_di_0_distance = plus_di_0 - minus_di_0;
                 ok = _.last(adx) > options.buyReference
-                ok = ok  && _.last(_.initial(adx)) > options.buyReference
-                ok = ok  && plus_di_cur > minus_di_cur
-                ok = ok  && indicators.adx_di_distance > options.minDIDistance
+                ok = ok && _.last(_.initial(adx)) > options.buyReference
+                ok = ok && plus_di_cur > minus_di_cur
+                ok = ok && indicators.adx_di_distance > options.minDIDistance
                 // && indicators.adx_di_distance >= indicators.adx_di_0_distance
                 ok = ok && isSorted((adx), options.minCount)
                     && (isSorted((adx_plus_di), options.minCount) && isSorted((adx_minus_di), options.minCount, { reverse: true }))
