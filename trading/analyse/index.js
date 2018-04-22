@@ -12,6 +12,7 @@ function listenToEvents() {
     const symbolsDta = {};
     const depths = {};
     const TIMEFRAMES = env.TIMEFRAMES;
+    const TIMEFRAME = env.TIMEFRAME;
     const signalsTimeframes = _.reduce(TIMEFRAMES, (st, tf) => Object.assign(st, { [tf]: {} }), {});
 
     appEmitter.on('tv:signals_24h', ({ markets }) => {
@@ -77,8 +78,22 @@ function listenToEvents() {
     function tryBuy({ symbol, timeframe, signalResult }) {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
         buyTimeframes[symbol] [timeframe] = signalResult;
+        let buySignals = buyTimeframes[symbol];
+        let s5 = buySignals[5] || {};
+        let s15 = buySignals[15] || {};
+        let s60 = buySignals[60] || {};
+        let s240 = buySignals[240] || {};
+
         //debugger
-        return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
+
+        if (timeframe == TIMEFRAME) {
+            switch (timeframe) {
+                case 15:
+                    // return s5.strongBuy && s15.strongBuy && (s60.buy || s240.buy);
+                    return s5.strongBuy && s15.strongBuy && (s60.buy && s240.buy);
+            }
+        }
+        // return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
     function noBuy({ symbol, timeframe }) {

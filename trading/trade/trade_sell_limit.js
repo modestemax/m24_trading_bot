@@ -25,13 +25,13 @@ const closedTrades = [];
  * achat, vente mise à jour et stop des pertes
  */
 appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }) => {
-    doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
+    return doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
         let { symbol, close } = signalData;
 
         let buyPrice = updatePrice({ price: close, percent: START_TRADE_BUY_PERCENT });
-        let stopPrice = buyPrice;
+        let stopPrice = buyPrice, sellPrice;
 
         //for debug
         // if (_.keys(tradings).length) return;
@@ -58,7 +58,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                 target: SELL_LIMIT_PERCENT
             };
 
-            trade.status = startTrade().catch(emitException).finally(endTrade);
+            trade.status = startTrade().finally(endTrade).catch(emitException);
         }
 
 
@@ -90,7 +90,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
 
             if (amount) {
                 //get the sell price
-                let sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
                 // if (sellPrice >= signal24h.high) {
                 //     // return
                 // }
@@ -106,7 +106,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                 fetchTicker({ symbol });
 
                 //get the stop loss price
-                let stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
+                stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
 
                 //check the sell in user data socket
                 let sellState = checkSellState({ symbol });

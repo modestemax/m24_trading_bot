@@ -17,7 +17,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
                     options
                 });
                 indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
-                if (mandatory && !indicatorsResult[indicator]) {
+                if (mandatory && !indicatorsResult[indicator] && signal.timeframe == env.TIMEFRAME) {
                     stopCheck = true;
                 } else {
                     signalWeight += thisIndicatorSignalWeight;
@@ -40,7 +40,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
     );
 
     if (signalResult.buy) {
-        signalResult.buy = _.reduce(mandatoryIndicators, (buy, mInd) => {
+        signalResult.strongBuy = _.reduce(mandatoryIndicators, (buy, mInd) => {
             return buy && signalResult.indicatorsResult[mInd];
         }, true)
     }
@@ -99,14 +99,16 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
         signal,
         longSignal,
         buy: signalResult.buy,
+        strongBuy: signalResult.strongBuy,
         signalResult
     }
 }
 
 function logSignalResult(signalResult) {
-    let { symbol, buy, timeframe, indicatorsResult, signalWeight, totalWeight } = signalResult
+    let { symbol, buy, strongBuy, timeframe, indicatorsResult, signalWeight, totalWeight } = signalResult;
     let strIndicators = _(indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
     let ok = buy ? 'OK' : 'NOK';
+    ok = strongBuy ? '++' + ok : ok;
     let buyRatio = signalWeight / totalWeight;
     buyRatio > 49 / 100 && buy && debug(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators}  -> ${ok}`);
     buyRatio > 49 / 100 && !buy && debug2(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators} -> ${ok}`);
