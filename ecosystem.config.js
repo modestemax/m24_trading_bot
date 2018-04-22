@@ -20,6 +20,7 @@ module.exports = {
                 SIMUL_FIRST_ENTRY: true,
                 NO_STOP_LOSS: true,
                 STOP_LOSS_PERCENT: -1.5,
+                SELL_LIMIT_PERCENT: 1.1,
             },
             env_production: {
                 NODE_ENV: 'production'
@@ -38,12 +39,52 @@ module.exports = {
                 MIN_COUNT: 2,
                 NO_STOP_LOSS: true,
                 STOP_LOSS_PERCENT: -1.5,
+                SELL_LIMIT_PERCENT: 1.1,
             },
             env_production: {
                 NODE_ENV: 'production'
             }
         },
-
+//SELL_LIMIT_PERCENT:.5
+        {
+            name: 'bot3',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            //"node_args": "--inspect=0.0.0.0:5858",
+            env: {
+                DEBUG: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
+                PORT: 12348,
+                MIN_COUNT: 3,
+                SIMUL_FIRST_ENTRY: true,
+                NO_STOP_LOSS: true,
+                STOP_LOSS_PERCENT: -1.5,
+                SELL_LIMIT_PERCENT: .5,
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
+        {
+            name: 'bot4',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            //"node_args" "--inspect=0.0.0.0:5859",
+            env: {
+                DEBUG: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
+                PORT: 12347,
+                MIN_COUNT: 2,
+                NO_STOP_LOSS: true,
+                STOP_LOSS_PERCENT: -1.5,
+                SELL_LIMIT_PERCENT: .5,
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
         // Second application
         // {
         //   name      : 'WEB',
