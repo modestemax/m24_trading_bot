@@ -1,14 +1,19 @@
 const _ = require('lodash');
 const logToFile = require('log-to-file');
 const EventEmitter = require('events');
+const path = require('path');
+const mkdirp = require('mkdirp');
+const fs = require('fs');
 const emitter = new EventEmitter();
 const formatError = require('format-error').format;
 
 emitter.setMaxListeners(Infinity);
 global.appEmitter = module.exports = emitter;
 
+const logFile = path.resolve(`logs/${global.appKey}_${new Date().toLocaleString()}.txt`);
+mkdirp.sync(path.dirname(logFile));
 
-global.log = _.wrap(_.bind(logToFile, null, _, `logs/${global.appKey}_${new Date().toLocaleString()}.txt`),
+global.log = _.wrap(_.bind(logToFile, null, _, logFile),
     (log, txt, debug) => {
         log(txt);
         debug && debug(txt);
