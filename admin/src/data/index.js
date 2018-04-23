@@ -39,10 +39,7 @@ export default appEmitter;
 
     switch (clientData.type) {
       case 'trades':
-        [{ status: 'open', trades: clientData.trades }, { status: 'closed', trades: clientData.finishedTrades }]
-          .forEach(({ status, trades }) => {
-            appEmitter.emit(`trades:${status}`, { trades });
-          });
+        appEmitter.emit('trades', { trades: clientData.trades });
 
         break;
       case 'time':

@@ -34,6 +34,13 @@ export default new Router({
       // props: true,
       // props: { type1: true },
       props: { type: 'open' },
+    }, {
+      path: '/closed',
+      name: 'closed',
+      component: Trades,
+      // props: true,
+      // props: { type1: true },
+      props: { type: 'closed' },
     },
     {
       name: 'openz',

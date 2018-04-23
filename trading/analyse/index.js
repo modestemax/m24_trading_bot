@@ -82,7 +82,7 @@ function listenToEvents() {
         let s15 = buySignals[15] || {};
         let s60 = buySignals[60] || {};
         let s240 = buySignals[240] || {};
-
+        return true;
         let s, buy;
         switch (timeframe) {
             case 5:
@@ -108,7 +108,7 @@ function listenToEvents() {
 
     function accumulateSignalResult({ symbol, timeframe, signalResult }) {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
-        buyTimeframes[symbol] [timeframe] = _.extend({buyTimes:0},buyTimeframes[symbol] [timeframe], signalResult);
+        buyTimeframes[symbol] [timeframe] = _.extend({ buyTimes: 0 }, buyTimeframes[symbol] [timeframe], signalResult);
     }
 
 

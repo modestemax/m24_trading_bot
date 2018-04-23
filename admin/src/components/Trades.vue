@@ -13,7 +13,7 @@
       </template>
       <template slot="commands" slot-scope="row">
         <!-- we use @click.stop here to prevent emitting of a 'row-clicked' event  -->
-        <b-button size="sm" @click.stop="row.toggleDetails" class="mr-2">
+        <b-button size="sm" @click.stop="row.toggleDetails" class="mr-2" style="height: 16px;">
           {{ /*row.detailsShowing ? 'Hide' : 'Show'*/}} ...
         </b-button>
 
@@ -55,7 +55,7 @@
     data() {
       return {
         sound: null,
-        trades: [],
+        allTrades: [],
         sortBy: 'time',
         sortDesc: true,
         fields: [
@@ -83,6 +83,9 @@
       });
     },
     computed: {
+      trades() {
+        return _.filter(this.allTrades, { type: this.type });
+      },
       tradeType() {
         this.listenToEvents();
         return _.startCase(this.type);
@@ -134,10 +137,10 @@
         }
       },
       addTrades({ trades }) {
-        this.trades = _.values(trades);
+        this.allTrades = _.values(trades);
       },
       listenToEvents() {
-        appEmitter.on(`trades:${this.type}`, this.addTrades);
+        appEmitter.on('trades', this.addTrades);
       },
     },
   };
