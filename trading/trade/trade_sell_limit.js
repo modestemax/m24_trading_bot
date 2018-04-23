@@ -149,7 +149,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                     // return;
                 }
             } catch (e) {
-                debugger
+                //debugger
                 throw e;
             }
 
