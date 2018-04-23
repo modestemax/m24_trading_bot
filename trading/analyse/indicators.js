@@ -51,7 +51,7 @@ module.exports = {
             indicator: 'ADX', check: true, weight: 1, mandatory: true,
             options: {
                 buyReference: 20, minDIDistance: 5, minCount: minCount,
-                minCountTimeframe: { 5: _.max([3, minCount]) }
+                minCountTimeframe: { x5: _.max([3, minCount]) }
             }
         },
         {
@@ -219,11 +219,10 @@ module.exports = {
             //     reset(adx_minus_di, options.minCount);
             //     indicators.adx_crossing = true;
             // }
-
+            adx = _.takeRightWhile(adx, v => v >= options.buyReference);
             let ok = false;
             let minCount = options.minCountTimeframe && options.minCountTimeframe[timeframe] || options.minCount;
             if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= minCount) {
-
 
                 let minus_di_cur = _.last(adx_minus_di);
                 let plus_di_cur = _.last(adx_plus_di);
@@ -237,9 +236,11 @@ module.exports = {
                 ok = ok && plus_di_cur > minus_di_cur
                 ok = ok && indicators.adx_di_distance > options.minDIDistance
                 // && indicators.adx_di_distance >= indicators.adx_di_0_distance
+                ok = ok && isSorted((adx), minCount);
+
                 if (timeframe <= env.TIMEFRAME) {
-                    ok = ok && isSorted((adx), minCount)
-                        && (isSorted((adx_plus_di), minCount) && isSorted((adx_minus_di), minCount, { reverse: true }))
+
+                    ok = ok && (isSorted((adx_plus_di), minCount) && isSorted((adx_minus_di), minCount, { reverse: true }))
                     // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
                     // && isCrossingReference()
                     ok = ok && isSorted(ecarts)

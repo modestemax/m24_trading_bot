@@ -62,7 +62,7 @@ module.exports = Model.Settings.load().then(async settings => {
 
     global.env.TIMEFRAMES = [
         // env.TIMEFRAME
-        240,
+        // 240,
         60,
         15,
         5,

@@ -26,9 +26,9 @@ Vue.use(Router);
 
 export default new Router({
   routes: [
+    { path: '/', redirect: { name: 'open' } },
     {
-      path: '/',
-      alias: '/open',
+      path: '/open',
       name: 'open',
       component: Trades,
       // props: true,

@@ -76,25 +76,39 @@ function listenToEvents() {
 
 
     function tryBuy({ symbol, timeframe }) {
+
         let buySignals = buyTimeframes[symbol];
         let s5 = buySignals[5] || {};
         let s15 = buySignals[15] || {};
         let s60 = buySignals[60] || {};
         let s240 = buySignals[240] || {};
 
-        //debugger
-
+        let s, buy;
         switch (timeframe) {
+            case 5:
+                s = s5;
+                buy = s5.strongBuy && s15.trendingUp && s60.trendingUp //&& s240.trendingUp);
+                break;
             case 15:
-                // return s5.strongBuy && s15.strongBuy && (s60.buy || s240.buy);
-                return s5.strongBuy && s15.strongBuy && (s60.trendingUp && s240.trendingUp);
+                s = s15;
+                buy = s5.strongBuy && s15.strongBuy && s60.trendingUp //&& s240.trendingUp);
+                break;
+        }
+        if (buy) {
+            s.buyTimes = s.buyTimes + 1;
+            if (s.buyTimes >= 3) {
+                s.buyTimes--;
+                return true;
+            }
+        } else {
+            s.buyTimes = 0;
         }
         // return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
     function accumulateSignalResult({ symbol, timeframe, signalResult }) {
         buyTimeframes[symbol] = buyTimeframes[symbol] || {};
-        buyTimeframes[symbol] [timeframe] = signalResult;
+        buyTimeframes[symbol] [timeframe] = _.extend({buyTimes:0},buyTimeframes[symbol] [timeframe], signalResult);
     }
 
 

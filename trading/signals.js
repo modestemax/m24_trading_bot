@@ -6,7 +6,7 @@ const appEmitter = require('./events');
 let { QUOTE_CUR, EXCHANGE, TIMEFRAME } = env;
 
 
-const debug2 = () => _.throttle((msg) => debug(msg), 30e3);
+const debug2 = (tf) => _.throttle((msg) => require('debug')('signals:'+tf)(msg), 30e3);
 const exchange = global.exchange;
 
 const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => {
@@ -123,7 +123,7 @@ function getSignals({ options = params(),/* longTimeframe,*/ rate = 1e3 } = {}) 
     const { data, timeframe } = options;
 
     let debug = getSignals.debug = getSignals.debug || {};
-    debug = debug[timeframe] = debug[timeframe] || debug2();
+    debug = debug[timeframe] = debug[timeframe] || debug2(timeframe);
 
     const url = 'https://scanner.tradingview.com/crypto/scan';
     curl.postJSON(url, data, (err, res, data) => {
