@@ -6,45 +6,45 @@ module.exports = {
     apps: [
 
         // First application
-//         {
-//             name: 'bot46',
-//             script: 'app.js',
-//             "exec_mode": "cluster",
-//             cwd: 'trading',
-//             "node_args": "--inspect=0.0.0.0:5858",
-//             env: {
-//                 DEBUG: '*',
-//                 QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-//                 PORT: 12346,
-//                 MIN_COUNT: 3,
-//                 SIMUL_FIRST_ENTRY: true,
-//                 NO_STOP_LOSS: true,
-//                 STOP_LOSS_PERCENT: -1.5,
-//                 SELL_LIMIT_PERCENT: 1.1,
-//             },
-//             env_production: {
-//                 NODE_ENV: 'production'
-//             }
-//         },
-//         {
-//             name: 'bot45',
-//             script: 'app.js',
-//             "exec_mode": "cluster",
-//             cwd: 'trading',
-//             "node_args": "--inspect=0.0.0.0:5859",
-//             env: {
-//                 DEBUG: '*',
-//                 QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-//                 PORT: 12345,
-//                 MIN_COUNT: 2,
-//                 NO_STOP_LOSS: true,
-//                 STOP_LOSS_PERCENT: -1.5,
-//                 SELL_LIMIT_PERCENT: 1.1,
-//             },
-//             env_production: {
-//                 NODE_ENV: 'production'
-//             }
-//         },
+        {
+            name: 'bot46',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            "node_args": "--inspect=0.0.0.0:5858",
+            env: {
+                DEBUG: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+                PORT: 12346,
+                MIN_COUNT: 2,
+                SIMUL_FIRST_ENTRY:'' ,
+                NO_STOP_LOSS: '',
+                STOP_LOSS_PERCENT: -1.5,
+                SELL_LIMIT_PERCENT: 1.1,
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
+        {
+            name: 'bot45',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            "node_args": "--inspect=0.0.0.0:5859",
+            env: {
+                DEBUG: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+                PORT: 12345,
+                MIN_COUNT: 2,
+                NO_STOP_LOSS: '',
+                STOP_LOSS_PERCENT: -1,
+                SELL_LIMIT_PERCENT: .5,
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
 //         {
 //             name: 'bot55',
 //             script: 'app.js',
@@ -85,25 +85,25 @@ module.exports = {
 //                 NODE_ENV: 'production'
 //             }
 //         },
-        {
-            name: 'bot47',
-            script: 'app.js',
-            "exec_mode": "cluster",
-            cwd: 'trading',
-            //"node_args" "--inspect=0.0.0.0:5859",
-            env: {
-                DEBUG: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-                PORT: 12347,
-                MIN_COUNT: 2,
-                NO_STOP_LOSS: '',
-                STOP_LOSS_PERCENT: -1,
-                SELL_LIMIT_PERCENT: .5,
-            },
-            env_production: {
-                NODE_ENV: 'production'
-            }
-        },
+//         {
+//             name: 'bot47',
+//             script: 'app.js',
+//             "exec_mode": "cluster",
+//             cwd: 'trading',
+//             //"node_args" "--inspect=0.0.0.0:5859",
+//             env: {
+//                 DEBUG: '*',
+//                 QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+//                 PORT: 12347,
+//                 MIN_COUNT: 2,
+//                 NO_STOP_LOSS: '',
+//                 STOP_LOSS_PERCENT: -1,
+//                 SELL_LIMIT_PERCENT: .5,
+//             },
+//             env_production: {
+//                 NODE_ENV: 'production'
+//             }
+//         },
         // {
         //     name: 'bot57',
         //     script: 'app.js',
