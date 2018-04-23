@@ -43,10 +43,9 @@ export default new Router({
       props: { type: 'closed' },
     },
     {
-      name: 'openz',
-      path: 'openz',
+      name: 'errors',
+      path: '/errors',
       component: Errors,
-      props: { type: 'open' },
     },
     //
     // path: '/open',

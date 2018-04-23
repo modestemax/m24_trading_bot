@@ -33,7 +33,7 @@
     mounted() {
       const me = this;
       this.$nextTick(() => {
-        appEmitter.on('error', (error) => {
+        appEmitter.on('srv_error', (error) => {
           const sameError = _.find(me.errors, { error: error.error });
           if (sameError) {
             sameError.count++;

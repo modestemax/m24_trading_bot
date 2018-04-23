@@ -267,9 +267,11 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
             exchange.createMarketSellOrder(symbol, amount);
         } else {
             //todo remove this, it is for testing
-            if (trade && ticker.last >= trade.initialTarget) {
-                trade.price = ticker.last;
-                appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+            if (!env.PRODUCTION) {
+                if (trade && ticker.last >= trade.sellPrice) {
+                    trade.price = ticker.last;
+                    appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+                }
             }
         }
         trade && logChange({ trade, ticker })

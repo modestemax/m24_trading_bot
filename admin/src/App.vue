@@ -22,7 +22,7 @@
             <b-nav-item to="open" type="open">Open</b-nav-item>
             <b-nav-item to="closed">Closed</b-nav-item>
             <b-nav-item to="errors">Errors
-              <b-badge variant="light">4</b-badge>
+              <b-badge variant="danger">{{errorsCount||''}}</b-badge>
             </b-nav-item>
           </b-navbar-nav>
 
