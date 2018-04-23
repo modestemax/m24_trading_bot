@@ -13,8 +13,9 @@
       </template>
       <template slot="commands" slot-scope="row">
         <!-- we use @click.stop here to prevent emitting of a 'row-clicked' event  -->
-        <b-button size="sm" @click.stop="row.toggleDetails" class="mr-2" style="height: 16px;">
-          {{ /*row.detailsShowing ? 'Hide' : 'Show'*/}} ...
+        <b-button size1="sm" @click.stop="row.toggleDetails" class="" style="height: 16px;">
+          <!--<b-button size1="sm" @click.stop="item._showDetails=!item._showDetails" class="" style="height: 16px;">-->
+          {{ /*row.detailsShowing ? 'Hide' : 'Show'*/}}
         </b-button>
 
       </template>
@@ -137,7 +138,17 @@
         }
       },
       addTrades({ trades }) {
-        this.allTrades = _.values(trades);
+        // if (!trades.allTrades || !trades.allTrades.length) {
+
+        this.allTrades = _.map(trades, (t) => {
+          const tr = _.find(this.allTrades, { id: t.id });
+          if (tr) {
+            return _.extend(tr, t);
+          }
+          return _.extend({ _showDetails: false }, t);
+        });
+
+        // }
       },
       listenToEvents() {
         appEmitter.on('trades', this.addTrades);
