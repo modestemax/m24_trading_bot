@@ -103,12 +103,13 @@ const fn = {
         });
     },
     async getBalances() {
-        return new Promise((resolve) => {
-            appEmitter.once('exchange:balances', ({ balances }) => {
-                resolve(balances);
-            });
-            appEmitter.emit('app:get_balances');
-        });
+        // return new Promise((resolve) => {
+        //     appEmitter.once('exchange:balances', ({ balances }) => {
+        //         resolve(balances);
+        //     });
+        //     appEmitter.emit('app:get_balances');
+        // });
+        return  exchange.fetchBalance();
     },
     async getAllPrices() {
         return new Promise((resolve, reject) => {

@@ -215,12 +215,13 @@ module.exports = function (exchange) {
             }
         }
 
-        function retryTimeOut(fn) {
+        async function retryTimeOut(fn, times = 3) {
             try {
-                return fn();
+                return await fn();
             } catch (ex) {
-                if (/request timed out/i.test(ex.toString())) {
-                    return retryTimeOut(fn);
+                // debugger
+                if (times && /request timed out/i.test(ex.toString())) {
+                    return await retryTimeOut(fn, --times);
                 }
                 throw ex;
             }
@@ -249,7 +250,7 @@ module.exports = function (exchange) {
                 let newClientOrderId = getClientOrderId({ symbol });
                 ({ symbol, quantity, price, stopPrice } = newValues);
                 _.extend(args[0], { price, stopPrice, quantity, newClientOrderId });
-                return retryTimeOut(postOrder);
+                return await retryTimeOut(postOrder);
             } else {
                 throw new Error('Check price & quantity')
             }
@@ -268,7 +269,7 @@ module.exports = function (exchange) {
         });
         exchange.privateDeleteOrder = _.wrap(exchange.privateDeleteOrder, async (privateDeleteOrder, ...args) => {
             await orderSync();
-            return retryTimeOut(deleteOrder);
+            return await retryTimeOut(deleteOrder);
 
             async function deleteOrder() {
                 if (PRODUCTION) {
@@ -281,7 +282,7 @@ module.exports = function (exchange) {
         });
         exchange.privateGetOrder = _.wrap(exchange.privateGetOrder, async (privateGetOrder, ...args) => {
             await orderSync();
-            return retryTimeOut(() => privateGetOrder.apply(exchange, args))
+            return await retryTimeOut(() => privateGetOrder.apply(exchange, args))
         });
 
         function makeTestOrder(order) {

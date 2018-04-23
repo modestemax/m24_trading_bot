@@ -190,8 +190,6 @@ env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }
 
 
 
-// getOthersSignals({ indicator: 'LONG_TREND', rate: 5e3 });
-
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
 

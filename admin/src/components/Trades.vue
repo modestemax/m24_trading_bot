@@ -79,8 +79,9 @@
     },
     // components: { Trade },
     mounted() {
+      this.allTrades = appEmitter.allTrades || [];// eslint-disable-line no-alert
       this.$nextTick(() => {
-        // this.listenToEvents();
+        this.listenToEvents();
       });
     },
     computed: {
@@ -88,7 +89,7 @@
         return _.filter(this.allTrades, { type: this.type });
       },
       tradeType() {
-        this.listenToEvents();
+        // this.listenToEvents();
         return _.startCase(this.type);
       },
       resume() {
@@ -106,7 +107,7 @@
     },
     watch: {
       type() {
-        this.listenToEvents();
+        // this.listenToEvents();
       },
       trades(newTrades, oldTrades) {
         this.emitSound(newTrades, oldTrades);
@@ -147,7 +148,7 @@
           }
           return _.extend({ _showDetails: false }, t);
         });
-
+        appEmitter.allTrades = this.allTrades;
         // }
       },
       listenToEvents() {

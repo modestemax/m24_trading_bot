@@ -74,77 +74,83 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
         }
 
         async function startTrade() {
-            if (simulation) {
-                // appEmitter.on('analyse:tracking:' + symbol, (signalResult) => {
-                //     if (signalResult.signalWeightPercent <) {
-                //     }
-                // });
-                return
-            }
-            emit('starting', trade);
+            try {
+                if (simulation) {
+                    // appEmitter.on('analyse:tracking:' + symbol, (signalResult) => {
+                    //     if (signalResult.signalWeightPercent <) {
+                    //     }
+                    // });
+                    return
+                }
+                emit('starting', trade);
 
-            //get trade start time
-            let time = Date.now();
+                //get trade start time
+                let time = Date.now();
 
-            //get quantity of symbol to buy for this trade
+
+                //get quantity of symbol to buy for this trade
             let amount = await getTradeAmount({ symbol, price: buyPrice });
 
-            if (amount) {
-                //get the sell price
-                sellPrice = await updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
-                // if (sellPrice >= signal24h.high) {
-                //     // return
-                // }
-                //prepare canceling order if not buy on time
-                let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
+                if (amount) {
+                    //get the sell price
+                    sellPrice =   updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                    // if (sellPrice >= signal24h.high) {
+                    //     // return
+                    // }
+                    //prepare canceling order if not buy on time
+                    let waitOrCancelOrder = prepareOrder({ symbol, maxWait: MAX_WAIT_BUY_TIME });
 
-                //bid
-                // let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
-                let buyOrder = await exchange.createStopLimitBuyOrder(symbol, amount, buyPrice, stopPrice, { "timeInForce": "FOK", });
+                    //bid
+                    // let buyOrder = await exchange.createLimitBuyOrder(symbol, amount, buyPrice, { "timeInForce": "FOK", });
+                    let buyOrder = await exchange.createStopLimitBuyOrder(symbol, amount, buyPrice, stopPrice, { "timeInForce": "FOK", });
 
-                //for the bid to succeed or cancal it after some time
-                await waitOrCancelOrder(buyOrder);
-                fetchTicker({ symbol });
+                    //for the bid to succeed or cancal it after some time
+                    await waitOrCancelOrder(buyOrder);
+                    fetchTicker({ symbol });
 
-                //get the stop loss price
-                stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
+                    //get the stop loss price
+                    stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
 
-                //check the sell in user data socket
-                let sellState = checkSellState({ symbol });
+                    //check the sell in user data socket
+                    let sellState = checkSellState({ symbol });
 
-                // cancel sell order and sell in market price ->stop loss
-                let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
-                    symbol,
-                    amount,
-                    stopPrice,
-                    maxWait: MAX_WAIT_TRADE_TIME
-                });
+                    // cancel sell order and sell in market price ->stop loss
+                    let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
+                        symbol,
+                        amount,
+                        stopPrice,
+                        maxWait: MAX_WAIT_TRADE_TIME
+                    });
 
-                //place the sell order
-                let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
-                let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
+                    //place the sell order
+                    let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
+                    let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
 
-                _.extend(trade, {
-                    started: true,
-                    time,
-                    amount,
-                    buyOrder,
-                    sellOrder,
-                    updateTrade,
-                    buyPrice,
-                    sellPrice,
-                    stopPrice,
-                    buyPrices: [buyPrice],
-                    sellState
-                });
+                    _.extend(trade, {
+                        started: true,
+                        time,
+                        amount,
+                        buyOrder,
+                        sellOrder,
+                        updateTrade,
+                        buyPrice,
+                        sellPrice,
+                        stopPrice,
+                        buyPrices: [buyPrice],
+                        sellState
+                    });
 
-                emit('started', trade);
-                //get the final sell price
-                trade.finalSellPrice = await sellState;
-                return trade;
-            } else {
-                emitException('Insufficient Quote balance');
-                // return;
+                    emit('started', trade);
+                    //get the final sell price
+                    trade.finalSellPrice = await sellState;
+                    return trade;
+                } else {
+                    emitException('Insufficient Quote balance');
+                    // return;
+                }
+            } catch (e) {
+                debugger
+                throw e;
             }
 
             // return trade.status;

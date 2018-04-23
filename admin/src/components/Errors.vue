@@ -32,6 +32,7 @@
     },
     mounted() {
       const me = this;
+      me.errors = appEmitter.errors || [];
       this.$nextTick(() => {
         appEmitter.on('srv_error', (error) => {
           const sameError = _.find(me.errors, { error: error.error });
@@ -48,7 +49,7 @@
               timeframes: [error.time],
             });
           }
-
+          appEmitter.errors = me.errors;
           me.countErrors();
         });
       });
