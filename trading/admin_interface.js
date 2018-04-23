@@ -96,7 +96,7 @@ function socketSend(data) {
                 socket.send(data);
                 return true
             } catch (e) {
-                emitException(e)
+               // emitException(e)
             }
         }
     });
