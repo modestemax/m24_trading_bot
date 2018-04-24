@@ -93,15 +93,16 @@ function listenToEvents() {
                 buy = s5.strongBuy && s15.strongBuy && s60.trendingUp //&& s240.trendingUp);
                 break;
         }
-        if (buy) {
-            s.buyTimes = s.buyTimes + 1;
-            if (s.buyTimes >= 3) {
-                s.buyTimes--;
-                return true;
-            }
-        } else {
-            s.buyTimes = 0;
-        }
+        return buy;
+        // if (buy) {
+        //     s.buyTimes = s.buyTimes + 1;
+        //     if (s.buyTimes >= 3) {
+        //         s.buyTimes--;
+        //         return true;
+        //     }
+        // } else {
+        //     s.buyTimes = 0;
+        // }
         // return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
     }
 
