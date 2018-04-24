@@ -267,7 +267,7 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
     const tickerListener = async ({ ticker }) => {
         stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
         const duration = (Date.now() - startTime);
-        if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) || duration >= maxWait) {
+        if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) /*|| duration >= maxWait*/) {
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);

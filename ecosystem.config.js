@@ -18,7 +18,7 @@ module.exports = {
                 PORT: 12346,
                 MIN_COUNT: 2,
                 SIMUL_FIRST_ENTRY:'' ,
-                NO_STOP_LOSS: '',
+                NO_STOP_LOSS: 'true',
                 STOP_LOSS_PERCENT: -1.5,
                 SELL_LIMIT_PERCENT: 1.1,
             },
@@ -37,9 +37,9 @@ module.exports = {
                 QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
                 PORT: 12345,
                 MIN_COUNT: 2,
-                NO_STOP_LOSS: '',
+                NO_STOP_LOSS: 'true',
                 STOP_LOSS_PERCENT: -1,
-                SELL_LIMIT_PERCENT: .5,
+                SELL_LIMIT_PERCENT: .6,
             },
             env_production: {
                 NODE_ENV: 'production'
