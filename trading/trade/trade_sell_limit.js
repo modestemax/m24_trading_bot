@@ -175,7 +175,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                     sellPrice,
                     stopPrice,
                     buyPrices: trade.buyPrices.concat(buyPrice),
-                    target: getChangePercent(trade.buyPrice, sellPrice)
+                    target2: getChangePercent(trade.buyPrice, sellPrice)
                 });
                 trade.update++;
                 emit('updated', trade)

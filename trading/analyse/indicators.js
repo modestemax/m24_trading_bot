@@ -10,8 +10,8 @@ function reset(array, minCount) {
 function isCrossing({ indic1, indic2 }) {
     let [ind1_pre, ind1_cur] = indic1.slice(-2);
     let [ind2_pre, ind2_cur] = indic2.slice(-2);
-    let crossing_up = ind1_pre <= ind2_pre && ind1_cur >= ind2_cur;
-    let crossing_down = ind1_pre >= ind2_pre && ind1_cur <= ind2_cur;
+    let crossing_up = ind1_pre <= ind2_pre && ind1_cur > ind2_cur;
+    let crossing_down = ind1_pre >= ind2_pre && ind1_cur < ind2_cur;
     return { crossing: crossing_up || crossing_down, crossing_up, crossing_down };
 }
 
@@ -28,10 +28,10 @@ module.exports = {
             options: { minChangePercent: 0.1 }
         },
         {
-            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .15 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
-            indicator: 'BID_ASK_VOLUME', check: true, weight: 1, mandatory: false,
+            indicator: 'BID_ASK_VOLUME', check: false, weight: 1, mandatory: false,
         },
         {
             indicator: 'EMA', check: true, weight: 1, mandatory: true, options: { minDistance: .1, minCount: minCount }
@@ -93,8 +93,8 @@ module.exports = {
         EMA({ weight, signal, options }) {
             let { indicators } = signal;
             let { ema10, ema20 } = indicators;
-
-            // if (isCrossing({ indic1: ema10, indic2: ema20 })) {
+            // let cross = isCrossing({ indic1: ema10, indic2: ema20 });
+            // if (cross.crossing) {
             //     // reset(ema10, 1);
             //     // reset(ema20, 1);
             //     // reset(ema10, options.minCount);

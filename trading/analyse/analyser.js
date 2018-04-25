@@ -5,19 +5,19 @@ const { checkers: indicatorCheckers, settings: indicatorSettings, mandatoryIndic
 
 
 function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT }) {
+    const activeSettings = _.filter(indicatorSettings, { check: true });
+    let signalResult = _.reduce(activeSettings, (signalResult, indicatorStetting) => {
 
-    let signalResult = _.reduce(indicatorSettings, (signalResult, indicatorStetting) => {
-
-            let { check, weight, indicator, mandatory, bonus, options } = indicatorStetting;
+            let { weight, indicator, mandatory, bonus, options } = indicatorStetting;
             let { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy } = signalResult;
-            if (!stopCheck && check) {
+            if (!stopCheck) {
 
                 let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
                     weight, signal24h, depth, signal, longSignal,
                     options
                 });
                 indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
-                if (mandatory && !indicatorsResult[indicator] && signal.timeframe == env.TIMEFRAME) {
+                if (mandatory && !indicatorsResult[indicator] && signal.timeframe <= env.TIMEFRAME) {
                     stopCheck = true;
                 } else {
                     signalWeight += thisIndicatorSignalWeight;
@@ -38,7 +38,10 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
             indicatorsResult: {},
         }
     );
-    _.extend(signalResult, { trendingUp: signalResult.indicatorsResult.EMA && signalResult.indicatorsResult.ADX });
+    _.extend(signalResult, {
+        strongBuy: false,
+        trendingUp: signalResult.indicatorsResult.EMA && signalResult.indicatorsResult.ADX
+    });
 
     if (signalResult.buy) {
         signalResult.strongBuy = _.reduce(mandatoryIndicators, (buy, mInd) => {

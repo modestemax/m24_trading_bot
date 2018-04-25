@@ -174,16 +174,16 @@ function getOthersSignals({ indicator, rate }) {
         fetchTickers();
     });
 
-    appEmitter.once('app:fetch_long_trend', function () {
-        switch (Number(TIMEFRAME)) {
-            case 15:
-                getSignals({ options: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
-                break;
-            case 60:
-                getSignals({ options: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
-                break;
-        }
-    });
+    // appEmitter.once('app:fetch_long_trend', function () {
+    //     switch (Number(TIMEFRAME)) {
+    //         case 15:
+    //             getSignals({ options: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
+    //             break;
+    //         case 60:
+    //             getSignals({ options: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
+    //             break;
+    //     }
+    // });
 }
 
 env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))

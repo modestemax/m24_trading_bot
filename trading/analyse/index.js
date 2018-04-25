@@ -34,33 +34,31 @@ function listenToEvents() {
         timeframe == env.TIMEFRAME && await analyse(markets);
     });
 
-    async function analyse(markets) {
-        // const [markets] = _.values(signalsTimeframes);
 
-        await Promise.each(_.keys(markets), async (symbol) => {
-            await Promise.each(TIMEFRAMES, async (timeframe) => {
-                let signal = signalsTimeframes[timeframe][symbol];
-                if (signal) {
+    async function analyse(markets) {
+
+        if (!analyse.running) {
+            analyse.running = true;
+            try {
+                await Promise.each(_.keys(markets), async (symbol) => {
+                    await Promise.each(TIMEFRAMES, async (timeframe) => {
+                        let signal = signalsTimeframes[timeframe][symbol];
+                        if (signal) {
                     let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
                     let longSignal = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol] || signal;
-                    // addSymbolData({ symbol, prop: 'signal', data: signal, timeframe });
-                    // longSignal && addSymbolData({ symbol, prop: 'longSignal', data: longSignal, timeframe });
+                            // addSymbolData({ symbol, prop: 'signal', data: signal, timeframe });
+                            // longSignal && addSymbolData({ symbol, prop: 'longSignal', data: longSignal, timeframe });
                     _.extend(signal, { timeframe, longTimeframe });
                     checkSignal({ signal, depth: depths[symbol], signal24h: signals24H[symbol], longSignal });
-                    delete depths[symbol];
-                    // delete symbolsDta[timeframe][symbol].depth;
-                }
-            });
-        })
-        //     .finally(gotNewSignal().then(analyse));
-        //
-        //symbolsDta function gotNewSignal() {
-        //     return new Promise(resolve => {
-        //         appEmitter.once('tv:signals', () => {
-        //             resolve();
-        //         });
-        //     })
-        // }
+                            delete depths[symbol];
+                            // delete symbolsDta[timeframe][symbol].depth;
+                        }
+                    });
+                })
+            } finally {
+                analyse.running = false;
+            }
+        }
     }
 
     // analyse();
@@ -90,7 +88,7 @@ function listenToEvents() {
                 break;
             case 15:
                 s = s15;
-                buy = s5.strongBuy && s15.strongBuy && s60.trendingUp && s240.trendingUp;
+                buy = s5.strongBuy && s15.strongBuy && s60.trendingUp //&& s240.trendingUp;
                 break;
         }
         return buy;
