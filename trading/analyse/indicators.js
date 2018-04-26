@@ -282,7 +282,8 @@ module.exports = {
                 ok = ok && plus_di_cur > minus_di_cur
                 ok = ok && indicators.adx_di_distance > options.minDIDistance
                 // && indicators.adx_di_distance >= indicators.adx_di_0_distance
-                ok = ok && isSorted((adx), minCount);
+
+                ok = ok && isSorted((adx), minCount) && isSorted((adx), minCount+1);
 
                 if (timeframe <= env.TIMEFRAME) {
 

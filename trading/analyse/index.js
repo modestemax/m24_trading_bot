@@ -88,7 +88,7 @@ function listenToEvents() {
                 break;
             case 15:
                 s = s15;
-                buy = s5.strongBuy && s15.strongBuy && s60.trendingUp //&& s240.trendingUp;
+                buy = /*s5.trendingUp && */s15.strongBuy && s60.trendingUp //&& s240.trendingUp;
                 break;
         }
         return buy;
