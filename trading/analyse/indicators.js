@@ -47,7 +47,7 @@ module.exports = {
             options: { minChangePercent: 0.1 }
         },
         {
-            indicator: 'CANDLE_COLOR', check: false, weight: 1, mandatory: true, options: { minChangePercent: .05 }
+            indicator: 'CANDLE_COLOR', check: true, weight: 1, mandatory: true, options: { minChangePercent: .05 }
         },
         {
             indicator: 'BID_ASK_VOLUME', check: false, weight: 1, mandatory: false,
@@ -118,7 +118,7 @@ module.exports = {
                     upSignals: ema10,
                     downSignals: ema20
                 });
-                if (0 < crossingPosition && crossingPosition <= 1 && penteCroisement >= .3) {
+                if (0 < crossingPosition && crossingPosition <= 2 && penteCroisement >= .3) {
                     return weight
                 } else if (signal.timeframe > env.TIMEFRAME) {
                     return weight
