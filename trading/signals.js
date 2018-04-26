@@ -6,11 +6,11 @@ const appEmitter = require('./events');
 let { QUOTE_CUR, EXCHANGE, TIMEFRAME } = env;
 
 
-const debug2 = (tf) => _.throttle((msg) => require('debug')('signals:'+tf)(msg), 30e3);
+const debug2 = (tf) => _.throttle((msg) => require('debug')('signals:' + tf)(msg), 30e3);
 const exchange = global.exchange;
 
-const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => {
-    let timeframeFilter = /1d/i.test(timeframe) ? '' : '|' + timeframe;
+const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE } = {}) => {
+    let timeframeFilter = /1d/i.test(timeframe) || timeframe == 60 * 24 ? '' : '|' + timeframe;
     return {
         timeframe,
         data: {
@@ -52,13 +52,14 @@ const params = ({ timeframe = '1D', tradingCurrency = QUOTE_CUR, exchangeId = EX
 
 };
 
-const beautify = (data) => {
+const beautify = (data, timeframe) => {
     let time = new Date().getTime();
     return _(data).map(({ d }) => {
             let candleColor;
             return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
                 time,
+                timeframeId: Math.trunc(Date.now() / env.timeframesIntervals[timeframe]),
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
@@ -117,7 +118,7 @@ const beautify = (data) => {
     ).filter(d => d).groupBy('symbol').mapValues(([v]) => v).value()
 }
 
-function getSignals({ options = params(),/* longTimeframe,*/ rate = 1e3 } = {}) {
+function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {}) {
 
     const args = arguments;
     const { data, timeframe } = options;
@@ -131,7 +132,7 @@ function getSignals({ options = params(),/* longTimeframe,*/ rate = 1e3 } = {}) 
             if (!err) {
                 let jsonData = JSON.parse(data);
                 if (jsonData.data && !jsonData.error) {
-                    let beautifyData = beautify(jsonData.data);
+                    let beautifyData = beautify(jsonData.data, timeframe);
                     // let long = longTimeframe ? ':long' : '';
                     debug(`signals ${timeframe} ${_.keys(beautifyData).length} symbols loaded`);
                     // setImmediate(() => appEmitter.emit('tv:signals' + long, { markets: beautifyData, timeframe }))
@@ -187,8 +188,6 @@ function getOthersSignals({ indicator, rate }) {
 }
 
 env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
-
-
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');

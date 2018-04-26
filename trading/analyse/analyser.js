@@ -55,11 +55,10 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 
 
 const symbolsData = {};
-const MAX_LENGTH = 4, MIN_BUY_WEIGHT = 70 / 100;
+const MAX_LENGTH = 40, MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
-    //todo potentiel bug 2 bougies diff peuvent avoir le meme open
-    return signal.open !== lastSignal.open;
+    return signal.timeframeId !== lastSignal.timeframeId    ;
 }
 
 function getNewIndicators({ signal, lastSignal }) {
@@ -71,7 +70,8 @@ function getNewIndicators({ signal, lastSignal }) {
         if (isNewCandle({ signal, lastSignal })) {
             prevIndicators[indKey] = prevIndicators[indKey].concat(indValue).slice(-MAX_LENGTH);
         } else {
-            prevIndicators[indKey].length > 1 && prevIndicators[indKey].pop();
+            // prevIndicators[indKey].length > 1 &&
+            prevIndicators[indKey].pop();
             prevIndicators[indKey].push(indValue);
         }
         // if (prevIndicators[indKey].length > 1) {

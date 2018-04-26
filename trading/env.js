@@ -69,5 +69,13 @@ module.exports = Model.Settings.load().then(async settings => {
         // 3,
         // '1D',
     ];
+
+    global.env.timeframesIntervals = {
+        5: 5 * 60e3,
+        15: 15 * 60e3,
+        60: 60 * 60e3,
+        240: 240 * 60e3,
+    };
+
     return settings;
 });
