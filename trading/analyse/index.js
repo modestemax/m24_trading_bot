@@ -44,12 +44,12 @@ function listenToEvents() {
                     await Promise.each(TIMEFRAMES, async (timeframe) => {
                         let signal = signalsTimeframes[timeframe][symbol];
                         if (signal) {
-                    let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
-                    let longSignal = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol] || signal;
+                            let longTimeframe = timeframe == 15 ? 60 : timeframe == 60 ? 240 : '1D';
+                            let longSignal = signalsTimeframes[longTimeframe] && signalsTimeframes[longTimeframe][symbol] || signal;
                             // addSymbolData({ symbol, prop: 'signal', data: signal, timeframe });
                             // longSignal && addSymbolData({ symbol, prop: 'longSignal', data: longSignal, timeframe });
-                    _.extend(signal, { timeframe, longTimeframe });
-                    checkSignal({ signal, depth: depths[symbol], signal24h: signals24H[symbol], longSignal });
+                            _.extend(signal, { timeframe, longTimeframe });
+                            checkSignal({ signal, depth: depths[symbol], signal24h: signals24H[symbol], longSignal });
                             delete depths[symbol];
                             // delete symbolsDta[timeframe][symbol].depth;
                         }
@@ -80,28 +80,39 @@ function listenToEvents() {
         let s15 = buySignals[15] || {};
         let s60 = buySignals[60] || {};
         let s240 = buySignals[240] || {};
-        let s, buy;
+        let s, buy, trendingUp;
         switch (timeframe) {
             case 5:
                 s = s5;
-                buy = s5.strongBuy && s15.trendingUp && s60.trendingUp //&& s240.trendingUp);
+                trendingUp = s15.trendingUp //&& s60.trendingUp //&& s240.trendingUp);
                 break;
             case 15:
                 s = s15;
-                buy = /*s5.trendingUp && */s15.strongBuy && s60.trendingUp //&& s240.trendingUp;
+                trendingUp = s60.trendingUp //&& s240.trendingUp;
                 break;
         }
-        return buy;
-        // if (buy) {
-        //     s.buyTimes = s.buyTimes + 1;
-        //     if (s.buyTimes >= 3) {
-        //         s.buyTimes--;
-        //         return true;
-        //     }
-        // } else {
-        //     s.buyTimes = 0;
-        // }
-        // return !!_.reduce(TIMEFRAMES, (allBuy, timeframe) => allBuy && buyTimeframes[symbol][timeframe], true);
+
+        if (trendingUp) {
+            buy = buyEma() + buyMacd() + buyAdx();
+            return buy >= 3;
+        }
+
+        function buyEma() {
+            let { distance, crossing_up, crossingChangePercent, crossingPosition } = s.emaData;
+            return Boolean( crossing_up && crossingPosition > 0 && distance >= .1 )//&& crossingChangePercent >= .3
+        }
+
+        function buyMacd() {
+            let { distance, crossing_up, crossingChangePercent, crossingPosition, macd, macd_signal } = s.macdData;
+            return Boolean( macd > 0 && crossing_up && crossingPosition > 0 && distance >= 10) //&& crossingChangePercent >= .1
+        }
+
+        function buyAdx() {
+            let { value: adx_value, aboveReference: adx_aboveReference, adx_trending_up, crossing_up: adx_crossing_up_reference, crossingPosition: adx_crossingPosition } = s.adxData;
+            let { distance, crossing_up, crossingChangePercent, crossingPosition } = s.adxDIData;
+            return Boolean((adx_aboveReference && adx_trending_up) && adx_crossingPosition > 0 && crossing_up && distance >= 1)// && crossingChangePercent >= .1
+        }
+
     }
 
     function accumulateSignalResult({ symbol, timeframe, signalResult }) {
@@ -113,10 +124,10 @@ function listenToEvents() {
     async function checkSignal({ signal24h, depth, signal, longSignal }) {
         let { symbol, timeframe } = signal;
         let { signal: signalData, signalResult } = await getSignalResult({ signal24h, depth, signal, longSignal });
-        let { buy, strongBuy } = signalResult;
+        let { buy, strongBuy, trendingUp } = signalResult;
         accumulateSignalResult({ symbol, timeframe, signalResult });
         if (timeframe == env.TIMEFRAME) {
-            if ((strongBuy) && tryBuy({ symbol, timeframe, signalResult, })) {
+            if ((trendingUp) && tryBuy({ symbol, timeframe, signalResult, })) {
                 appEmitter.emit('analyse:try_trade', { market: signalData, signalData, signal24h });
             } else if (!buy) {
 

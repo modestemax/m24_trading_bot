@@ -53,13 +53,12 @@ const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE 
 };
 
 const beautify = (data, timeframe) => {
-    let time = new Date().getTime();
     return _(data).map(({ d }) => {
             let candleColor;
             return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
-                time,
-                timeframeId: Math.trunc(Date.now() / env.timeframesIntervals[timeframe]),
+                time: Date.now(),
+                timeframeId: new Date(Math.trunc(Date.now() / env.timeframesIntervals[timeframe]) * env.timeframesIntervals[timeframe]),
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
@@ -136,6 +135,9 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
                     // let long = longTimeframe ? ':long' : '';
                     debug(`signals ${timeframe} ${_.keys(beautifyData).length} symbols loaded`);
                     // setImmediate(() => appEmitter.emit('tv:signals' + long, { markets: beautifyData, timeframe }))
+
+                    // beautifyData=_.pick(beautifyData,['AMB/BTC'])
+
                     return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData, timeframe }))
                 }
                 err = jsonData.error;

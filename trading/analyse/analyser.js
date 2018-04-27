@@ -39,9 +39,14 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
         }
     );
     _.extend(signalResult, {
-        strongBuy: false,
-        trendingUp: signalResult.indicatorsResult.EMA && signalResult.indicatorsResult.ADX
-    });
+            timeframeId: signal.timeframeId,
+            strongBuy: false,
+            // trendingUp: signalResult.indicatorsResult.EMA,// && signalResult.indicatorsResult.ADX,
+            trendingUp: signal.indicators.EMA || signal.indicators.ADXDI || signal.indicators.MACD,
+        },
+        _.pick(signal.indicators, ['emaData', 'macdData', 'adxData', 'adxDIData'])
+    );
+
 
     if (signalResult.buy) {
         signalResult.strongBuy = _.reduce(mandatoryIndicators, (buy, mInd) => {
@@ -58,7 +63,7 @@ const symbolsData = {};
 const MAX_LENGTH = 40, MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
-    return signal.timeframeId !== lastSignal.timeframeId    ;
+    return signal.timeframeId !== lastSignal.timeframeId;
 }
 
 function getNewIndicators({ signal, lastSignal }) {

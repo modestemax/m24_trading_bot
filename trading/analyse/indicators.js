@@ -12,7 +12,7 @@ function isCrossing({ upSignals, downSignals }) {
     let [downPrev, downCurr] = downSignals.slice(-2);
     let crossing_up = upPrev <= downPrev && upCurr > downCurr;
     let crossing_down = upPrev >= downPrev && upCurr < downCurr;
-    return { crossing: crossing_up || crossing_down, crossing_up, crossing_down };
+    return crossing_up || crossing_down && { crossing_up, crossing_down };
 }
 
 const minCount = process.env.MIN_COUNT || 2;
@@ -27,14 +27,13 @@ function getCrossingData({ upSignals, downSignals, crossingPosition = 0 }) {
             }) :
             isCrossing({ upSignals, downSignals });
 
-        if (crossing.crossing_up) {
-            let penteCroisement = distance(_.last(upSignals), upSignals[upSignals.length - (crossingPosition + 1)]);
-            return _.extend({ crossingPosition, penteCroisement }, crossing);
+        if (crossing) {
+            let crossingChangePercent = distance(_.last(upSignals), upSignals[upSignals.length - (crossingPosition + 1)]);
+            return _.extend({ crossingPosition, crossingChangePercent }, crossing);
         } else {
             return getCrossingData({ upSignals, downSignals, crossingPosition: 1 + crossingPosition })
         }
     }
-    return {};
 }
 
 module.exports = {
@@ -63,7 +62,7 @@ module.exports = {
             options: { minDistance: .1, minCount: minCount }
         },
         {
-            indicator: 'AROON', check: true, weight: 1, mandatory: false,
+            indicator: 'AROON', check: false, weight: 1, mandatory: false,
             options: { minDistance: .2, upReference: 70, downReference: 30, minCount: 1 }
         },
         {
@@ -109,21 +108,25 @@ module.exports = {
             let ok = Boolean(depth) && (depth.allBid > depth.allAsk);
             return +ok && weight;
         },
+
         EMA({ weight, signal, options }) {
             let { indicators } = signal;
             let { ema10, ema20 } = indicators;
 
-            if (distance(_.last(ema10), _.last(ema20)) > .1) {
-                let { crossingPosition, penteCroisement } = indicators.emaCrossing = getCrossingData({
-                    upSignals: ema10,
-                    downSignals: ema20
-                });
-                if (0 < crossingPosition && crossingPosition <= 2 && penteCroisement >= .3) {
-                    return weight
-                } else if (signal.timeframe > env.TIMEFRAME) {
-                    return weight
-                }
-            }
+            indicators.EMA = _.last(ema10) > _.last(ema20);
+
+            indicators.emaData = _.extend({
+                distance: distance(_.last(ema10), _.last(ema20))
+            }, getCrossingData({ upSignals: ema10, downSignals: ema20 }));
+
+
+            return +indicators.EMA && weight;
+            // if (0 < crossingPosition && crossingPosition <= 2 && penteCroisement >= .3) {
+            //     return weight;
+            // } else if (signal.timeframe > env.TIMEFRAME) {
+            //     return weight
+            // }
+
             // let ema10 = (ema10_full);
             // let ema20 = (ema20_full);
             // let ema10Prev = (ema10);
@@ -197,32 +200,35 @@ module.exports = {
             //macd >macd_signal
             let { indicators } = signal;
             let { macd, macd_signal } = indicators;
+            indicators.MACD = _.last(macd) > _.last(macd_signal);
 
-            // if (isCrossing({ indic1: macd, indic2: macd_signal })) {
-            //     reset(macd, options.minCount);
-            //     reset(macd_signal, options.minCount);
-            //     indicators.macd_crossing = true;
+            indicators.macdData = _.extend({
+                macd: _.last(macd),
+                macd_signal: _.last(macd_signal),
+                distance: distance(_.last(macd), _.last(macd_signal))
+            }, getCrossingData({ upSignals: macd, downSignals: macd_signal }));
+
+            return +indicators.MACD && weight;
+
+            // let ok = false;
+            // if (_.min([macd.length, macd_signal.length]) >= options.minCount) {
+            //
+            //
+            //     let macd_cur = _.last(macd);
+            //     let macd_signal_cur = _.last(macd_signal);
+            //     let macd_0 = _.head(macd);
+            //     let macd_signal_0 = _.head(macd_signal);
+            //     indicators.macd_distance = distance(macd_cur, macd_signal_cur);
+            //     indicators.macd_0_distance = distance(macd_0, macd_signal_0);
+            //     ok = macd_cur > macd_signal_cur
+            //     // ok = ok && isSorted((macd), options.minCount)
+            //     // ok = ok && isSorted((macd_signal), options.minCount)
+            //     ok = ok && indicators.macd_distance > options.minDistance
+            //     // && indicators.macd_distance >= indicators.macd_0_distance;
+            //
+            //
             // }
-
-            let ok = false;
-            if (_.min([macd.length, macd_signal.length]) >= options.minCount) {
-
-
-                let macd_cur = _.last(macd);
-                let macd_signal_cur = _.last(macd_signal);
-                let macd_0 = _.head(macd);
-                let macd_signal_0 = _.head(macd_signal);
-                indicators.macd_distance = distance(macd_cur, macd_signal_cur);
-                indicators.macd_0_distance = distance(macd_0, macd_signal_0);
-                ok = macd_cur > macd_signal_cur
-                // ok = ok && isSorted((macd), options.minCount)
-                // ok = ok && isSorted((macd_signal), options.minCount)
-                ok = ok && indicators.macd_distance > options.minDistance
-                // && indicators.macd_distance >= indicators.macd_0_distance;
-
-
-            }
-            return +ok && weight;
+            // return +ok && weight;
 
         },
         AROON({ weight, signal, options }) {
@@ -257,47 +263,74 @@ module.exports = {
         },
         ADX({ weight, signal, options }) {
 
-            let { timeframe, indicators } = signal;
-            let { adx, /* adx_trendingUp, adx_minus_di_trendingDown, adx_plus_di_trendingUp, */adx_minus_di, adx_plus_di } = indicators;
-            //
-            // if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
-            //     reset(adx_plus_di, options.minCount);
-            //     reset(adx_minus_di, options.minCount);
-            //     indicators.adx_crossing = true;
-            // }
-            adx = _.takeRightWhile(adx, v => v >= options.buyReference);
-            let ok = false;
-            let minCount = options.minCountTimeframe && options.minCountTimeframe[timeframe] || options.minCount;
-            if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= minCount) {
+            let { indicators } = signal;
+            let { adx, adx_minus_di, adx_plus_di } = indicators;
 
-                let minus_di_cur = _.last(adx_minus_di);
-                let plus_di_cur = _.last(adx_plus_di);
-                let plus_di_0 = _.head(adx_plus_di);
-                let minus_di_0 = _.head(adx_minus_di);
-                let ecarts = getEcarts(adx);
-                indicators.adx_di_distance = plus_di_cur - minus_di_cur;
-                indicators.adx_di_0_distance = plus_di_0 - minus_di_0;
-                ok = _.last(adx) > options.buyReference
-                ok = ok && _.last(_.initial(adx)) > options.buyReference
-                ok = ok && plus_di_cur > minus_di_cur
-                ok = ok && indicators.adx_di_distance > options.minDIDistance
-                // && indicators.adx_di_distance >= indicators.adx_di_0_distance
+            indicators.ADXDI = _.last(adx_plus_di) > _.last(adx_minus_di);
 
-                ok = ok && isSorted((adx), minCount) && isSorted((adx), minCount+1);
 
-                if (timeframe <= env.TIMEFRAME) {
+            indicators.adxDIData = _.extend({
+                distance: (_.last(adx_plus_di) - _.last(adx_minus_di))
+            }, getCrossingData({ upSignals: adx_plus_di, downSignals: adx_minus_di }));
+            let adxValue = _.last(adx);
+            let adxAboveReference = adxValue > options.buyReference;
+            indicators.adxData = _.extend({
+                adx_trending_up: isAdxOk(),
+                aboveReference: adxAboveReference,
+                value: adxValue,
+            }, getCrossingData({ upSignals: adx, downSignals: _.fill(new Array(adx.length), options.buyReference) }));
 
-                    // ok = ok && (isSorted((adx_plus_di), minCount) && isSorted((adx_minus_di), minCount, { reverse: true }))
-                    // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
-                    // && isCrossingReference()
-                    // ok = ok && isSorted(ecarts)
+            return +indicators.ADXDI && weight;
+
+            function isAdxOk() {
+                if (adxAboveReference) {
+                    if (adxValue < options.buyReference + 5) {
+                        return _.last(_.initial(adx)) < adxValue;
+                    }
+                    return true;
                 }
+                return false
             }
-            return +ok && weight;
 
-            function isCrossingReference() {
-                return _.min(adx) < options.buyReference && _.max(adx) > options.buyReference;
-            }
+//
+// if (isCrossing({ indic1: adx_plus_di, indic2: adx_minus_di })) {
+//     reset(adx_plus_di, options.minCount);
+//     reset(adx_minus_di, options.minCount);
+//     indicators.adx_crossing = true;
+// }
+// adx = _.takeRightWhile(adx, v => v >= options.buyReference);
+// let ok = false;
+// let minCount = options.minCountTimeframe && options.minCountTimeframe[timeframe] || options.minCount;
+// if (_.min([adx.length, adx_minus_di.length, adx_plus_di.length]) >= minCount) {
+//
+//     let minus_di_cur = _.last(adx_minus_di);
+//     let plus_di_cur = _.last(adx_plus_di);
+//     let plus_di_0 = _.head(adx_plus_di);
+//     let minus_di_0 = _.head(adx_minus_di);
+//     let ecarts = getEcarts(adx);
+//     indicators.adx_di_distance = plus_di_cur - minus_di_cur;
+//     indicators.adx_di_0_distance = plus_di_0 - minus_di_0;
+//     ok = _.last(adx) > options.buyReference
+//     ok = ok && _.last(_.initial(adx)) > options.buyReference
+//     ok = ok && plus_di_cur > minus_di_cur
+//     ok = ok && indicators.adx_di_distance > options.minDIDistance
+//     // && indicators.adx_di_distance >= indicators.adx_di_0_distance
+//
+//     ok = ok && isSorted((adx), minCount) && isSorted((adx), minCount + 1);
+//
+//     if (timeframe <= env.TIMEFRAME) {
+//
+//         // ok = ok && (isSorted((adx_plus_di), minCount) && isSorted((adx_minus_di), minCount, { reverse: true }))
+//         // && (isSorted((adx_plus_di), options.minCount) || isSorted((adx_minus_di), options.minCount, { reverse: true }))
+//         // && isCrossingReference()
+//         // ok = ok && isSorted(ecarts)
+//     }
+// }
+// return +ok && weight;
+//
+// function isCrossingReference() {
+//     return _.min(adx) < options.buyReference && _.max(adx) > options.buyReference;
+// }
         },
 
         VWMA({ weight, signal }) {
@@ -310,7 +343,8 @@ module.exports = {
                 ok = (vwma_cur < close);
             }
             return +ok && weight;
-        },
+        }
+        ,
 
         RSI({ weight, signal, options }) {
             let { indicators } = signal;
@@ -325,7 +359,8 @@ module.exports = {
     }
 
 
-};
+}
+;
 
 function isSorted(list, minCount, { reverse = false } = {}) {
     let array = _.slice(list, -minCount);
