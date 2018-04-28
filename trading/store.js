@@ -118,20 +118,21 @@ TradeRatio.updateTradeRatio = async function ({ symbol, ratio }) {
     }
 }
 
-SymbolsData.load = async function ({ json = false }={}) {
+SymbolsData.load = async function ({ starting = false } = {}) {
     try {
-        let sData = await SymbolsData.range({
-            latest: Date.now(), //* the ending time point of list
-            earliest: 0,                   //* the starting time point of list
-            limit: [0, 1],
-        });
-        sData = _.first(sData);
-        if (sData && Date.now() - new Date(+sData.updatedAt) < 60e3 * 15) {
-            if (json) {
+        let sData = await SymbolsData.findBySid('1');
+        if (!sData) {
+            await   SymbolsData.create({ data: '', time: Date.now() })
+        }
+
+        if (starting) {
+            if (sData && Date.now() - new Date(+sData.time) < 60e3 * 15) {
                 return JSON.parse(sData.data)
             } else {
-                return sData;
+                return null;
             }
+        } else {
+            return sData;
         }
     } catch (e) {
         log(e);
@@ -143,12 +144,11 @@ SymbolsData.save = _.throttle(async function (sData) {
     try {
         let data = JSON.stringify(sData);
         let savedData = await SymbolsData.load();
-        if (savedData) {
-            savedData.data = data;
-            SymbolsData.modify(savedData);
-        } else {
-            SymbolsData.create({ data })
-        }
+
+        savedData.data = data;
+        savedData.time = Date.now();
+        SymbolsData.modify(savedData);
+
     }
     catch
         (e) {
@@ -161,7 +161,7 @@ appEmitter.on('trade:new_trade', addTrade);
 appEmitter.on('trade:end_trade', delTrade);
 
 module.exports = (async () => {
-    let saved = await  SymbolsData.load({ json: true });
+    let saved = await  SymbolsData.load({ starting: true });
     // SymbolsData.saved =  {};
     SymbolsData.saved = saved || {};
 })();

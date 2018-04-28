@@ -41,6 +41,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
     _.extend(signalResult, {
             timeframeId: signal.timeframeId,
             strongBuy: false,
+            indicators: signal.indicators,
             // trendingUp: signalResult.indicatorsResult.EMA,// && signalResult.indicatorsResult.ADX,
             trendingUp: signal.indicators.EMA || signal.indicators.ADXDI || signal.indicators.MACD,
         },
@@ -59,8 +60,8 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 }
 
 
-const symbolsData = Model.SymbolsData.saved||{};
-const  MIN_BUY_WEIGHT = 70 / 100;
+const symbolsData = Model.SymbolsData.saved || {};
+const MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
     return signal.timeframeId !== lastSignal.timeframeId;

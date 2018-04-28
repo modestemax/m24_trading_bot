@@ -55,10 +55,11 @@ const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE 
 const beautify = (data, timeframe) => {
     return _(data).map(({ d }) => {
             let candleColor;
+            let timeframeId= Math.trunc(Date.now() / env.timeframesIntervals[timeframe]);
             return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
                 time: new Date(),
-                timeframeId: Math.trunc(Date.now() / env.timeframesIntervals[timeframe]),
+                timeframeId,
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
@@ -70,6 +71,18 @@ const beautify = (data, timeframe) => {
                 exchange: d[7].toLowerCase(),
                 description: d[8],
                 indicators: {
+                    symbol: exchange.marketsById[d[0]].symbol,
+                    time:timeframeId* env.timeframesIntervals[timeframe],
+                    open: d[20],
+                    close: d[1],
+                    changePercent: +d[2].toFixed(2),
+                    high: d[3],
+                    low: d[4],
+                    volume: d[5],
+                    signal: signal(d[6]),
+                    signalStrength: strength(d[6]),
+                    signalString: signalString(d[6]),
+                    change_from_open: d[21],
                     "adx": d[9],
                     "adx_minus_di": d[10],
                     "adx_plus_di": d[11],
