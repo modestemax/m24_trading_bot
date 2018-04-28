@@ -12,7 +12,7 @@ function isCrossing({ upSignals, downSignals }) {
     let [downPrev, downCurr] = downSignals.slice(-2);
     let crossing_up = upPrev <= downPrev && upCurr > downCurr;
     let crossing_down = upPrev >= downPrev && upCurr < downCurr;
-    return crossing_up || crossing_down && { crossing_up, crossing_down };
+    return (crossing_up || crossing_down) && { crossing_up, crossing_down };
 }
 
 const minCount = process.env.MIN_COUNT || 2;
@@ -34,6 +34,12 @@ function getCrossingData({ upSignals, downSignals, crossingPosition = 0 }) {
             return getCrossingData({ upSignals, downSignals, crossingPosition: 1 + crossingPosition })
         }
     }
+}
+
+function cleanUpOldSignals({ signals, crossingData }) {
+    crossingData && _.forEach(signals, values => {
+        values.splice(0, values.length - (crossingData.crossingPosition + 5))
+    })
 }
 
 module.exports = {
@@ -111,13 +117,14 @@ module.exports = {
 
         EMA({ weight, signal, options }) {
             let { indicators } = signal;
-            let { ema10, ema20 } = indicators;
+            let crossingData, { ema10, ema20 } = indicators;
 
             indicators.EMA = _.last(ema10) > _.last(ema20);
 
             indicators.emaData = _.extend({
                 distance: distance(_.last(ema10), _.last(ema20))
-            }, getCrossingData({ upSignals: ema10, downSignals: ema20 }));
+            }, crossingData = getCrossingData({ upSignals: ema10, downSignals: ema20 }));
+            cleanUpOldSignals({ signals: [ema20, ema10], crossingData });
 
 
             return +indicators.EMA && weight;
@@ -201,12 +208,13 @@ module.exports = {
             let { indicators } = signal;
             let { macd, macd_signal } = indicators;
             indicators.MACD = _.last(macd) > _.last(macd_signal);
-
+            let crossingData;
             indicators.macdData = _.extend({
                 macd: _.last(macd),
                 macd_signal: _.last(macd_signal),
                 distance: distance(_.last(macd), _.last(macd_signal))
-            }, getCrossingData({ upSignals: macd, downSignals: macd_signal }));
+            }, crossingData = getCrossingData({ upSignals: macd, downSignals: macd_signal }));
+            cleanUpOldSignals({ signals: [macd, macd_signal], crossingData });
 
             return +indicators.MACD && weight;
 
@@ -264,26 +272,32 @@ module.exports = {
         ADX({ weight, signal, options }) {
 
             let { indicators } = signal;
-            let { adx, adx_minus_di, adx_plus_di } = indicators;
+            let crossingData, { adx, adx_minus_di, adx_plus_di } = indicators;
 
             indicators.ADXDI = _.last(adx_plus_di) > _.last(adx_minus_di);
 
 
             indicators.adxDIData = _.extend({
                 distance: (_.last(adx_plus_di) - _.last(adx_minus_di))
-            }, getCrossingData({ upSignals: adx_plus_di, downSignals: adx_minus_di }));
+            }, crossingData = getCrossingData({ upSignals: adx_plus_di, downSignals: adx_minus_di }));
+            cleanUpOldSignals({ signals: [adx_minus_di, adx_plus_di], crossingData });
+
             let adxValue = _.last(adx);
             let adxAboveReference = adxValue > options.buyReference;
             indicators.adxData = _.extend({
                 adx_trending_up: isAdxOk(),
                 aboveReference: adxAboveReference,
                 value: adxValue,
-            }, getCrossingData({ upSignals: adx, downSignals: _.fill(new Array(adx.length), options.buyReference) }));
+            }, crossingData = getCrossingData({
+                upSignals: adx,
+                downSignals: _.fill(new Array(adx.length), options.buyReference)
+            }));
+            cleanUpOldSignals({ signals: [adx], crossingData });
 
-            return +indicators.ADXDI && weight;
+            return +isAdxOk() && weight;
 
             function isAdxOk() {
-                if (adxAboveReference) {
+                if (adxAboveReference && indicators.ADXDI) {
                     if (adxValue < options.buyReference + 5) {
                         return _.last(_.initial(adx)) < adxValue;
                     }

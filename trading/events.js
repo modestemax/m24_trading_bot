@@ -54,7 +54,6 @@ process.stdin.on('data', (reason, p) => {
     if (/tradee/i.test(reason.toString())) {
         appEmitter('test:trade', null, true)
     }
-    debugger
     emitException(reason);
 });
 

@@ -59,8 +59,8 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 }
 
 
-const symbolsData = {};
-const MAX_LENGTH = 40, MIN_BUY_WEIGHT = 70 / 100;
+const symbolsData = Model.SymbolsData.saved||{};
+const  MIN_BUY_WEIGHT = 70 / 100;
 
 function isNewCandle({ signal, lastSignal }) {
     return signal.timeframeId !== lastSignal.timeframeId;
@@ -73,7 +73,7 @@ function getNewIndicators({ signal, lastSignal }) {
         }
 
         if (isNewCandle({ signal, lastSignal })) {
-            prevIndicators[indKey] = prevIndicators[indKey].concat(indValue).slice(-MAX_LENGTH);
+            prevIndicators[indKey] = prevIndicators[indKey].concat(indValue);//.slice(-MAX_LENGTH);
         } else {
             // prevIndicators[indKey].length > 1 &&
             prevIndicators[indKey].pop();
@@ -101,7 +101,7 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
     isNewCandle({ lastSignal, signal }) && _.extend(lastSignal, _.omit(signal, 'indicators'));
     signal.indicators = lastSignal.indicators;
     let signalResult = analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT });
-
+    Model.SymbolsData.save(symbolsData);
     return {
         signal24h,
         depth,
@@ -112,13 +112,15 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
 }
 
 function logSignalResult(signalResult) {
-    let { symbol, buy, strongBuy, timeframe, indicatorsResult, signalWeight, totalWeight } = signalResult;
-    let strIndicators = _(indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
-    let ok = buy ? 'OK' : 'NOK';
-    ok = strongBuy ? '++' + ok : ok;
-    let buyRatio = signalWeight / totalWeight;
-    buyRatio > 49 / 100 && buy && debug(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators}  -> ${ok}`);
-    buyRatio > 49 / 100 && !buy && debug2(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators} -> ${ok}`);
+    let { symbol, buy, strongBuy, trendingUp, timeframe, indicatorsResult, signalWeight, totalWeight } = signalResult;
+    if (trendingUp) {
+        let strIndicators = _(indicatorsResult).map((v, k) => [k, v]).filter(([k, v]) => v).map(([k, v]) => k).value().join(' ');
+        let ok = buy ? 'OK' : 'NOK';
+        ok = strongBuy ? '++' + ok : ok;
+        let buyRatio = signalWeight / totalWeight;
+        buyRatio > 49 / 100 && buy && debug(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators}  -> ${ok}`);
+        buyRatio > 49 / 100 && !buy && debug2(`${timeframe} ${symbol} ${signalWeight}/${totalWeight} ${strIndicators} -> ${ok}`);
+    }
 }
 
 

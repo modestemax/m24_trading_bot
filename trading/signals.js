@@ -57,8 +57,8 @@ const beautify = (data, timeframe) => {
             let candleColor;
             return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
-                time: Date.now(),
-                timeframeId: new Date(Math.trunc(Date.now() / env.timeframesIntervals[timeframe]) * env.timeframesIntervals[timeframe]),
+                time: new Date(),
+                timeframeId: Math.trunc(Date.now() / env.timeframesIntervals[timeframe]),
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
                 high: d[3],
@@ -126,6 +126,7 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
     debug = debug[timeframe] = debug[timeframe] || debug2(timeframe);
 
     const url = 'https://scanner.tradingview.com/crypto/scan';
+
     curl.postJSON(url, data, (err, res, data) => {
         try {
             if (!err) {
@@ -148,7 +149,7 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
             log('signals exception:' + timeframe + ' ' + ex);
             emitException(ex)
         } finally {
-            setTimeout(() => getSignals.apply(null, args), rate);
+            // setTimeout(() => getSignals.apply(null, args), rate);
         }
     })
 }
@@ -189,7 +190,7 @@ function getOthersSignals({ indicator, rate }) {
     // });
 }
 
-env.TIMEFRAMES.forEach((timeframe) => getSignals({ options: params({ timeframe }) }))
+env.TIMEFRAMES.forEach((timeframe) => setInterval(_.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3), 1e3));
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');

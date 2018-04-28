@@ -3,8 +3,9 @@ const Settings = require('pd-redis-model')(appKey + 'Settings');
 const Trade = require('pd-redis-model')(appKey + 'Trade');
 const OldTrade = require('pd-redis-model')(appKey + 'OldTrade');
 const TradeRatio = require('pd-redis-model')(appKey + 'TradeRatio');
+const SymbolsData = require('pd-redis-model')(appKey + 'SymbolsData');
 
-Object.assign(global, { Model: { Settings, Trade, OldTrade, TradeRatio } });
+Object.assign(global, { Model: { Settings, Trade, OldTrade, TradeRatio, SymbolsData } });
 Settings.current = null;
 Settings.load = async function () {
     if (!Settings.current) {
@@ -117,5 +118,50 @@ TradeRatio.updateTradeRatio = async function ({ symbol, ratio }) {
     }
 }
 
+SymbolsData.load = async function ({ json = false }={}) {
+    try {
+        let sData = await SymbolsData.range({
+            latest: Date.now(), //* the ending time point of list
+            earliest: 0,                   //* the starting time point of list
+            limit: [0, 1],
+        });
+        sData = _.first(sData);
+        if (sData && Date.now() - new Date(+sData.updatedAt) < 60e3 * 15) {
+            if (json) {
+                return JSON.parse(sData.data)
+            } else {
+                return sData;
+            }
+        }
+    } catch (e) {
+        log(e);
+        process.exit(1);
+    }
+};
+
+SymbolsData.save = _.throttle(async function (sData) {
+    try {
+        let data = JSON.stringify(sData);
+        let savedData = await SymbolsData.load();
+        if (savedData) {
+            savedData.data = data;
+            SymbolsData.modify(savedData);
+        } else {
+            SymbolsData.create({ data })
+        }
+    }
+    catch
+        (e) {
+        emitException(e);
+    }
+}, 30e3 * 5);
+
+
 appEmitter.on('trade:new_trade', addTrade);
 appEmitter.on('trade:end_trade', delTrade);
+
+module.exports = (async () => {
+    let saved = await  SymbolsData.load({ json: true });
+    // SymbolsData.saved =  {};
+    SymbolsData.saved = saved || {};
+})();
