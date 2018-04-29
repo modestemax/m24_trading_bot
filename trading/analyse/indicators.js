@@ -132,6 +132,7 @@ module.exports = {
             indicators.EMA = _.last(ema10) > _.last(ema20);
 
             indicators.emaData = _.extend({
+                values: { ema10, ema20 },
                 distance: distance(_.last(ema10), _.last(ema20))
             }, crossingData = getCrossingData({ upSignals: ema10, downSignals: ema20 }));
             cleanUpOldSignals({ signals: [ema20, ema10], crossingData });
@@ -220,6 +221,7 @@ module.exports = {
             indicators.MACD = _.last(macd) > _.last(macd_signal);
             let crossingData;
             indicators.macdData = _.extend({
+                values: { macd, macd_signal },
                 macd: _.last(macd),
                 macd_signal: _.last(macd_signal),
                 trending_up: isTrendingUp(macd) && isTrendingUp(macd_signal),
@@ -289,6 +291,7 @@ module.exports = {
 
 
             indicators.adxDIData = _.extend({
+                values: { adx_plus_di, adx_minus_di },
                 distance: (_.last(adx_plus_di) - _.last(adx_minus_di))
             }, crossingData = getCrossingData({ upSignals: adx_plus_di, downSignals: adx_minus_di }));
             cleanUpOldSignals({ signals: [adx_minus_di, adx_plus_di], crossingData });
@@ -296,6 +299,7 @@ module.exports = {
             let adxValue = _.last(adx);
             let adxAboveReference = adxValue > options.buyReference;
             indicators.adxData = _.extend({
+                values: { adx },
                 trending_up: isTrendingUp(adx),
                 aboveReference: adxAboveReference,
                 value: adxValue,
@@ -409,7 +413,7 @@ function getEcarts(list) {
 }
 
 function distance(pointA, pointB) {
-    return +((pointA - pointB) / pointB * 100).toFixed(2)
+    return +((pointA - pointB) / Math.abs(pointB) * 100).toFixed(2)
 }
 
 +function validateSettings() {

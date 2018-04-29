@@ -91,20 +91,28 @@ function listenToEvents() {
                 trendingUp = s60.trendingUp //&& s240.trendingUp;
                 break;
         }
-
-        if (trendingUp && s.indicatorsResult.CANDLE_COLOR) {
-            if (s.emaData.crossing_up && 1 < s.emaData.crossingPosition && s.emaData.crossingPosition < 3 && s.emaData.distance >= .1) {
-                if (s.macdData.crossing_up && s.adxDIData.crossing_up) {
-                    if ((s.macdData.macd >= 0 && s.macdData.trending_up) ||
-                        (s.adxData.aboveReference && s.adxData.adx_trending_up)) {
-                        return true;
-                    }
+        if (process.env.TRENDING_UP && trendingUp || !process.env.TRENDING_UP) {
+            if (s.emaData.crossing_up && s.emaData.crossingPosition < 1 && s.emaData.distance >= .1) {
+                if (s.macdData.crossing_up && 0 < s.macdData.crossingPosition && s.macdData.crossingPosition <= 2) {
+                    return true;
                 }
-
             }
-            // buy = buyEma() + buyMacd() + buyAdx();
-            // return buy >= 3;
         }
+
+
+        // if (trendingUp && s.indicatorsResult.CANDLE_COLOR) {
+        //     if (s.emaData.crossing_up && 1 < s.emaData.crossingPosition && s.emaData.crossingPosition < 3 && s.emaData.distance >= .1) {
+        //         if (s.macdData.crossing_up && s.adxDIData.crossing_up) {
+        //             if ((s.macdData.macd >= 0 && s.macdData.trending_up) ||
+        //                 (s.adxData.aboveReference && s.adxData.adx_trending_up)) {
+        //                 return true;
+        //             }
+        //         }
+        //
+        //     }
+        //     // buy = buyEma() + buyMacd() + buyAdx();
+        //     // return buy >= 3;
+        // }
 
         function buyEma() {
             let { distance, crossing_up, crossingChangePercent, crossingPosition } = s.emaData;
