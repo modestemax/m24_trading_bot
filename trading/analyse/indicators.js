@@ -7,6 +7,11 @@ function reset(array, minCount) {
     array.splice(0, array.length - minCount)
 }
 
+function isTrendingUp(values) {
+    let [a, b, c] = values.slice(-3);
+    return a < b;
+}
+
 function isCrossing({ upSignals, downSignals }) {
     let [upPrev, upCurr] = upSignals.slice(-2);
     let [downPrev, downCurr] = downSignals.slice(-2);
@@ -97,6 +102,11 @@ module.exports = {
     checkers: {
         CANDLE_COLOR({ weight, signal, options }) {
             let ok = signal.candleColor > options.minChangePercent;
+            if (signal.indicators.change_from_open.length >= 4) {
+                signal.indicators.change_from_open = signal.indicators.change_from_open.slice(-4);
+                let [a, b, c, d] = signal.indicators.change_from_open
+                ok = ok && (((a > 0) + (b > 0) + (c > 0) + (d > 0)) > 1) >= 3
+            }
             return +ok && weight
         },
         LONG_TREND({ weight, longSignal, options }) {
@@ -212,6 +222,7 @@ module.exports = {
             indicators.macdData = _.extend({
                 macd: _.last(macd),
                 macd_signal: _.last(macd_signal),
+                trending_up: isTrendingUp(macd) && isTrendingUp(macd_signal),
                 distance: distance(_.last(macd), _.last(macd_signal))
             }, crossingData = getCrossingData({ upSignals: macd, downSignals: macd_signal }));
             cleanUpOldSignals({ signals: [macd, macd_signal], crossingData });
@@ -285,7 +296,7 @@ module.exports = {
             let adxValue = _.last(adx);
             let adxAboveReference = adxValue > options.buyReference;
             indicators.adxData = _.extend({
-                adx_trending_up: isAdxOk(),
+                trending_up: isTrendingUp(adx),
                 aboveReference: adxAboveReference,
                 value: adxValue,
             }, crossingData = getCrossingData({

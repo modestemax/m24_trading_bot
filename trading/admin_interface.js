@@ -72,8 +72,10 @@ appEmitter.on('test:trade', (start, end) => {
 async function pushTrades() {
     let openTrades = await getTrades();
     let closedTrades = await getFinishedTrades();
-    let trades = [].concat(_.values(openTrades).map(t => _.extend({ type: 'open' }, t)),
-        _.values(closedTrades).map(t => _.extend({ type: 'closed' }, t)));
+    let trades = [].concat(
+        _.values(openTrades).map(t => _.extend({ type: 'open' }, t)),
+        _.values(closedTrades).map(t => _.extend({ type: 'closed' }, t))
+    );
     socketSend(JSON.stringify({ type: 'trades', trades }));
 }
 
@@ -83,7 +85,10 @@ async function pushTracking({ symbol, signalResult }) {
 
 function pushError(error) {
 
-    socketSend(JSON.stringify({ type: 'error', error: { time: Date.now(), error: formatError(error) } }))
+    socketSend(JSON.stringify({
+        type: 'error',
+        error: { time: Date.now(), error: formatError(error).replace(/?\[\d+\w+/g, '') }
+    }))
 
 }
 
@@ -125,21 +130,21 @@ function formatTrade(trade) {
         // target: (+trade.target).toFixed(2) + '%',
         // tradeDuration: moment.duration(Date.now() - trade.time).humanize(),
         // _rowVariant: trade.maxGain >= env.SELL_LIMIT_PERCENT ? 'success' : (trade.minGain <= env.STOP_LOSS_PERCENT ? 'danger' : '')
-        _rowVariant: (() => {
-
-            if (!lastTrade._moon_ || lastTrade._moon_ === 'danger') {
-                let moon;
-                if (trade.maxGain >= trade.target) moon = 'info';
-                else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
-                else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
-                // if (moon !== 'danger' && trade._moon_ === 'danger') {
-                //     trade._moon_ = 'warning';
-                //     trade.effectiveDuration = trade.tradeDuration;
-                // } else
-                lastTrade._moon_ = moon;
-            }
-            return lastTrade._moon_;
-        })()
+        // _rowVariant: (() => {
+        //
+        //     if (!lastTrade._moon_ || lastTrade._moon_ === 'danger') {
+        //         let moon;
+        //         if (trade.maxGain >= trade.target) moon = 'info';
+        //         else if (trade.maxGain >= env.SELL_LIMIT_PERCENT) moon = 'success';
+        //         else if (trade.minGain <= env.STOP_LOSS_PERCENT) moon = 'danger';
+        //         // if (moon !== 'danger' && trade._moon_ === 'danger') {
+        //         //     trade._moon_ = 'warning';
+        //         //     trade.effectiveDuration = trade.tradeDuration;
+        //         // } else
+        //         lastTrade._moon_ = moon;
+        //     }
+        //     return lastTrade._moon_;
+        // })()
     });
 }
 

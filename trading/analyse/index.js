@@ -84,7 +84,7 @@ function listenToEvents() {
         switch (timeframe) {
             case 5:
                 s = s5;
-                trendingUp = s15.trendingUp //&& s60.trendingUp //&& s240.trendingUp);
+                trendingUp = s15.trendingUp && s60.trendingUp //&& s240.trendingUp);
                 break;
             case 15:
                 s = s15;
@@ -92,25 +92,37 @@ function listenToEvents() {
                 break;
         }
 
-        if (trendingUp) {
-            buy = buyEma() + buyMacd() + buyAdx();
-            return buy >= 3;
+        if (trendingUp && s.indicatorsResult.CANDLE_COLOR) {
+            if (s.emaData.crossing_up && 1 < s.emaData.crossingPosition && s.emaData.crossingPosition < 3 && s.emaData.distance >= .1) {
+                if (s.macdData.crossing_up && s.adxDIData.crossing_up) {
+                    if ((s.macdData.macd >= 0 && s.macdData.trending_up) ||
+                        (s.adxData.aboveReference && s.adxData.adx_trending_up)) {
+                        return true;
+                    }
+                }
+
+            }
+            // buy = buyEma() + buyMacd() + buyAdx();
+            // return buy >= 3;
         }
 
         function buyEma() {
             let { distance, crossing_up, crossingChangePercent, crossingPosition } = s.emaData;
-            return Boolean( crossing_up && crossingPosition > 0 && distance >= .1 )//&& crossingChangePercent >= .3
+            return Boolean(crossing_up && 0 < crossingPosition && crossingPosition < 2 && distance >= .1)//&& crossingChangePercent >= .3
         }
 
         function buyMacd() {
             let { distance, crossing_up, crossingChangePercent, crossingPosition, macd, macd_signal } = s.macdData;
-            return Boolean( macd > 0 && crossing_up && crossingPosition > 0 && distance >= 10) //&& crossingChangePercent >= .1
+            return Boolean(macd > 0 && crossing_up && 0 < crossingPosition && crossingPosition < 2 && distance >= 10) //&& crossingChangePercent >= .1
         }
 
         function buyAdx() {
-            let { value: adx_value, aboveReference: adx_aboveReference, adx_trending_up, crossing_up: adx_crossing_up_reference, crossingPosition: adx_crossingPosition } = s.adxData;
+            let {
+                value: adx_value, aboveReference: adx_aboveReference, adx_trending_up,
+                crossing_up: adx_crossing_up_reference, crossingPosition: adx_crossingPosition
+            } = s.adxData;
             let { distance, crossing_up, crossingChangePercent, crossingPosition } = s.adxDIData;
-            return Boolean((adx_aboveReference && adx_trending_up) && adx_crossingPosition > 0 && crossing_up && distance >= 1)// && crossingChangePercent >= .1
+            return Boolean((adx_aboveReference && adx_trending_up) && 0 < crossingPosition && crossingPosition < 2 && crossing_up && distance >= 5)// && crossingChangePercent >= .1
         }
 
     }

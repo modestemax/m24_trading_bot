@@ -9,32 +9,32 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
     let signalResult = _.reduce(activeSettings, (signalResult, indicatorStetting) => {
 
             let { weight, indicator, mandatory, bonus, options } = indicatorStetting;
-            let { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy } = signalResult;
-            if (!stopCheck) {
+            let { totalWeight, signalWeight, signalWeightPercent, /* stopCheck,*/ indicatorsResult, buy } = signalResult;
+            // if (!stopCheck) {
 
-                let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
-                    weight, signal24h, depth, signal, longSignal,
-                    options
-                });
-                indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
-                if (mandatory && !indicatorsResult[indicator] && signal.timeframe <= env.TIMEFRAME) {
-                    stopCheck = true;
-                } else {
-                    signalWeight += thisIndicatorSignalWeight;
-                    totalWeight += bonus ? 0 : weight; //bonus do not count in final weight
-                    signalWeightPercent = signalWeight / totalWeight;
-                    buy = signalWeightPercent >= MIN_BUY_WEIGHT;
-                }
-            }
-            if (stopCheck) {
-                buy = false;
-            }
+            let thisIndicatorSignalWeight = indicatorCheckers[indicator]({
+                weight, signal24h, depth, signal, longSignal,
+                options
+            });
+            indicatorsResult[indicator] = Boolean(thisIndicatorSignalWeight);
+            // if (mandatory && !indicatorsResult[indicator] && signal.timeframe <= env.TIMEFRAME) {
+            //     stopCheck = true;
+            // } else {
+            signalWeight += thisIndicatorSignalWeight;
+            totalWeight += bonus ? 0 : weight; //bonus do not count in final weight
+            signalWeightPercent = signalWeight / totalWeight;
+            buy = signalWeightPercent >= MIN_BUY_WEIGHT;
+            // }
+            // }
+            // if (stopCheck) {
+            //     buy = false;
+            // }
 
-            return { totalWeight, signalWeight, signalWeightPercent, stopCheck, indicatorsResult, buy };
+            return { totalWeight, signalWeight, signalWeightPercent, /*stopCheck,*/ indicatorsResult, buy };
         },
         //initial result value
         {
-            totalWeight: 0, signalWeight: 0, signalWeightPercent: 0, stopCheck: false, buy: false,
+            totalWeight: 0, signalWeight: 0, signalWeightPercent: 0, /*stopCheck: false,*/ buy: false,
             indicatorsResult: {},
         }
     );
@@ -61,7 +61,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 
 
 const symbolsData = Model.SymbolsData.saved || {};
-const MIN_BUY_WEIGHT = 70 / 100;
+const MIN_BUY_WEIGHT = 70 / 100, MAX_LENGTH = 10;
 
 function isNewCandle({ signal, lastSignal }) {
     return signal.timeframeId !== lastSignal.timeframeId;
@@ -74,7 +74,10 @@ function getNewIndicators({ signal, lastSignal }) {
         }
 
         if (isNewCandle({ signal, lastSignal })) {
-            prevIndicators[indKey] = prevIndicators[indKey].concat(indValue);//.slice(-MAX_LENGTH);
+            prevIndicators[indKey] = prevIndicators[indKey].concat(indValue)
+            if (!/adx|ema|macd/.test(indKey)) {
+                prevIndicators[indKey] = prevIndicators[indKey].slice(-MAX_LENGTH);
+            }
         } else {
             // prevIndicators[indKey].length > 1 &&
             prevIndicators[indKey].pop();
