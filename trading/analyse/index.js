@@ -92,10 +92,10 @@ function listenToEvents() {
                 break;
         }
         if (process.env.TRENDING_UP && trendingUp || !process.env.TRENDING_UP) {
-            if (s.emaData.crossing_up && s.emaData.crossingPosition < 1 && s.emaData.distance >= .1) {
-                if (s.macdData.crossing_up && 0 < s.macdData.crossingPosition && s.macdData.crossingPosition <= 2) {
+            if (s.emaData.crossing_up && s.emaData.crossingPosition < 3 && s.emaData.distance >= .3) {
+                // if (s.macdData.crossing_up && 0 < s.macdData.crossingPosition && s.macdData.crossingPosition <= 2) {
                     return true;
-                }
+                // }
             }
         }
 
