@@ -31,7 +31,7 @@ appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
  * cet evenement effectue un trade complet
  * achat, vente mise à jour et stop des pertes
  */
-appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }) => {
+appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) => {
     return doIntelligentTrade({ simulation: process.env.SIMUL_FIRST_ENTRY || false });
 
     function doIntelligentTrade({ simulation = true } = {}) {
@@ -129,6 +129,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
                     // cancel sell order and sell in market price ->stop loss
                     let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
                         symbol,
+                        signals,
                         amount,
                         stopPrice,
                         maxWait: MAX_WAIT_TRADE_TIME
@@ -274,7 +275,7 @@ async function checkSellState({ symbol }) {
     })
 }
 
-function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, maxWait }) {
+function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, stopPrice, maxWait }) {
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
         stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
@@ -286,9 +287,10 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
         } else {
             //todo remove this, it is for testing
             if (!env.PRODUCTION) {
-                if (trade && ticker.last >= trade.sellPrice) {
+                let signal = signals[env.TIMEFRAME][symbol];
+                if (signal.rating < 0) {
                     trade.price = ticker.last;
-                    // appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+                    appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
                 }
             }
         }

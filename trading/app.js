@@ -1,13 +1,13 @@
 require('./override');
 (async (env) => {
-    let { EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY } = env;
+    let { EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY, BOT_ID } = env;
     try {
         const _ = require('lodash');
-
+        BOT_ID = BOT_ID || '';
         if (EXCHANGE && TIMEFRAME && QUOTE_CUR && API_KEY) {
             global.appStartupParams = _.mapValues({ EXCHANGE, TIMEFRAME, QUOTE_CUR, API_KEY }, v => v.toUpperCase());
             ({ EXCHANGE, TIMEFRAME, QUOTE_CUR } = appStartupParams);
-            global.appKey = `${EXCHANGE}:${TIMEFRAME}:${QUOTE_CUR}:`;
+            global.appKey = `${EXCHANGE}:${TIMEFRAME}:${QUOTE_CUR}:${BOT_ID}:`;
             require('./events');
 
             await   require('./store');

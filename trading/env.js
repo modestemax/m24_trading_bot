@@ -49,11 +49,7 @@ module.exports = Model.Settings.load().then(async settings => {
             TRAILING_CHANGE_PERCENT: .5
         });
 
-    if (settings['pd-sid']) {
-        await Model.Settings.modify(settings);
-    } else {
-        await Model.Settings.create(settings);
-    }
+    await Model.Settings.updateSettings({ settings });
 
     global.env = _.extend(settings, {
         APIKEY: api.api_key,
@@ -61,7 +57,7 @@ module.exports = Model.Settings.load().then(async settings => {
     });
 
     global.env.TIMEFRAMES = [
-        60*24,
+        60 * 24,
         240,
         60,
         15,
@@ -73,7 +69,7 @@ module.exports = Model.Settings.load().then(async settings => {
         15: 15 * 60e3,
         60: 60 * 60e3,
         240: 240 * 60e3,
-        [60*24]: 60 * 24 * 60e3,
+        [60 * 24]: 60 * 24 * 60e3,
     };
 
     return settings;
