@@ -17,8 +17,15 @@ const {
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME, START_TRADE_BUY_PERCENT } = env;
 
 const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
-const tradings = {};
-const closedTrades = {};
+const tradings = Model.Trade.open || {};
+const closedTrades = Model.Trade.closed || {};
+_.keys(tradings).forEach(symbol => fetchTicker({ symbol }));
+
+appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
+    if (timeframe == env.TIMEFRAME) {
+        _.forEach(_.keys(tradings), symbol => tradings[symbol].rating = markets[symbol].rating)
+    }
+});
 
 /**
  * cet evenement effectue un trade complet
@@ -47,6 +54,11 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
             //one trade at once
             trade = tradings[symbol] = {
                 id: _.uniqueId(symbol),
+                misc: {
+                    volume: signalData.volume,
+                    rating: signalData.rating,
+                },
+                rating: signalData.rating,
                 symbol,
                 buyPrice,
                 simulation,
@@ -89,11 +101,11 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signal24h }
 
 
                 //get quantity of symbol to buy for this trade
-            let amount = await getTradeAmount({ symbol, price: buyPrice });
+                let amount = await getTradeAmount({ symbol, price: buyPrice });
 
                 if (amount) {
                     //get the sell price
-                    sellPrice =   updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
+                    sellPrice = updatePrice({ price: buyPrice, percent: SELL_LIMIT_PERCENT });
                     // if (sellPrice >= signal24h.high) {
                     //     // return
                     // }
@@ -276,7 +288,7 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ symbol, amount, stopPrice, 
             if (!env.PRODUCTION) {
                 if (trade && ticker.last >= trade.sellPrice) {
                     trade.price = ticker.last;
-                    appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+                    // appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
                 }
             }
         }
@@ -317,7 +329,8 @@ function logChange({ trade, ticker }) {
 
 function emit(event, trade) {
     trade && appEmitter.emit(event = 'trade:' + event, trade);
-    debug('emit ' + event, trade && trade.symbol)
+    debug('emit ' + event, trade && trade.symbol);
+    Model.SymbolsData.save({ open: tradings, closed: closedTrades });
 }
 
 function isGoingUp({ symbol, price }) {

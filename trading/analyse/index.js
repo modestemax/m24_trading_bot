@@ -80,24 +80,51 @@ function listenToEvents() {
         let s15 = buySignals[15] || {};
         let s60 = buySignals[60] || {};
         let s240 = buySignals[240] || {};
+        let sday = buySignals[60 * 24] || {};
         let s, buy, trendingUp;
         switch (timeframe) {
-            case 5:
+            case 5: {
                 s = s5;
-                trendingUp = s15.trendingUp && s60.trendingUp //&& s240.trendingUp);
+                let [prevCh, lastCh] = s.indicators.change_from_open.slice(-2);
+                if (prevCh < 0 && lastCh < .1) return;
+                if (lastCh < .05) return;
+                let ema10 = _.last(s.indicators.ema10);
+                let ema20 = _.last(s.indicators.ema20);
+                if (((ema10 - ema20) / Math.abs(ema20) * 100) < .2) return;
+
+                if (s5.rating > .5 && s15.rating > .5 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
+                    return true;
+                }
                 break;
+            }
+            case 240: {
+                s = s240;
+
+                let [prevCh, lastCh] = s.indicators.change_from_open.slice(-2);
+                lastCh = lastCh || prevCh;
+                if (prevCh < 0 && lastCh < .1) return;
+                if ((lastCh) < .05) return;
+                let ema10 = _.last(s.indicators.ema10);
+                let ema20 = _.last(s.indicators.ema20);
+                if (((ema10 - ema20) / Math.abs(ema20) * 100) < .1) return;
+
+                if (s5.rating > 0 && s15.rating > 0 && s60.rating > 0 && s240.rating > .5 && sday.rating > 0) {
+                    return true;
+                }
+                break;
+            }
             case 15:
                 s = s15;
                 trendingUp = s60.trendingUp //&& s240.trendingUp;
                 break;
         }
-        if (process.env.TRENDING_UP && trendingUp || !process.env.TRENDING_UP) {
-            if (s.emaData.crossing_up && s.emaData.crossingPosition < 3 && s.emaData.distance >= .3) {
-                // if (s.macdData.crossing_up && 0 < s.macdData.crossingPosition && s.macdData.crossingPosition <= 2) {
-                    return true;
-                // }
-            }
-        }
+        // if (process.env.TRENDING_UP && trendingUp || !process.env.TRENDING_UP) {
+        //     if (s.emaData.crossing_up && s.emaData.crossingPosition < 3 && s.emaData.distance >= .3) {
+        //         if (s.macdData.crossing_up && 0 < s.macdData.crossingPosition && s.macdData.crossingPosition <= 2) {
+        //             return true;
+        //         }
+        //     }
+        // }
 
 
         // if (trendingUp && s.indicatorsResult.CANDLE_COLOR) {
@@ -147,8 +174,11 @@ function listenToEvents() {
         let { buy, strongBuy, trendingUp } = signalResult;
         accumulateSignalResult({ symbol, timeframe, signalResult });
         if (timeframe == env.TIMEFRAME) {
-            if ((trendingUp) && tryBuy({ symbol, timeframe, signalResult, })) {
-                appEmitter.emit('analyse:try_trade', { market: signalData, signalData, signal24h });
+            // suivreLaTendanceAvantDacheter({ signal });
+
+            if (/*(trendingUp) && */tryBuy({ symbol, timeframe, signalResult, })) {
+                // suivreLaTendanceAvantDacheter({ symbol, price: signal.close });
+                appEmitter.emit('analyse:try_trade', { signalData });
             } else if (!buy) {
 
                 if (signalResult.signalWeightPercent > 49 / 100) {
@@ -175,6 +205,37 @@ function listenToEvents() {
 
             }
         }
+    }
+
+    let tendances = {};
+
+    function suivreLaTendanceAvantDacheter({ signal, symbol, price } = {}) {
+        if (symbol && !tendances[symbol]) {
+            tendances[symbol] = { price0: price, price, gain: 0, lost: 0 }
+        } else if (signal && tendances[signal.symbol]) {
+            symbol = signal.symbol;
+            let market = tendances[symbol];
+            let { price, gain, lost } = market
+            let { close } = signal;
+            gain = (close - price) / price * 100;
+            if (!gain) return;
+            if (gain < 0) {
+                lost += gain;
+                if (lost < -1) {
+                    return delete tendances[symbol];
+                }
+                return _.extend(market, { price: close, gain: 0, lost })
+            }
+            // if (gain < .5) {
+            //     return _.extend(market, { gain })
+            // }
+            if (gain >= 1.5) {
+                delete tendances[symbol];
+                appEmitter.emit('analyse:try_trade', { signalData: signal });
+            }
+        }
+
+
     }
 }
 

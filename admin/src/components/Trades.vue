@@ -70,8 +70,22 @@
           { key: 'maxGain', formatter: fixed2, sortable: true },
           { key: 'target', formatter: fixed2, sortable: true },
           { key: 'tradeDuration', formatter: (v, k, item) => moment.duration(Date.now() - item.time).humanize() },
+          // {
+          //   key: 'update',
+          // formatter: update => update ? `+${update}` : '',
+          // sortable: true, // eslint-disable-line no-confusing-arrow
+          // },
           {
-            key: 'update', formatter: update => update ? `+${update}` : '', sortable: true, // eslint-disable-line no-confusing-arrow
+            key: 'rating',
+            formatter: (rating) => {
+              if (rating > 0.5) return 'Strong Buy';
+              if (rating > 0) return 'Buy';
+              if (+rating === 0) return '';
+              if (rating < 0.5) return 'Strong Sell';
+              if (rating < 0) return ' Sell';
+              return '';
+            },
+            sortable: true, // eslint-disable-line no-confusing-arrow
           },
           'commands',
         ],

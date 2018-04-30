@@ -55,7 +55,7 @@ const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE 
 const beautify = (data, timeframe) => {
     return _(data).map(({ d }) => {
             let candleColor;
-            let timeframeId= Math.trunc(Date.now() / env.timeframesIntervals[timeframe]);
+            let timeframeId = Math.trunc(Date.now() / env.timeframesIntervals[timeframe]);
             return exchange.marketsById[d[0]] && {
                 symbol: exchange.marketsById[d[0]].symbol,
                 time: new Date(),
@@ -65,6 +65,7 @@ const beautify = (data, timeframe) => {
                 high: d[3],
                 low: d[4],
                 volume: d[5],
+                rating: d[6],
                 signal: signal(d[6]),
                 signalStrength: strength(d[6]),
                 signalString: signalString(d[6]),
@@ -203,8 +204,16 @@ function getOthersSignals({ indicator, rate }) {
     // });
 }
 
-env.TIMEFRAMES.forEach((timeframe) => setInterval(_.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3), 1e3));
+env.TIMEFRAMES.forEach((timeframe) => setInterval(_.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3), getRate(timeframe)));
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
 
+
+function getRate(timeframe) {
+    if (timeframe == env.TIMEFRAME) {
+        return 1e3;
+    } else {
+        return 5e3
+    }
+}

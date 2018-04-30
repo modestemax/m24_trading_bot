@@ -38,10 +38,8 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
             indicatorsResult: {},
         }
     );
-    _.extend(signalResult, {
-            timeframeId: signal.timeframeId,
+    _.extend(signalResult,signal, {
             strongBuy: false,
-            indicators: signal.indicators,
             // trendingUp: signalResult.indicatorsResult.EMA,// && signalResult.indicatorsResult.ADX,
             trendingUp: signal.indicators.EMA || signal.indicators.ADXDI || signal.indicators.MACD,
         },
@@ -105,7 +103,7 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
     isNewCandle({ lastSignal, signal }) && _.extend(lastSignal, _.omit(signal, 'indicators'));
     signal.indicators = lastSignal.indicators;
     let signalResult = analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT });
-    Model.SymbolsData.save(symbolsData);
+    Model.SymbolsData.save({data:symbolsData});
     return {
         signal24h,
         depth,

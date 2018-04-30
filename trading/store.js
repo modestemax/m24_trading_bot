@@ -10,12 +10,12 @@ Settings.current = null;
 Settings.load = async function () {
     if (!Settings.current) {
         try {
-            let settings = await Settings.range({
-                latest: Date.now(), //* the ending time point of list
-                earliest: 0,                   //* the starting time point of list
-                limit: [0, 1],
-            });
-            Settings.current = _.first(settings) || {}
+            Settings.current = await Settings.findBySid('1');
+            if (!Settings.current) {
+                let sid = await   Settings.create({  })
+                Settings.current = { 'pd-sid': sid };
+            }
+
             return Settings.current;
         } catch (e) {
             log(e);
@@ -30,7 +30,7 @@ Settings.updateSettings = async function ({ settings }) {
     try {
         if (settings) {
             let settings0 = await Settings.load();
-            settings0 = _.extend(settings0, settings0);
+            settings0 = _.extend(settings0, settings);
             await Settings.modify(settings0);
             Settings.current = settings0;
         }
@@ -122,12 +122,21 @@ SymbolsData.load = async function ({ starting = false } = {}) {
     try {
         let sData = await SymbolsData.findBySid('1');
         if (!sData) {
-            await   SymbolsData.create({ data: '', time: Date.now() })
+            let sid = await   SymbolsData.create({ data: '{}', open: '{}', closed: '{}', time: Date.now() })
+            sData = { 'pd-sid': sid };
         }
 
         if (starting) {
             if (sData && Date.now() - new Date(+sData.time) < 60e3 * 15) {
-                return JSON.parse(sData.data)
+                try {
+                    return {
+                        data: JSON.parse(sData.data),
+                        open: JSON.parse(sData.open),
+                        closed: JSON.parse(sData.closed)
+                    }
+                } catch (e) {
+
+                }
             } else {
                 return null;
             }
@@ -140,12 +149,16 @@ SymbolsData.load = async function ({ starting = false } = {}) {
     }
 };
 
-SymbolsData.save = _.throttle(async function (sData) {
+SymbolsData.save = _.throttle(async function ({ data, open, closed }) {
     try {
-        let data = JSON.stringify(sData);
+        data = data && JSON.stringify(data);
+        open = open && JSON.stringify(open);
+        closed = closed && JSON.stringify(closed);
         let savedData = await SymbolsData.load();
 
-        savedData.data = data;
+        data && (savedData.data = data);
+        open && (savedData.open = open);
+        closed && (savedData.closed = closed);
         savedData.time = Date.now();
         SymbolsData.modify(savedData);
 
@@ -163,5 +176,9 @@ appEmitter.on('trade:end_trade', delTrade);
 module.exports = (async () => {
     let saved = await  SymbolsData.load({ starting: true });
     // SymbolsData.saved =  {};
-    SymbolsData.saved = saved || {};
+    if (saved) {
+        SymbolsData.saved = saved.data || {};
+        Trade.open = saved.open || {};
+        Trade.closed = saved.closed || {};
+    }
 })();

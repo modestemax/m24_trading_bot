@@ -7,7 +7,7 @@ module.exports = {
 
         // First application
         {
-            name: 'bot46',
+            name: 'bot_btc_46',
             script: 'app.js',
             "exec_mode": "cluster",
             cwd: 'trading',
@@ -22,13 +22,14 @@ module.exports = {
                 STOP_LOSS_PERCENT: -1.5,
                 TRENDING_UP: true,
                 SELL_LIMIT_PERCENT: 1.1,
+                QUOTE_CUR_QTY:.006,
             },
             env_production: {
                 NODE_ENV: 'production'
             }
         },
         {
-            name: 'bot45',
+            name: 'bot_btc_45',
             script: 'app.js',
             "exec_mode": "cluster",
             cwd: 'trading',
@@ -42,6 +43,7 @@ module.exports = {
                 STOP_LOSS_PERCENT: -1,
                 TRENDING_UP: true,
                 SELL_LIMIT_PERCENT: .6,
+                QUOTE_CUR_QTY:.006
             },
             env_production: {
                 NODE_ENV: 'production'
@@ -49,7 +51,7 @@ module.exports = {
         },
 
         {
-            name: 'bot56',
+            name: 'bot_usdt_56',
             script: 'app.js',
             "exec_mode": "cluster",
             cwd: 'trading',
@@ -63,13 +65,14 @@ module.exports = {
                 NO_STOP_LOSS: 'true',
                 STOP_LOSS_PERCENT: -1.5,
                 SELL_LIMIT_PERCENT: 1.1,
+                QUOTE_CUR_QTY:100
             },
             env_production: {
                 NODE_ENV: 'production'
             }
         },
         {
-            name: 'bot55',
+            name: 'bot_usdt_55',
             script: 'app.js',
             "exec_mode": "cluster",
             cwd: 'trading',
@@ -82,6 +85,7 @@ module.exports = {
                 NO_STOP_LOSS: 'true',
                 STOP_LOSS_PERCENT: -1,
                 SELL_LIMIT_PERCENT: .6,
+                QUOTE_CUR_QTY:100
             },
             env_production: {
                 NODE_ENV: 'production'
