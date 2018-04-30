@@ -57,9 +57,10 @@
       return {
         sound: null,
         allTrades: [],
-        sortBy: 'time',
+        sortBy: 'maxGain',
         sortDesc: true,
         fields: [
+          { key: 'id', formatter: (id, k, item) => id.replace(item.symbol, ''), sortable: true, label: '#' },
           { key: 'time', formatter: value => formatTime(value), sortable: true },
           { key: 'symbol', sortable: true },
           { key: 'buyPrice', formatter: fixed8 },

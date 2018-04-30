@@ -62,6 +62,7 @@ const beautify = (data, timeframe) => {
                 timeframeId,
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
+                changeFromOpen: +d[21].toFixed(2),
                 high: d[3],
                 low: d[4],
                 volume: d[5],
@@ -71,6 +72,8 @@ const beautify = (data, timeframe) => {
                 signalString: signalString(d[6]),
                 exchange: d[7].toLowerCase(),
                 description: d[8],
+                ema10: d[13],
+                ema20: d[14],
                 indicators: {
                     // symbol: exchange.marketsById[d[0]].symbol,
                     // time:timeframeId* env.timeframesIntervals[timeframe],

@@ -67,7 +67,13 @@ function tryBuy({ signal }) {
 
 
                 if (s5.rating > 0 && s15.rating > 0 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
-                    return true;
+                    if (s5.changePercent > 0 && s15.changePercent > 0 && s60.changePercent > 0 && s240.changePercent > 0 && sday.changePercent > 0) {
+                        if (s5.changeFromOpen > 0 && s15.changeFromOpen > 0 && s60.changeFromOpen > 0 && s240.changeFromOpen > 0 && sday.changeFromOpen > 0) {
+                            if (s5.ema10 > s5.ema20 && s15.ema10 > s15.ema20 && s60.ema10 > s60.ema20 && s240.ema10 > s240.ema20 && sday.ema10 > sday.ema20) {
+                                return true;
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -119,7 +125,7 @@ function suivreLaTendanceAvantDacheter({ signal, trySymbol = false } = {}) {
                 return _.extend(market, { price: close, lost })
             }
 
-            if (gain >= 2 && signal.rating > 0) {
+            if (gain >= 2 && tryBuy({ signal })) {
                 delete tendances[symbol];
                 appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
             }
