@@ -28,27 +28,27 @@ module.exports = {
                 NODE_ENV: 'production'
             }
         },
-        {
-            name: 'bot_btc_45',
-            script: 'app.js',
-            "exec_mode": "cluster",
-            cwd: 'trading',
-            "node_args": "--inspect=0.0.0.0:5859",
-            env: {
-                DEBUG1: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-                PORT: 12345,
-                MIN_COUNT: 2,
-                NO_STOP_LOSS: 'true',
-                STOP_LOSS_PERCENT: -1,
-                TRENDING_UP: true,
-                SELL_LIMIT_PERCENT: .6,
-                QUOTE_CUR_QTY:.006
-            },
-            env_production: {
-                NODE_ENV: 'production'
-            }
-        },
+        // {
+        //     name: 'bot_btc_45',
+        //     script: 'app.js',
+        //     "exec_mode": "cluster",
+        //     cwd: 'trading',
+        //     "node_args": "--inspect=0.0.0.0:5859",
+        //     env: {
+        //         DEBUG1: '*',
+        //         QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+        //         PORT: 12345,
+        //         MIN_COUNT: 2,
+        //         NO_STOP_LOSS: 'true',
+        //         STOP_LOSS_PERCENT: -1,
+        //         TRENDING_UP: true,
+        //         SELL_LIMIT_PERCENT: .6,
+        //         QUOTE_CUR_QTY:.006
+        //     },
+        //     env_production: {
+        //         NODE_ENV: 'production'
+        //     }
+        // },
 
         {
             name: 'bot_usdt_56',
@@ -71,26 +71,26 @@ module.exports = {
                 NODE_ENV: 'production'
             }
         },
-        {
-            name: 'bot_usdt_55',
-            script: 'app.js',
-            "exec_mode": "cluster",
-            cwd: 'trading',
-            "node_args": "--inspect=0.0.0.0:5859",
-            env: {
-                DEBUG1: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-                PORT: 12355,
-                MIN_COUNT: 2,
-                NO_STOP_LOSS: 'true',
-                STOP_LOSS_PERCENT: -1,
-                SELL_LIMIT_PERCENT: .6,
-                QUOTE_CUR_QTY:100
-            },
-            env_production: {
-                NODE_ENV: 'production'
-            }
-        },
+        // {
+        //     name: 'bot_usdt_55',
+        //     script: 'app.js',
+        //     "exec_mode": "cluster",
+        //     cwd: 'trading',
+        //     "node_args": "--inspect=0.0.0.0:5859",
+        //     env: {
+        //         DEBUG1: '*',
+        //         QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+        //         PORT: 12355,
+        //         MIN_COUNT: 2,
+        //         NO_STOP_LOSS: 'true',
+        //         STOP_LOSS_PERCENT: -1,
+        //         SELL_LIMIT_PERCENT: .6,
+        //         QUOTE_CUR_QTY:100
+        //     },
+        //     env_production: {
+        //         NODE_ENV: 'production'
+        //     }
+        // },
 
     ],
 
