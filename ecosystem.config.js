@@ -14,7 +14,7 @@ module.exports = {
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG1: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys',
                 PORT: 12346,
                 MIN_COUNT: 2,
                 SIMUL_FIRST_ENTRY:'' ,
@@ -58,7 +58,7 @@ module.exports = {
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG1: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+                QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys',
                 PORT: 12356,
                 MIN_COUNT: 2,
                 SIMUL_FIRST_ENTRY:'' ,
