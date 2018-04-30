@@ -38,7 +38,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
             indicatorsResult: {},
         }
     );
-    _.extend(signalResult,signal, {
+    _.extend(signalResult, signal, {
             strongBuy: false,
             // trendingUp: signalResult.indicatorsResult.EMA,// && signalResult.indicatorsResult.ADX,
             trendingUp: signal.indicators.EMA || signal.indicators.ADXDI || signal.indicators.MACD,
@@ -59,7 +59,7 @@ function analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT })
 
 
 const symbolsData = Model.SymbolsData.saved || {};
-const MIN_BUY_WEIGHT = 70 / 100, MAX_LENGTH = 10;
+const MIN_BUY_WEIGHT = 70 / 100, MAX_LENGTH = 4;
 
 function isNewCandle({ signal, lastSignal }) {
     return signal.timeframeId !== lastSignal.timeframeId;
@@ -73,9 +73,9 @@ function getNewIndicators({ signal, lastSignal }) {
 
         if (isNewCandle({ signal, lastSignal })) {
             prevIndicators[indKey] = prevIndicators[indKey].concat(indValue)
-            if (!/adx|ema|macd/.test(indKey)) {
-                prevIndicators[indKey] = prevIndicators[indKey].slice(-MAX_LENGTH);
-            }
+            // if (!/adx|ema|macd/.test(indKey)) {
+            prevIndicators[indKey] = prevIndicators[indKey].slice(-MAX_LENGTH);
+            // }
         } else {
             // prevIndicators[indKey].length > 1 &&
             prevIndicators[indKey].pop();
@@ -103,7 +103,7 @@ function getSignalResult({ signal24h, depth, signal, longSignal }) {
     isNewCandle({ lastSignal, signal }) && _.extend(lastSignal, _.omit(signal, 'indicators'));
     signal.indicators = lastSignal.indicators;
     let signalResult = analyseSignal({ signal24h, depth, signal, longSignal, MIN_BUY_WEIGHT });
-    Model.SymbolsData.save({data:symbolsData});
+    Model.SymbolsData.save({ data: symbolsData });
     return {
         signal24h,
         depth,
