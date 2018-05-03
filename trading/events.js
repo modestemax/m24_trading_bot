@@ -27,6 +27,10 @@ global.emitException = function (ex) {
     log(ex, console.error);
     appEmitter.emit('app:error', ex);
 };
+global.emitMessage = function (ex) {
+    log(ex, console.log);
+    appEmitter.emit('app:msg', ex);
+};
 
 
 process.on('uncaughtException', (err) => {

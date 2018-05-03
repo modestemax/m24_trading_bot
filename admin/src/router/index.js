@@ -34,7 +34,8 @@ export default new Router({
       // props: true,
       // props: { type1: true },
       props: { type: 'open' },
-    }, {
+    },
+    {
       path: '/closed',
       name: 'closed',
       component: Trades,
@@ -46,6 +47,13 @@ export default new Router({
       name: 'errors',
       path: '/errors',
       component: Errors,
+      props: { type: 'error' },
+    },
+    {
+      name: 'msg',
+      path: '/msg',
+      component: Errors,
+      props: { type: 'msg' },
     },
     //
     // path: '/open',

@@ -71,8 +71,13 @@ function checkTrend({ symbol }) {
     if (s5.rating > 0 && s15.rating > 0 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
         if (s5.changePercent >= 0 && s15.changePercent >= 0 && s60.changePercent >= 0 && s240.changePercent >= 0 && sday.changePercent >= 0) {
             if (s5.changeFromOpen >= 0 && s15.changeFromOpen >= 0 && s60.changeFromOpen >= 0 && s240.changeFromOpen >= 0 && sday.changeFromOpen >= 0) {
+
                 if (s5.ema10 > s5.ema20 && s15.ema10 > s15.ema20 && s60.ema10 > s60.ema20 && s240.ema10 > s240.ema20 && sday.ema10 > sday.ema20) {
-                    return trendUp[symbol] = true;
+                    if (s5.macd > s5.macd_signal && s15.macd > s15.macd_signal && s60.macd > s60.macd_signal && s240.macd > s240.macd_signal && sday.macd > sday.macd_signal) {
+                        if (s5.adx_plus_di > s5.adx_minus_di && s15.adx_plus_di > s15.adx_minus_di && s60.adx_plus_di > s60.adx_minus_di && s240.adx_plus_di > s240.adx_minus_di && sday.adx_plus_di > sday.adx_minus_di) {
+                            return trendUp[symbol] = true;
+                        }
+                    }
                 }
             }
         }
@@ -102,9 +107,9 @@ async function checkSignal({ signal }) {
 
 
     // suivreLaTendanceAvantDacheter({ signal });
-    backupLast3Points({ signal: signals[5][symbol] });
+    backupLast3Points({ symbol, });
     checkTrend({ symbol });
-    suivreLaTendanceAvantDacheter({ signal: signals[5][symbol] });
+    suivreLaTendanceAvantDacheter({ symbol });
 
 }
 
@@ -113,8 +118,9 @@ function getGain(close, price) {
     return (close - price) / Math.abs(price) * 100;
 }
 
-function suivreLaTendanceAvantDacheter({ signal, } = {}) {
+function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
     let checks = suivreLaTendanceAvantDacheter.checks = suivreLaTendanceAvantDacheter.checks || {};
+    let signal = signals[TIMEFRAME][symbol];
 
     if (signal) {
         let { symbol } = signal;
@@ -137,9 +143,9 @@ function suivreLaTendanceAvantDacheter({ signal, } = {}) {
                 debug(symbol, 'gain', gain, 'step', changeStep);
                 if (gain < 0) {
                     lost += gain;
-                    if (lost < -1) {
+                    if (lost < -2) {
                         if (changeStep) {
-                           // debugger
+                            // debugger
                             //juste pour voir le ratio fr ce qui commence a monter puis echoue
                         }
                         return delete checks[symbol];
@@ -148,15 +154,19 @@ function suivreLaTendanceAvantDacheter({ signal, } = {}) {
                 }
                 let duration = Date.now() - time;
                 //on doit avoir fait 1% en minimum 30 secondes et en 5 changement de prix aumoins
-                if (gain >= .3 && duration > 30e3 && changeStep >= 100) {
-                    if (specialCheck({ symbol })) {
-                        delete checks[symbol];
-                        if (estFiable({ symbol })) {
-                            console.log('buying', symbol);
-                            return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
-                        }
-                    }
+
+                // if (lost < -1 || (.3 < gain /* && duration > 30e3*/ && -0.2 < lost /*changeStep >= 100*/)) {
+                emitMessage(`${symbol}  special check, changeStep:${changeStep}, duration: ${duration}  lost: ${lost} gain: ${gain}`);
+                if (specialCheck({ symbol })) {
+                    delete checks[symbol];
+                    // if (estFiable({ symbol })) {
+
+                    emitMessage(`${symbol} fiable: ${estFiable({ symbol })}, changeStep:${changeStep}, duration: ${duration} lost: ${lost} gain: ${gain}`);
+                    emitMessage(symbol + ' buying');
+                    return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+                    // }
                 }
+                // }
                 return _.extend(market, { gain, changeStep: ++changeStep })
 
             }
@@ -166,77 +176,102 @@ function suivreLaTendanceAvantDacheter({ signal, } = {}) {
     }
 }
 
-function backupLast3Points({ signal }) {
-    let tendances = backupLast3Points.tendances = backupLast3Points.tendances || {};
-    if (signal) {
-        let { symbol } = signal
-        let tendance = tendances[symbol] = tendances[symbol] || [];
-        let [first, prev, last] = tendance;
-        if (!last) {
-            tendance.push(signal)
-        } else if (first.id === prev.id) {
-            tendance.shift();
-            tendance.push(signal);
-        } else if (prev.id === last.id) {
-            tendance.splice(1, 1);
-            tendance.push(signal);
-        } else if (last.id !== signal.id) {
-            tendance.shift();
-            tendance.push(signal);
-        } else {
-            tendance.splice(2, 1, signal)
+function backupLast3Points({ symbol, timeframes = [15, 60] }) {
+
+
+    _.forEach(timeframes, (timeframe) => {
+        backup(timeframe);
+    });
+
+    function backup(timeframe) {
+
+        let tendances = backupLast3Points.tendances = backupLast3Points.tendances || {};
+        tendances = tendances[symbol] = tendances[symbol] || {};
+        let points = tendances [timeframe] = tendances [timeframe] || [];
+
+        let signal = signals[timeframe][symbol];
+        if (signal) {
+            // let { symbol } = signal
+            let [first, prev, last] = points;
+            if (!last) {
+                points.push(signal)
+            } else if (first.id === prev.id) {
+                points.shift();
+                points.push(signal);
+            } else if (prev.id === last.id) {
+                points.splice(1, 1);
+                points.push(signal);
+            } else if (last.id !== signal.id) {
+                points.shift();
+                points.push(signal);
+            } else {
+                points.splice(2, 1, signal)
+            }
         }
     }
 }
 
 
-function specialCheck({ symbol }) {
-    let [first, prev, last] = backupLast3Points.tendances[symbol];
-    if (!(first && prev && last)) return;
+function specialCheck({ symbol, timeframes = [15, 60] }) {
 
-    const points = [first, prev, last];
-    specialCheck.ema10Above20 = last.ema10 > last.ema20;
-    specialCheck.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
-    specialCheck.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
-    specialCheck.emaCrossingUpAt = getCrossingUpPoint({ up: 'ema10', down: 'ema20', points });
-    specialCheck.emaCrossingDistance = specialCheck.emaCrossingUpAt && ((Date.now() / 5 * 60e3) - specialCheck.emaCrossingUpAt.id);
-    specialCheck.emaDistance = getGain(last.ema10, last.ema20)
+    return _.reduce(timeframes, (good, timeframe) => {
+        let alwaysGood = alsoGood(timeframe);
+        alwaysGood && emitMessage(symbol + ', timeframe: ' + timeframe + ' is OK');
+        return good && alwaysGood
+    }, true);
 
-    specialCheck.macdAboveSignal = last.macd > last.macd_signal;
-    specialCheck.macdTrendUp = isSorted([first.macd, prev.macd, last.macd,]);
-    specialCheck.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
-    specialCheck.macdCrossingUpAt = getCrossingUpPoint({ up: 'macd', down: 'macd_signal', points });
-    specialCheck.macdAboveZero = last.macd > 0
-    specialCheck.macdSignalAboveZero = last.macd_signal > 0
+    function alsoGood(timeframe) {
+        const tendances = backupLast3Points.tendances[symbol];
 
-    const ADX_REF = 20;
-    specialCheck.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
-    specialCheck.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
-    specialCheck.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
-    specialCheck.diCrossingUpAt = getCrossingUpPoint({ up: 'adx_plus_di', down: 'macd_signal', points });
-    specialCheck.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
-    specialCheck.diMinusBelowAdxRef = last.adx_minus_di < ADX_REF
-    specialCheck.diDistance = last.adx_plus_di - last.adx_minus_di;
+        const points = tendances[timeframe];
+        if (_.compact(points).length !== 3 || _.uniqBy(points, 'id').length < 2) return;
 
-    specialCheck.adxAboveRef = last.adx > ADX_REF
-    specialCheck.adxTrendUp = isSorted([first.adx, prev.adx, last.adx,]);
-    specialCheck.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
+        const [first, prev, last] = points;
 
-    specialCheck.absenceDePique = 0 <= last.changeFromOpen && last.changeFromOpen < .2 && prev.changeFromOpen < .5 && first.changeFromOpen < .75;
+        specialCheck.ema10Above20 = last.ema10 > last.ema20;
+        specialCheck.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
+        specialCheck.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
+        specialCheck.emaCrossingUpAt = getCrossingUpPoint({ up: 'ema10', down: 'ema20', points });
+        specialCheck.emaCrossingDistance = specialCheck.emaCrossingUpAt && ((Date.now() / 5 * 60e3) - specialCheck.emaCrossingUpAt.id);
+        specialCheck.emaDistance = getGain(last.ema10, last.ema20)
 
-    let {
-        ema10Above20, emaDistance, emaCrossingUpAt, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
-        macdCrossingUpAt, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
-        diCrossingUpAt, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
-        adxAboveRef, adxTrendUp, absenceDePique, adxEcart
-    } = specialCheck;
+        specialCheck.macdAboveSignal = last.macd > last.macd_signal;
+        specialCheck.macdTrendUp = isSorted([first.macd, prev.macd, last.macd,]);
+        specialCheck.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
+        specialCheck.macdCrossingUpAt = getCrossingUpPoint({ up: 'macd', down: 'macd_signal', points });
+        specialCheck.macdAboveZero = last.macd > 0
+        specialCheck.macdSignalAboveZero = last.macd_signal > 0
 
-    if (ema10Above20 && emaDistance >= .2 && ema10TrendUp && ema20TrendUp /*&& emaCrossingDistance < 3*/) {
-        if (macdAboveSignal && macdAboveZero && macdSignalAboveZero && macdTrendUp && macdSignalTrendUp) {
-            if (diPlusAboveMinus && diDistance >= 5 && (diPlusTrendUp || diMinusTrendDown) && diPlusAboveAdxRef && diMinusBelowAdxRef) {
-                if (adxAboveRef && adxTrendUp && adxEcart >= 1) {
-                    if (absenceDePique) {
+        const ADX_REF = 20;
+        specialCheck.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
+        specialCheck.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
+        specialCheck.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
+        specialCheck.diCrossingUpAt = getCrossingUpPoint({ up: 'adx_plus_di', down: 'macd_signal', points });
+        specialCheck.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
+        specialCheck.diMinusBelowAdxRef = last.adx_minus_di < ADX_REF
+        specialCheck.diDistance = last.adx_plus_di - last.adx_minus_di;
+
+        specialCheck.adxAboveRef = last.adx > ADX_REF
+        specialCheck.adxTrendUp = isSorted([first.adx, prev.adx, last.adx,]);
+        specialCheck.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
+
+        // specialCheck.absenceDePique = 0 <= last.changeFromOpen && last.changeFromOpen < .2 && prev.changeFromOpen < .5 && first.changeFromOpen < .75;
+
+        let {
+            ema10Above20, emaDistance, emaCrossingUpAt, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
+            macdCrossingUpAt, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
+            diCrossingUpAt, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
+            adxAboveRef, adxTrendUp, absenceDePique, adxEcart
+        } = specialCheck;
+
+        if (ema10Above20 && emaDistance >= .2 && ema10TrendUp && ema20TrendUp /*&& emaCrossingDistance < 3*/) {
+            if (macdAboveSignal && macdAboveZero && macdSignalAboveZero && macdTrendUp && macdSignalTrendUp) {
+                if (diPlusAboveMinus && diDistance >= 5 && (diPlusTrendUp && diMinusTrendDown) && diPlusAboveAdxRef && diMinusBelowAdxRef) {
+                    if (adxAboveRef && adxTrendUp && adxEcart >= 0) {
+                        // if (absenceDePique) {
+                        emitMessage(symbol + ' status -> ' + JSON.stringify(Object.assign({}, specialCheck)))
                         return true;
+                        // }
                     }
                 }
             }

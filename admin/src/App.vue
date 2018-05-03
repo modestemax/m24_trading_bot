@@ -15,6 +15,7 @@
           <b-img class="m24-logo" :src="logo"></b-img>
         </b-navbar-brand>
 
+
         <!--<b-collapse is-nav id="nav_collapse">-->
 
         <b-navbar-nav>
@@ -23,6 +24,9 @@
           <b-nav-item to="closed">Closed</b-nav-item>
           <b-nav-item to="errors">Errors
             <b-badge variant="danger">{{errorsCount||''}}</b-badge>
+          </b-nav-item>
+          <b-nav-item to="msg">Messages
+            <b-badge variant="info">{{msgCount||''}}</b-badge>
           </b-nav-item>
         </b-navbar-nav>
 
@@ -83,6 +87,7 @@
         duration: '',
         online: false,
         errorsCount: '',
+        msgCount: '',
         tradeResume: '',
         appDetails: '',
       };
@@ -111,6 +116,9 @@
         });
         appEmitter.on('error_count', (count) => {
           me.errorsCount = count;
+        });
+        appEmitter.on('msg_count', (count) => {
+          me.msgCount = count;
         });
       });
     },
