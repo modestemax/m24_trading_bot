@@ -118,7 +118,7 @@ function socketSend(data) {
 }
 
 function sendStartTime() {
-    let details = `QUOTE: ${env.QUOTE_CUR} TimeFrame: ${env.TIMEFRAME}  Trade Target: ${(+env.SELL_LIMIT_PERCENT).toFixed(1)}%  Stop Loss:${(+env.STOP_LOSS_PERCENT).toFixed(1)}% `; //Enter On Second Buy:${env.SIMUL_FIRST_ENTRY ? 'Yes' : 'No'}
+    let details = process.env.DESC;
     let time = JSON.stringify({ type: 'time', time: serverStartTime, details });
     socketSend(time);
 }
