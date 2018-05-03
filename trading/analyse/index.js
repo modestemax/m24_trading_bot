@@ -121,8 +121,9 @@ function getGain(close, price) {
 function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
     let checks = suivreLaTendanceAvantDacheter.checks = suivreLaTendanceAvantDacheter.checks || {};
     let signal = signals[TIMEFRAME][symbol];
+    let signal5 = signals[5][symbol];
 
-    if (signal) {
+    if (signal && signal5) {
         let { symbol } = signal;
         if (checkTrend.trendUp[symbol]) {
             if (!checks[symbol]) {
@@ -141,7 +142,7 @@ function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
                 let gain = getGain(close, price);
                 if (gain === oldGain) return;
                 debug(symbol, 'gain', gain, 'step', changeStep);
-                if (gain < 0) {
+                if (gain < 0||signal5.changeFromOpen<.01) {
                     lost += gain;
                     if (lost < -2) {
                         if (changeStep) {
@@ -267,7 +268,7 @@ function specialCheck({ symbol, timeframes = [15, 60] }) {
         if (ema10Above20 && emaDistance >= .2 && ema10TrendUp && ema20TrendUp /*&& emaCrossingDistance < 3*/) {
             if (macdAboveSignal && macdAboveZero && macdSignalAboveZero && macdTrendUp && macdSignalTrendUp) {
                 if (diPlusAboveMinus && diDistance >= 5 && (diPlusTrendUp && diMinusTrendDown) && diPlusAboveAdxRef && diMinusBelowAdxRef) {
-                    if (adxAboveRef && adxTrendUp && adxEcart >= 0) {
+                    if (adxAboveRef && adxTrendUp && adxEcart >= 1) {
                         // if (absenceDePique) {
                         emitMessage(symbol + ' status -> ' + JSON.stringify(Object.assign({}, specialCheck)))
                         return true;
