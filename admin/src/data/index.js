@@ -5,10 +5,12 @@ import moment from 'moment';
 
 const appEmitter = new Events();
 let startTime;
+let srvDetail;
 
 setInterval(() => startTime && appEmitter.emit('time', {
   start: startTime.format('HH:mm'),
   duration: startTime.fromNow(true),
+  details: srvDetail,
 }), 60e3);
 export const formatTime = (time, format = 'HH:mm') => moment(new Date(time)).format(format);
 export const fixed8 = value => (+value).toFixed(8);
@@ -47,7 +49,7 @@ export default appEmitter;
         appEmitter.emit('time', {
           start: formatTime(clientData.time, 'HH:mm  DD MMM'),
           duration: startTime.fromNow(true),
-          details: clientData.details,
+          details: srvDetail = clientData.details,
         });
         break;
       case 'error':

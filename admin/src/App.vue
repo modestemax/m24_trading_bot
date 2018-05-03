@@ -3,7 +3,7 @@
     <!--<img class="m24-logo" src="./assets/images/m24_on.gif">-->
     <!--<div class="pb-5">-->
     <!--<img class="m24-logo" :src="logo">-->
-    <!--<audio :src="sound" autoplay controls1></audio>-->
+    <audio :src="sound" autoplay controls1></audio>
     <!--</div>-->
 
     <b-container fluid>
