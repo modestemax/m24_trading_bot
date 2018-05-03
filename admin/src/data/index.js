@@ -51,8 +51,13 @@ export default appEmitter;
         });
         break;
       case 'error':
+        clientData.error.type = 'error';
         clientData.error.time = formatTime(clientData.error.time);
-        appEmitter.emit('srv_error', clientData.error);
+        appEmitter.emit('srv_text', clientData.error);
+        break;
+      case 'msg':
+        clientData.error = { type: 'msg', time: formatTime(clientData.msg.time), error: clientData.msg.msg };
+        appEmitter.emit('srv_text', clientData.error);
         break;
       default:
 

@@ -151,16 +151,16 @@ SymbolsData.load = async function ({ starting = false } = {}) {
 
 SymbolsData.save = _.throttle(async function ({ data, open, closed }) {
     try {
-        data = data && JSON.stringify(data);
-        open = open && JSON.stringify(open);
-        closed = closed && JSON.stringify(closed);
-        let savedData = await SymbolsData.load();
-
-        data && (savedData.data = data);
-        open && (savedData.open = open);
-        closed && (savedData.closed = closed);
-        savedData.time = Date.now();
-        SymbolsData.modify(savedData);
+        // data = data && JSON.stringify(data);
+        // open = open && JSON.stringify(open);
+        // closed = closed && JSON.stringify(closed);
+        // let savedData = await SymbolsData.load();
+        //
+        // data && (savedData.data = data);
+        // open && (savedData.open = open);
+        // closed && (savedData.closed = closed);
+        // savedData.time = Date.now();
+        // SymbolsData.modify(savedData);
 
     }
     catch
@@ -177,8 +177,8 @@ module.exports = (async () => {
     let saved = await  SymbolsData.load({ starting: true });
     // SymbolsData.saved =  {};
     if (saved) {
-        SymbolsData.saved = saved.data || {};
-        Trade.open = saved.open || {};
-        Trade.closed = saved.closed || {};
+        // SymbolsData.saved = saved.data || {};
+        // Trade.open = saved.open || {};
+        // Trade.closed = saved.closed || {};
     }
 })();

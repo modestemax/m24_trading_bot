@@ -51,6 +51,7 @@ appEmitter.on('trade:do_trade', pushTrades);
 appEmitter.on('trade:end_trade', pushTrades.bind('end'));
 // appEmitter.on('analyse:tracking', pushTracking);
 appEmitter.on('app:error', pushError);
+appEmitter.on('app:msg', pushMsg);
 appEmitter.on('test:trade', (start, end) => {
     socketSend(JSON.stringify({
         type: 'trades',
@@ -88,6 +89,15 @@ function pushError(error) {
     socketSend(JSON.stringify({
         type: 'error',
         error: { time: Date.now(), error: formatError(error).replace(/?\[\d+\w+/g, '') }
+    }))
+
+}
+
+function pushMsg(msg) {
+
+    socketSend(JSON.stringify({
+        type: 'msg',
+        msg: { time: Date.now(), msg }
     }))
 
 }

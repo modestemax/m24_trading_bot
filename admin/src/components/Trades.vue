@@ -137,7 +137,7 @@
             let moon;
             if (item.maxGain >= item.target) moon = 'info';
             else if (item.maxGain >= 1  /* env.SELL_LIMIT_PERCENT */) moon = 'success';
-            else if (item.minGain <= -1 /* env.STOP_LOSS_PERCENT */) moon = 'danger';
+            else if (item.minGain <= item.stopPrice /* env.STOP_LOSS_PERCENT */) moon = 'danger';
             return moon;
           })(),
         }));
