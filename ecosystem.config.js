@@ -14,11 +14,11 @@ module.exports = {
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG1: '*',
-                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys', BOT_ID: 'tv01',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys', BOT_ID: 'tv02',
                 PORT: 12346,
                 MIN_COUNT: 2,
                 SIMUL_FIRST_ENTRY: '',
-                NO_STOP_LOSS: 'true',
+                NO_STOP_LOSS1: 'true',
                 STOP_LOSS_PERCENT: -1.5,
                 TRENDING_UP: true,
                 SELL_LIMIT_PERCENT: 1.1,
@@ -28,27 +28,27 @@ module.exports = {
                 NODE_ENV: 'production'
             }
         },
-        // {
-        //     name: 'bot_btc_45',
-        //     script: 'app.js',
-        //     "exec_mode": "cluster",
-        //     cwd: 'trading',
-        //     "node_args": "--inspect=0.0.0.0:5859",
-        //     env: {
-        //         DEBUG1: '*',
-        //         QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
-        //         PORT: 12345,
-        //         MIN_COUNT: 2,
-        //         NO_STOP_LOSS: 'true',
-        //         STOP_LOSS_PERCENT: -1,
-        //         TRENDING_UP: true,
-        //         SELL_LIMIT_PERCENT: .6,
-        //         QUOTE_CUR_QTY:.006
-        //     },
-        //     env_production: {
-        //         NODE_ENV: 'production'
-        //     }
-        // },
+        {
+            name: 'bot_btc_45',
+            script: 'app.js',
+            "exec_mode": "cluster",
+            cwd: 'trading',
+            "node_args": "--inspect=0.0.0.0:5859",
+            env: {
+                DEBUG1: '*',
+                QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys', BOT_ID: 'tv02',
+                PORT: 12345,
+                MIN_COUNT: 2,
+                NO_STOP_LOSS1: 'true',
+                STOP_LOSS_PERCENT: -1,
+                TRENDING_UP: true,
+                SELL_LIMIT_PERCENT: .6,
+                QUOTE_CUR_QTY: .006
+            },
+            env_production: {
+                NODE_ENV: 'production'
+            }
+        },
 
         {
             name: 'bot_usdt_56',
@@ -58,7 +58,7 @@ module.exports = {
             "node_args": "--inspect=0.0.0.0:5858",
             env: {
                 DEBUG1: '*',
-                QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys', BOT_ID: 'tv01',
+                QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys', BOT_ID: 'tv02',
                 PORT: 12356,
                 MIN_COUNT: 2,
                 SIMUL_FIRST_ENTRY: '',

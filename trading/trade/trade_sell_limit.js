@@ -21,6 +21,10 @@ const tradings = Model.Trade.open || {};
 const closedTrades = Model.Trade.closed || {};
 _.keys(tradings).forEach(symbol => fetchTicker({ symbol }));
 
+
+module.exports.openTrades = tradings;
+module.exports.closedTrades = closedTrades;
+
 appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
     if (timeframe == env.TIMEFRAME) {
         _.forEach(_.keys(tradings), symbol => tradings[symbol].rating = markets[symbol].rating)
@@ -80,6 +84,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
             if (trade && !trade.simulation) {
                 delete tradings[symbol];
                 //log trade
+                // trade.success = trade.buyPrice >
                 trade.started && (closedTrades[trade.id] = trade) && emit('ended', trade);
                 noFetchTicker({ symbol })
             }
@@ -162,7 +167,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
                     // return;
                 }
             } catch (e) {
-                //debugger
+             emitException(e)
                 throw e;
             }
 
@@ -281,14 +286,17 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, st
         stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
         const duration = (Date.now() - startTime);
         if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) /*|| duration >= maxWait*/) {
+            trade.success = false;
             removeTickerListener();
             sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
             exchange.createMarketSellOrder(symbol, amount);
         } else {
             //todo remove this, it is for testing
             if (!env.PRODUCTION) {
-                let signal = signals[env.TIMEFRAME][symbol];
-                if (signal.rating < 0) {
+                // let signal = signals[env.TIMEFRAME][symbol];
+                // if (signal.rating < 0) {
+                if (ticker.last >= trade.sellPrice) {
+                    trade.success = true;
                     trade.price = ticker.last;
                     appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
                 }
