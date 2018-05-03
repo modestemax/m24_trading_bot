@@ -142,7 +142,7 @@ function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
                 let gain = getGain(close, price);
                 if (gain === oldGain) return;
                 debug(symbol, 'gain', gain, 'step', changeStep);
-                if (gain < 0||signal5.changeFromOpen<.01) {
+                if (gain < 0 || signal5.changeFromOpen < .01) {
                     lost += gain;
                     if (lost < -2) {
                         if (changeStep) {
@@ -221,6 +221,10 @@ function specialCheck({ symbol, timeframes = [15, 60] }) {
         return good && alwaysGood
     }, true);
 
+    function countCandle({ id, timeframe }) {
+        return Math.trunc((Date.now() / (timeframe * 60e3))) - id
+    }
+
     function alsoGood(timeframe) {
         const tendances = backupLast3Points.tendances[symbol];
 
@@ -233,7 +237,10 @@ function specialCheck({ symbol, timeframes = [15, 60] }) {
         specialCheck.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
         specialCheck.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
         specialCheck.emaCrossingUpAt = getCrossingUpPoint({ up: 'ema10', down: 'ema20', points });
-        specialCheck.emaCrossingDistance = specialCheck.emaCrossingUpAt && ((Date.now() / 5 * 60e3) - specialCheck.emaCrossingUpAt.id);
+        specialCheck.emaCrossingDistance = specialCheck.emaCrossingUpAt && countCandle({
+            id: specialCheck.emaCrossingUpAt.id,
+            timeframe
+        });
         specialCheck.emaDistance = getGain(last.ema10, last.ema20)
 
         specialCheck.macdAboveSignal = last.macd > last.macd_signal;
@@ -243,7 +250,7 @@ function specialCheck({ symbol, timeframes = [15, 60] }) {
         specialCheck.macdAboveZero = last.macd > 0
         specialCheck.macdSignalAboveZero = last.macd_signal > 0
 
-        const ADX_REF = 20;
+        const ADX_REF = 25;
         specialCheck.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
         specialCheck.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
         specialCheck.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
@@ -264,6 +271,17 @@ function specialCheck({ symbol, timeframes = [15, 60] }) {
             diCrossingUpAt, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
             adxAboveRef, adxTrendUp, absenceDePique, adxEcart
         } = specialCheck;
+
+        if (emaCrossingUpAt) {
+            emitMessage(symbol + ' ' + timeframe + ' ema crossing distance: ' + emaCrossingDistance)
+        }
+        if (macdCrossingUpAt) {
+            emitMessage(symbol + ' ' + timeframe + ' macd crossing ')
+        }
+        if (diCrossingUpAt) {
+            emitMessage(symbol + ' ' + timeframe + ' di crossing distance')
+        }
+
 
         if (ema10Above20 && emaDistance >= .2 && ema10TrendUp && ema20TrendUp /*&& emaCrossingDistance < 3*/) {
             if (macdAboveSignal && macdAboveZero && macdSignalAboveZero && macdTrendUp && macdSignalTrendUp) {
