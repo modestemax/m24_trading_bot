@@ -8,13 +8,13 @@ const apps = [
         cwd: 'trading',
         "node_args": "--inspect=0.0.0.0:5858",
         env: {
-            DEBUG1: '*',
+            DEBUG: '*',
             // DESC: 'BTC Target 1.1 Stop -2',
-            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys', BOT_ID: 'tv02',
+            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
             PORT: 12346,
             MIN_COUNT: 2,
             SIMUL_FIRST_ENTRY: '',
-            NO_STOP_LOSS1: 'true',
+            NO_STOP_LOSS: 'true',
             STOP_LOSS_PERCENT: -2,
             TRADE_ON_EMA_CROSS: true,
             SELL_LIMIT_PERCENT: 1.1,
@@ -25,22 +25,22 @@ const apps = [
         }
     },
     {
-        name: 'bot_btc_45',
+        name: 'bot_eth_45',
         script: 'app.js',
         "exec_mode": "cluster",
         cwd: 'trading',
         "node_args": "--inspect=0.0.0.0:5859",
         env: {
-            DEBUG1: '*',
+            DEBUG: '*',
             // DESC: 'BTC Target 0.6 Stop -1.5',
-            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys', BOT_ID: 'tv02',
+            QUOTE_CUR: 'ETH', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
             PORT: 12345,
             MIN_COUNT: 2,
-            NO_STOP_LOSS1: 'true',
+            NO_STOP_LOSS: 'true',
             STOP_LOSS_PERCENT: -1.5,
             TRADE_ON_EMA_CROSS: true,
             SELL_LIMIT_PERCENT: .6,
-            QUOTE_CUR_QTY: .006
+            QUOTE_CUR_QTY: .06
         },
         env_production: {
             NODE_ENV: 'production'
@@ -54,9 +54,9 @@ const apps = [
         cwd: 'trading',
         "node_args": "--inspect=0.0.0.0:5858",
         env: {
-            DEBUG1: '*',
+            DEBUG: '*',
             // DESC: 'USDT Target 1.1 Stop -2',
-            QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 240, API_KEY: 'keys', BOT_ID: 'tv02',
+            QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
             PORT: 12356,
             MIN_COUNT: 2,
             TRADE_ON_EMA_CROSS: true,
@@ -70,21 +70,21 @@ const apps = [
         }
     },
     {
-        name: 'bot_btc_55',
+        name: 'bot_bnb_55',
         script: 'app.js',
         "exec_mode": "cluster",
         cwd: 'trading',
         "node_args": "--inspect=0.0.0.0:5859",
         env: {
-            DEBUG1: '*',
+            DEBUG: '*',
             // DESC: 'BTC Target 0.6 Stop -1.5',
-            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys',
+            QUOTE_CUR: 'BNB', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
             PORT: 12355,
             MIN_COUNT: 2,
             NO_STOP_LOSS: 'true',
             STOP_LOSS_PERCENT: -1.5,
             SELL_LIMIT_PERCENT: .6,
-            QUOTE_CUR_QTY: .006
+            QUOTE_CUR_QTY: 20
         },
         env_production: {
             NODE_ENV: 'production'
