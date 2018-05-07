@@ -57,8 +57,10 @@ const beautify = (data, timeframe) => {
             let candleColor;
             let id = Math.trunc(Date.now() / env.timeframesIntervals[timeframe]);
             return exchange.marketsById[d[0]] && {
+                timeframe,
                 symbol: exchange.marketsById[d[0]].symbol,
-                time: new Date(),
+                now: new Date(),
+                time: new Date(id * env.timeframesIntervals[timeframe]),
                 id,
                 close: d[1],
                 changePercent: +d[2].toFixed(2),
@@ -176,52 +178,71 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
     })
 }
 
+//
+// async function fetchTickers() {
+//     try {
+//         let tickers = await exchange.fetchTickers();
+//         tickers = _.filter(tickers, t => /\/BTC$/i.test(t.symbol));
+//         debug2(`signals 24H_TREND ${_.keys(tickers).length} symbols loaded`);
+//         let pumpings = _.filter(tickers, t => t.percentage > 0);
+//         let meanPercentage = _.sumBy(pumpings, 'percentage') / pumpings.length;
+//         tickers = _.map(tickers, t => _.extend(t, { meanPercentage, pumpingCount: pumpings.length }));
+//         return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: tickers }))
+//     } catch (ex) {
+//         emitException(ex)
+//     } finally {
+//         setTimeout(fetchTickers, 60e3 * 10);
+//     }
+// }
+//
+// function getOthersSignals({ indicator, rate }) {
+//
+//     appEmitter.once('app:fetch_24h_trend', function () {
+//         // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
+//         fetchTickers();
+//     });
+//
+//     // appEmitter.once('app:fetch_long_trend', function () {
+//     //     switch (Number(TIMEFRAME)) {
+//     //         case 15:
+//     //             getSignals({ options: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
+//     //             break;
+//     //         case 60:
+//     //             getSignals({ options: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
+//     //             break;
+//     //     }
+//     // });
+// }
 
-async function fetchTickers() {
-    try {
-        let tickers = await exchange.fetchTickers();
-        tickers = _.filter(tickers, t => /\/BTC$/i.test(t.symbol));
-        debug2(`signals 24H_TREND ${_.keys(tickers).length} symbols loaded`);
-        let pumpings = _.filter(tickers, t => t.percentage > 0);
-        let meanPercentage = _.sumBy(pumpings, 'percentage') / pumpings.length;
-        tickers = _.map(tickers, t => _.extend(t, { meanPercentage, pumpingCount: pumpings.length }));
-        return setImmediate(() => appEmitter.emit('tv:signals_24h', { markets: tickers }))
-    } catch (ex) {
-        emitException(ex)
-    } finally {
-        setTimeout(fetchTickers, 60e3 * 10);
+env.TIMEFRAMES.forEach((timeframe) => {
+        //get signal max 1 time per second
+        const throttledGetSignals = _.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3);
+
+        throttledGetSignals();
+
+        setTimeout(() => {
+            throttledGetSignals();
+            setInterval(throttledGetSignals, getRate(timeframe))
+        }, getStartTime())
     }
-}
-
-function getOthersSignals({ indicator, rate }) {
-
-    appEmitter.once('app:fetch_24h_trend', function () {
-        // getSignals({ data: params(), signal24h: true, indicator: '24H_TREND', rate: 60e3 * 5 });
-        fetchTickers();
-    });
-
-    // appEmitter.once('app:fetch_long_trend', function () {
-    //     switch (Number(TIMEFRAME)) {
-    //         case 15:
-    //             getSignals({ options: params({ timeframe: 60 }), longTimeframe: true, indicator, rate });
-    //             break;
-    //         case 60:
-    //             getSignals({ options: params({ timeframe: 240 }), longTimeframe: true, indicator, rate });
-    //             break;
-    //     }
-    // });
-}
-
-env.TIMEFRAMES.forEach((timeframe) => setInterval(_.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3), getRate(timeframe)));
+);
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
 
+function getStartTime() {
+    const step = 10e3;
+    return step - Date.now() % step;
+}
 
 function getRate(timeframe) {
-    if (timeframe == env.TIMEFRAME) {
-        return 1e3;
-    } else {
-        return 5e3
+    switch (timeframe) {
+        case  env.TIMEFRAME:
+            return 1e3;
+        case 60:
+            return 5 * 60e3;
+        default :
+            Infinity
+
     }
 }
