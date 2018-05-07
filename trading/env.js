@@ -61,7 +61,7 @@ module.exports = Model.Settings.load().then(async settings => {
         // 240,
         60,
         15,
-        5,
+        // 5,
     ];
 
     global.env.timeframesIntervals = {

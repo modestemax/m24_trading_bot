@@ -214,16 +214,35 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
 //     // });
 // }
 
-env.TIMEFRAMES.forEach((timeframe) => setInterval(_.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3), getRate(timeframe)));
+env.TIMEFRAMES.forEach((timeframe) => {
+        //get signal max 1 time per second
+        const throttledGetSignals = _.throttle(() => getSignals({ options: params({ timeframe }) }), 1e3);
+
+        throttledGetSignals();
+
+        setTimeout(() => {
+            throttledGetSignals();
+            setInterval(throttledGetSignals, getRate(timeframe))
+        }, getStartTime())
+    }
+);
 
 
 debug('trading on ' + TIMEFRAME + ' trimeframe');
 
+function getStartTime() {
+    const step = 10e3;
+    return step - Date.now() % step;
+}
 
 function getRate(timeframe) {
-    if (timeframe == env.TIMEFRAME) {
-        return 1e3;
-    } else {
-        return 1e3
+    switch (timeframe) {
+        case  env.TIMEFRAME:
+            return 1e3;
+        case 60:
+            return 5 * 60e3;
+        default :
+            Infinity
+
     }
 }

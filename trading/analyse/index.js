@@ -104,12 +104,13 @@ async function analyse(markets) {
 
 
 async function checkSignal({ signal }) {
-    let { symbol } = signal;
-    backupLast3Points({ symbol, });
-    buildStrategy({ symbol })
+    const { symbol } = signal;
+    const timeframes = [15, 60];
+    backupLast3Points({ symbol, timeframes });
+    buildStrategy({ symbol, timeframes })
     if (isMacdCrossingUp({ symbol, timeframe: 15 })) {
         if (isEma10TrendingUp({ symbol, timeframe: 60 })) {
-            // return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+            return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
         }
     }
 }
@@ -215,9 +216,9 @@ function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
         return backupLast3Points.tendances [symbol] [timeframe] = backupLast3Points.tendances [symbol] [timeframe] || [];
     }
 
-    function getLast3UniqPoints({ symbol, timeframe }) {
+    function getLast3UniqPoints({ symbol, timeframe, uniqCount = 3 }) {
         const points = getLast3Points({ symbol, timeframe })
-        if (_.compact(points).length === 3 && _.uniqBy(points, 'id').length === 3) {
+        if (_.compact(points).length === 3 && _.uniqBy(points, 'id').length === uniqCount) {
             return points;
         }
     }
@@ -228,7 +229,7 @@ function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
 function isMacdCrossingUp({ symbol, timeframe, bound = [+1, +2] }) {
     const sData = buildStrategy.getSpecialData({ symbol, timeframe });
     if (sData.macdAboveSignal /*&& sData.macdTrendUp*/ && bound[0] <= sData.macdCrossingDistance && sData.macdCrossingDistance <= bound[1]) {
-        emitMessage(`${symbol} ${timeframe} macd crossing  Up distance: ${sData.macdCrossingDistance}`);
+        // emitMessage(`${symbol} ${timeframe} macd crossing  Up distance: ${sData.macdCrossingDistance}`);
         return true
     }
 
@@ -237,6 +238,7 @@ function isMacdCrossingUp({ symbol, timeframe, bound = [+1, +2] }) {
 function isEma10TrendingUp({ symbol, timeframe }) {
     const sData = buildStrategy.getSpecialData({ symbol, timeframe });
     if (sData.ema10TrendUp) {
+        emitMessage(`${symbol} ${timeframe} EMA 10 Trending  Up `);
         return true
     }
 }
@@ -250,7 +252,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
         let specialData = getSpecialData({ symbol, timeframe });
 
         // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
-        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe });
+        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
             specialData.points = points;
             const [first, prev, last] = points;
