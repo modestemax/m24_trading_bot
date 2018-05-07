@@ -15,9 +15,9 @@ const apps = [
             MIN_COUNT: 2,
             SIMUL_FIRST_ENTRY: '',
             NO_STOP_LOSS: 'true',
-            STOP_LOSS_PERCENT: -2,
-            TRADE_ON_EMA_CROSS: true,
-            SELL_LIMIT_PERCENT: 1.1,
+            STRATEGY: "ValKeys",
+            STOP_LOSS_PERCENT: -10,
+            SELL_LIMIT_PERCENT: 15,
             QUOTE_CUR_QTY: .006,
         },
         env_production: {
@@ -37,9 +37,9 @@ const apps = [
             PORT: 12345,
             MIN_COUNT: 2,
             NO_STOP_LOSS: 'true',
-            STOP_LOSS_PERCENT: -1.5,
-            TRADE_ON_EMA_CROSS: true,
-            SELL_LIMIT_PERCENT: .6,
+            STRATEGY: "ValKeys",
+            STOP_LOSS_PERCENT: -10,
+            SELL_LIMIT_PERCENT: 15,
             QUOTE_CUR_QTY: .06
         },
         env_production: {
@@ -59,10 +59,10 @@ const apps = [
             QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
             PORT: 12356,
             MIN_COUNT: 2,
-            TRADE_ON_EMA_CROSS: true,
+            STRATEGY: "ValKeys",
             NO_STOP_LOSS: 'true',
-            STOP_LOSS_PERCENT: -2,
-            SELL_LIMIT_PERCENT: 1.1,
+            STOP_LOSS_PERCENT: -10,
+            SELL_LIMIT_PERCENT: 15,
             QUOTE_CUR_QTY: 100
         },
         env_production: {
@@ -82,8 +82,9 @@ const apps = [
             PORT: 12355,
             MIN_COUNT: 2,
             NO_STOP_LOSS: 'true',
-            STOP_LOSS_PERCENT: -1.5,
-            SELL_LIMIT_PERCENT: .6,
+            STRATEGY: "ValKeys",
+            STOP_LOSS_PERCENT: -10,
+            SELL_LIMIT_PERCENT: 15,
             QUOTE_CUR_QTY: 20
         },
         env_production: {
@@ -93,7 +94,7 @@ const apps = [
 
 ].map(app => {
     app.env.DESC = `Quote: ${app.env.QUOTE_CUR} Target: ${app.env.SELL_LIMIT_PERCENT} stop: ${app.env.SELL_LIMIT_PERCENT}`;
-    app.env.DESC += ' Trade based on ' + (app.env.TRADE_ON_EMA_CROSS ? 'EMA Crossing' : 'Trend')
+    app.env.DESC += ' Trade based on ' + (app.env.STRATEGY )
     return app;
 });
 
