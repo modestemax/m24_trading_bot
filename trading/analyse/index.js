@@ -40,60 +40,60 @@ async function analyse(markets) {
 }
 
 
-function checkTrend({ symbol }) {
-    let trendUp = checkTrend.trendUp = checkTrend.trendUp = {};
-    // if (signal && signal.timeframe == TIMEFRAME) {
-    // let { symbol, timeframe } = signal;
-    let s5 = signals[5][symbol] || {};
-    let s15 = signals[15][symbol] || {};
-    let s60 = signals[60][symbol] || {};
-    let s240 = signals[240][symbol] || {};
-    let sday = signals[60 * 24][symbol];
-    // let s;
-    // switch (timeframe) {
-    //     case 5: {
-    //         s = s5;
-    //         let [prevCh, lastCh] = s.indicators.change_from_open.slice(-2);
-    //         if (prevCh < 0 && lastCh < .1) return;
-    //         if (lastCh < .05) return;
-    //         let ema10 = _.last(s.indicators.ema10);
-    //         let ema20 = _.last(s.indicators.ema20);
-    //         if (((ema10 - ema20) / Math.abs(ema20) * 100) < .2) return;
-    //
-    //         if (s5.rating > .5 && s15.rating > .5 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
-    //             // return true;
-    //         }
-    //         break;
-    //     }
-    //     case 240: {
-    // s = s240;
-    return trendUp[symbol] = true;
-    // if (s5.rating > 0 && s15.rating > 0 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
-    if (s5 && s15 && s60 && s240 && sday) {
-        if (s5.changePercent >= 0 && s15.changePercent >= 0 && s60.changePercent >= 0 && s240.changePercent >= 0 && sday.changePercent >= 0) {
-            if (s5.changeFromOpen >= 0 && s15.changeFromOpen >= 0 && s60.changeFromOpen >= 0 && s240.changeFromOpen >= 0 && sday.changeFromOpen >= 0) {
-
-                if (s5.ema10 > s5.ema20 && s15.ema10 > s15.ema20 && s60.ema10 > s60.ema20 && s240.ema10 > s240.ema20 && sday.ema10 > sday.ema20) {
-                    if (s5.macd > s5.macd_signal && s15.macd > s15.macd_signal && s60.macd > s60.macd_signal && s240.macd > s240.macd_signal && sday.macd > sday.macd_signal) {
-                        if (s5.adx_plus_di > s5.adx_minus_di && s15.adx_plus_di > s15.adx_minus_di && s60.adx_plus_di > s60.adx_minus_di && s240.adx_plus_di > s240.adx_minus_di && sday.adx_plus_di > sday.adx_minus_di) {
-                            return trendUp[symbol] = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // }
-    delete trendUp[symbol];
-    //     break;
-    // }
-    // case 15:
-    //     s = s15;
-    //     break;
+// function checkTrend({ symbol }) {
+//     let trendUp = checkTrend.trendUp = checkTrend.trendUp = {};
+//     // if (signal && signal.timeframe == TIMEFRAME) {
+//     // let { symbol, timeframe } = signal;
+//     let s5 = signals[5][symbol] || {};
+//     let s15 = signals[15][symbol] || {};
+//     let s60 = signals[60][symbol] || {};
+//     // let s240 = signals[240][symbol] || {};
+//     // let sday = signals[60 * 24][symbol];
+//     // let s;
+//     // switch (timeframe) {
+//     //     case 5: {
+//     //         s = s5;
+//     //         let [prevCh, lastCh] = s.indicators.change_from_open.slice(-2);
+//     //         if (prevCh < 0 && lastCh < .1) return;
+//     //         if (lastCh < .05) return;
+//     //         let ema10 = _.last(s.indicators.ema10);
+//     //         let ema20 = _.last(s.indicators.ema20);
+//     //         if (((ema10 - ema20) / Math.abs(ema20) * 100) < .2) return;
+//     //
+//     //         if (s5.rating > .5 && s15.rating > .5 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
+//     //             // return true;
+//     //         }
+//     //         break;
+//     //     }
+//     //     case 240: {
+//     // s = s240;
+//     return trendUp[symbol] = true;
+//     // if (s5.rating > 0 && s15.rating > 0 && s60.rating > 0 && s240.rating > 0 && sday.rating > 0) {
+//     if (s5 && s15 && s60 && s240 && sday) {
+//         if (s5.changePercent >= 0 && s15.changePercent >= 0 && s60.changePercent >= 0 && s240.changePercent >= 0 && sday.changePercent >= 0) {
+//             if (s5.changeFromOpen >= 0 && s15.changeFromOpen >= 0 && s60.changeFromOpen >= 0 && s240.changeFromOpen >= 0 && sday.changeFromOpen >= 0) {
+//
+//                 if (s5.ema10 > s5.ema20 && s15.ema10 > s15.ema20 && s60.ema10 > s60.ema20 && s240.ema10 > s240.ema20 && sday.ema10 > sday.ema20) {
+//                     if (s5.macd > s5.macd_signal && s15.macd > s15.macd_signal && s60.macd > s60.macd_signal && s240.macd > s240.macd_signal && sday.macd > sday.macd_signal) {
+//                         if (s5.adx_plus_di > s5.adx_minus_di && s15.adx_plus_di > s15.adx_minus_di && s60.adx_plus_di > s60.adx_minus_di && s240.adx_plus_di > s240.adx_minus_di && sday.adx_plus_di > sday.adx_minus_di) {
+//                             return trendUp[symbol] = true;
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     // }
+//     delete trendUp[symbol];
+//     //     break;
+//     // }
+//     // case 15:
+//     //     s = s15;
+//     //     break;
+// // }
+//
+// // }
 // }
-
-// }
-}
 
 //
 // function accumulateSignalResult({ signal }) {
@@ -105,14 +105,13 @@ function checkTrend({ symbol }) {
 
 async function checkSignal({ signal }) {
     let { symbol } = signal;
-    // accumulateSignalResult({ signal });
-
-
-    // suivreLaTendanceAvantDacheter({ signal });
     backupLast3Points({ symbol, });
-    checkTrend({ symbol });
-    suivreLaTendanceAvantDacheter({ symbol });
-
+    buildStrategy({ symbol })
+    if (isMacdCrossingUp({ symbol, timeframe: 15 })) {
+        if (isEma10TrendingUp({ symbol, timeframe: 60 })) {
+            // return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+        }
+    }
 }
 
 
@@ -120,76 +119,71 @@ function getGain({ high, low }) {
     return (high - low) / Math.abs(low) * 100;
 }
 
-function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
-    let checks = suivreLaTendanceAvantDacheter.checks = suivreLaTendanceAvantDacheter.checks || {};
-    let signal = signals[TIMEFRAME][symbol];
-    let signal5 = signals[5][symbol];
-
-    if (signal) {
-        let { symbol } = signal;
-        // if (checkTrend.trendUp[symbol]) {
-        if (!checks[symbol]) {
-            checks[symbol] = {
-                price: signal.close,
-                gain: 0,
-                lost: 0,
-                time0: Date.now(),
-                time: Date.now(),
-                changeStep: 0
-            }
-        } else {
-            let market = checks[symbol];
-            let { price, gain: oldGain, lost, time, changeStep, } = market;
-            let { close } = signal;
-            let gain = getGain({ high: close, low: price });
-            if (gain === oldGain) return;
-            // debug(symbol, 'gain', gain, 'step', changeStep);
-            if (gain < 0) {
-                lost += gain;
-                if (lost < -2) {
-                    if (changeStep) {
-                        // debugger
-                        //juste pour voir le ratio fr ce qui commence a monter puis echoue
-                    }
-                    return delete checks[symbol];
-                }
-                return _.extend(market, { price: close, lost, gain, time: Date.now(), changeStep: 0 })
-            }
-            let duration = Date.now() - time;
-            //on doit avoir fait 1% en minimum 30 secondes et en 5 changement de prix aumoins
-
-            // if (lost < -1 || (.3 < gain /* && duration > 30e3*/ && -0.2 < lost /*changeStep >= 100*/)) {
-            // emitMessage(`${symbol}  special check, changeStep:${changeStep}, duration: ${duration}  lost: ${lost} gain: ${gain}`);
-            if (specialCheck({ symbol, market })) {
-                // delete checks[symbol];
-                // if (estFiable({ symbol })) {
-
-                // emitMessage(`${symbol} , changeStep:${changeStep}, duration: ${duration} lost: ${lost} gain: ${gain}`);
-                // emitMessage(symbol + ' buying');
-                // return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
-                // }
-            }
-            // }
-            return _.extend(market, { gain, changeStep: ++changeStep })
-
-        }
-        // } else {
-        //     delete checks[signal.symbol]
-        // }
-    }
-}
+// function suivreLaTendanceAvantDacheter({ symbol, } = {}) {
+//     let checks = suivreLaTendanceAvantDacheter.checks = suivreLaTendanceAvantDacheter.checks || {};
+//     let signal = signals[TIMEFRAME][symbol];
+//     let signal5 = signals[5][symbol];
+//
+//     if (signal) {
+//         let { symbol } = signal;
+//         // if (checkTrend.trendUp[symbol]) {
+//         if (!checks[symbol]) {
+//             checks[symbol] = {
+//                 price: signal.close,
+//                 gain: 0,
+//                 lost: 0,
+//                 time0: Date.now(),
+//                 time: Date.now(),
+//                 changeStep: 0
+//             }
+//         } else {
+//             let market = checks[symbol];
+//             let { price, gain: oldGain, lost, time, changeStep, } = market;
+//             let { close } = signal;
+//             let gain = getGain({ high: close, low: price });
+//             if (gain === oldGain) return;
+//             // debug(symbol, 'gain', gain, 'step', changeStep);
+//             if (gain < 0) {
+//                 lost += gain;
+//                 if (lost < -2) {
+//                     if (changeStep) {
+//                         // debugger
+//                         //juste pour voir le ratio fr ce qui commence a monter puis echoue
+//                     }
+//                     return delete checks[symbol];
+//                 }
+//                 return _.extend(market, { price: close, lost, gain, time: Date.now(), changeStep: 0 })
+//             }
+//             let duration = Date.now() - time;
+//             //on doit avoir fait 1% en minimum 30 secondes et en 5 changement de prix aumoins
+//
+//             // if (lost < -1 || (.3 < gain /* && duration > 30e3*/ && -0.2 < lost /*changeStep >= 100*/)) {
+//             // emitMessage(`${symbol}  special check, changeStep:${changeStep}, duration: ${duration}  lost: ${lost} gain: ${gain}`);
+//             if (specialCheck({ symbol, market })) {
+//                 // delete checks[symbol];
+//                 // if (estFiable({ symbol })) {
+//
+//                 // emitMessage(`${symbol} , changeStep:${changeStep}, duration: ${duration} lost: ${lost} gain: ${gain}`);
+//                 // emitMessage(symbol + ' buying');
+//                 // return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+//                 // }
+//             }
+//             // }
+//             return _.extend(market, { gain, changeStep: ++changeStep })
+//
+//         }
+//         // } else {
+//         //     delete checks[signal.symbol]
+//         // }
+//     }
+// }
 
 function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
-    backupLast3Points.tendances = backupLast3Points.tendances || {};
-    backupLast3Points.tendances[symbol] = backupLast3Points.tendances[symbol] || {};
-
+    init();
     _.forEach(timeframes, savePoints);
 
     function savePoints(timeframe) {
-
-
-        let points = backupLast3Points.tendances [symbol] [timeframe] = backupLast3Points.tendances [symbol] [timeframe] || [];
-
+        const points = getLast3Points({ symbol, timeframe });
         let signal = signals[timeframe][symbol];
         if (signal) {
             // let { symbol } = signal
@@ -210,122 +204,151 @@ function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
             }
         }
     }
-}
 
-
-function specialCheck({ symbol, timeframes = [5, 15, 60] }) {
-    specialCheck.specialData = specialCheck.specialData || {};
-    specialCheck.specialData[symbol] = specialCheck.specialData[symbol] || {};
-
-    _.forEach(timeframes, getSpecialData);
-
-    function getSpecialData(timeframe) {
-        const tendances = backupLast3Points.tendances[symbol];
-        let specialData = specialCheck.specialData[symbol][timeframe] = specialCheck.specialData[symbol][timeframe] || {};
-
-
-        const points = tendances[timeframe];
-        if (_.compact(points).length !== 3 || _.uniqBy(points, 'id').length < 2) return;
-
-        const [first, prev, last] = points;
-
-        specialData.ema10Above20 = last.ema10 > last.ema20;
-        specialData.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
-        specialData.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
-        // le point de croisement change uniquement au prochain croisement,
-        //     si pas croisement le point precedent est maintenu
-        // le point de croisement doit etre pris en monté coe en descente
-        //
-        // si ecart tres petit alors considerer croisement
-
-        specialData.emaCrossingAt =
-            getCrossingPoint({ up: 'ema10', down: 'ema20', points, zero: .06 }) || specialData.emaCrossingAt;
-        specialData.emaCrossingDistance = specialData.emaCrossingAt && countCandle({
-            id: specialData.emaCrossingAt.point.id,
-            timeframe
-        });
-        specialData.emaDistance = getGain({ high: last.ema10, low: last.ema20 })
-
-        specialData.macdAboveSignal = last.macd > last.macd_signal;
-        specialData.macdTrendUp = isSorted([first.macd, prev.macd, last.macd,]);
-        specialData.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
-        specialData.macdCrossingAt =
-            getCrossingPoint({ up: 'macd', down: 'macd_signal', points }) || specialData.macdCrossingAt;
-        specialData.macdCrossingDistance = specialData.macdCrossingAt && countCandle({
-            id: specialData.macdCrossingAt.point.id,
-            timeframe
-        });
-        specialData.macdAboveZero = last.macd > 0
-        specialData.macdSignalAboveZero = last.macd_signal > 0
-
-        const ADX_REF = 25;
-        specialData.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
-        specialData.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
-        specialData.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
-        specialData.diCrossingAt =
-            getCrossingPoint({ up: 'adx_plus_di', down: 'macd_signal', points }) || specialData.diCrossingAt;
-        specialData.diCrossingDistance = specialData.diCrossingAt && countCandle({
-            id: specialData.diCrossingAt.point.id,
-            timeframe
-        });
-        specialData.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
-        specialData.diMinusBelowAdxRef = last.adx_minus_di < ADX_REF
-        specialData.diDistance = last.adx_plus_di - last.adx_minus_di;
-
-        specialData.adxValue = last.adx
-        specialData.adxAboveRef = last.adx > ADX_REF
-        specialData.adxTrendUp = isSorted([first.adx, prev.adx, last.adx,]);
-        specialData.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
-        first.adx_ref = prev.adx_ref = last.adx_ref = ADX_REF;
-        specialData.adxCrossingAt = getCrossingPoint({ up: 'adx', down: 'adx_ref', points }) || specialData.adxCrossingAt;
-        specialData.adxCrossingDistance = specialData.adxCrossingAt && countCandle({
-            id: specialData.adxCrossingAt.point.id,
-            timeframe
-        });
-        // specialCheck.absenceDePique = 0 <= last.changeFromOpen && last.changeFromOpen < .2 && prev.changeFromOpen < .5 && first.changeFromOpen < .75;
-
-        let {
-            ema10Above20, emaDistance, emaCrossingAt, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
-            macdCrossingAt, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
-            diCrossingAt, diCrossingDistance, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
-            adxAboveRef, adxTrendUp, absenceDePique, adxEcart, adxValue, adxCrossingAt, adxCrossingDistance
-        } = specialData;
-
-        if (emaCrossingAt) {
-            emitMessage(`${symbol} ${timeframe} ema crossing ${emaCrossingAt.crossing_up ? 'Up' : 'Down'} [${emaCrossingAt.point.ema10},${emaCrossingAt.point.ema20}] distance: ${emaCrossingDistance}`)
-        }
-        if (macdCrossingAt) {
-            emitMessage(`${symbol} ${timeframe} macd crossing ${macdCrossingAt.crossing_up ? 'Up' : 'Down'} [${macdCrossingAt.point.macd},${macdCrossingAt.point.macd_signal}] distance: ${macdCrossingDistance}`)
-
-        }
-        if (diCrossingAt) {
-            emitMessage(`${symbol} ${timeframe} DI crossing ${diCrossingAt.crossing_up ? 'Up' : 'Down'} [${diCrossingAt.point.adx_plus_di},${diCrossingAt.point.adx_minus_di}] distance: ${diCrossingDistance}`)
-        }
-        if (adxCrossingAt) {
-            emitMessage(`${symbol} ${timeframe} ADX crossing ${adxCrossingAt.crossing_up ? 'Up' : 'Down'} [${adxValue}] distance: ${adxCrossingDistance}`)
-        }
-
-        // if (process.env.TRADE_ON_EMA_CROSS) {
-        //     //  si du signal sentinel au croisement on a fait bcp on peut anticiper l'entrer a la position 0 ou 1
-        //     return .2 <= emaDistance && 1 <= emaCrossingDistance && emaCrossingDistance <= 3;
-        // }
-        // if (ema10Above20 && emaDistance >= .2 && ema10TrendUp && ema20TrendUp /*&& emaCrossingDistance < 3*/) {
-        //     if (macdAboveSignal && macdAboveZero && macdSignalAboveZero && macdTrendUp && macdSignalTrendUp) {
-        //         if (diPlusAboveMinus && diDistance >= 5 && (diPlusTrendUp && diMinusTrendDown) && diPlusAboveAdxRef && diMinusBelowAdxRef) {
-        //             if (adxAboveRef) {
-        //                 if (adxValue > 30 || (adxTrendUp && adxEcart > .5)) {
-        //                     // if (absenceDePique) {
-        //                     emitMessage(symbol + ' status -> ' + JSON.stringify(Object.assign({}, specialCheck)))
-        //                     return true;
-        //                     // }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
+    function init() {
+        backupLast3Points.tendances = backupLast3Points.tendances || {};
+        backupLast3Points.tendances[symbol] = backupLast3Points.tendances[symbol] || {};
 
     }
+
+    function getLast3Points({ symbol, timeframe }) {
+        return backupLast3Points.tendances [symbol] [timeframe] = backupLast3Points.tendances [symbol] [timeframe] || [];
+    }
+
+    function getLast3UniqPoints({ symbol, timeframe }) {
+        const points = getLast3Points({ symbol, timeframe })
+        if (_.compact(points).length === 3 && _.uniqBy(points, 'id').length === 3) {
+            return points;
+        }
+    }
+
+    _.extend(backupLast3Points, { getLast3Points, getLast3UniqPoints });
+}
+
+function isMacdCrossingUp({ symbol, timeframe, bound = [+1, +2] }) {
+    const sData = buildStrategy.getSpecialData({ symbol, timeframe });
+    if (sData.macdAboveSignal /*&& sData.macdTrendUp*/ && bound[0] <= sData.macdCrossingDistance && sData.macdCrossingDistance <= bound[1]) {
+        emitMessage(`${symbol} ${timeframe} macd crossing  Up distance: ${sData.macdCrossingDistance}`);
+        return true
+    }
+
+}
+
+function isEma10TrendingUp({ symbol, timeframe }) {
+    const sData = buildStrategy.getSpecialData({ symbol, timeframe });
+    if (sData.ema10TrendUp) {
+        return true
+    }
+}
+
+function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
+    init();
+
+    _.forEach(timeframes, buildSpecialData);
+
+    function buildSpecialData(timeframe) {
+        let specialData = getSpecialData({ symbol, timeframe });
+
+        // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
+        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe });
+        if (points && points.length > 2) {
+            specialData.points = points;
+            const [first, prev, last] = points;
+            {
+                specialData.ema10Above20 = last.ema10 > last.ema20;
+                specialData.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
+                specialData.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
+
+                let crossingPoint = getCrossingPoint({ up: 'ema10', down: 'ema20', points, });
+                crossingPoint = specialData.emaCrossingPoint = crossingPoint || specialData.emaCrossingPoint;
+                specialData.emaCrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                specialData.emaDistance = getGain({ high: last.ema10, low: last.ema20 });
+            }
+            {
+                specialData.macdAboveSignal = last.macd > last.macd_signal;
+                specialData.macdTrendUp = isSorted([first.macd, prev.macd, last.macd,]);
+                specialData.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
+
+                let crossingPoint = getCrossingPoint({ up: 'macd', down: 'macd_signal', points });
+                crossingPoint = specialData.macdCrossingPoint = crossingPoint || specialData.macdCrossingPoint;
+                specialData.macdCrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                specialData.macdAboveZero = last.macd > 0
+                specialData.macdSignalAboveZero = last.macd_signal > 0
+            }
+            {
+                const ADX_REF = 25;
+                {
+                    specialData.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
+                    specialData.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
+                    specialData.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
+                    let crossingPoint = getCrossingPoint({ up: 'adx_plus_di', down: 'macd_signal', points });
+                    crossingPoint = specialData.diCrossingPoint = crossingPoint || specialData.diCrossingPoint;
+                    specialData.diCrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                    specialData.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
+                    specialData.diMinusBelowAdxRef = last.adx_minus_di < ADX_REF
+                    specialData.diDistance = last.adx_plus_di - last.adx_minus_di;
+                }
+                {
+                    specialData.adxValue = last.adx
+                    specialData.adxAboveRef = last.adx > ADX_REF
+                    specialData.adxTrendUp = isSorted([first.adx, prev.adx, last.adx,]);
+                    specialData.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
+                    first.adx_ref = prev.adx_ref = last.adx_ref = ADX_REF;
+                    let crossingPoint = getCrossingPoint({ up: 'adx', down: 'adx_ref', points });
+                    crossingPoint = specialData.adxCrossingPoint = crossingPoint || specialData.adxCrossingPoint;
+                    specialData.adxCrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                }
+            }
+
+            // {
+            //     //DEBUG
+            //     let {
+            //         ema10Above20, emaDistance, emaCrossingPoint, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
+            //         macdCrossingPoint, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
+            //         diCrossingPoint, diCrossingDistance, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
+            //         adxAboveRef, adxTrendUp, absenceDePique, adxEcart, adxValue, adxCrossingPoint, adxCrossingDistance
+            //     } = specialData;
+            //     if (ema10TrendUp) {
+            //         emitMessage(`${symbol} ${timeframe} ema 10 Trending Up `)
+            //     }
+            //     if (macdTrendUp) {
+            //         emitMessage(`${symbol} ${timeframe} macd Trending Up `)
+            //     }
+            //     // if (emaCrossingPoint) {
+            //     //     emitMessage(`${symbol} ${timeframe} ema crossing ${emaCrossingPoint.crossing_up ? 'Up' : 'Down'} [${emaCrossingPoint.point.ema10},${emaCrossingPoint.point.ema20}] distance: ${emaCrossingDistance}`)
+            //     // }
+            //     if (macdCrossingPoint) {
+            //         emitMessage(`${symbol} ${timeframe} macd crossing ${macdCrossingPoint.crossing_up ? 'Up' : 'Down'} [${macdCrossingPoint.point.macd},${macdCrossingPoint.point.macd_signal}] distance: ${macdCrossingDistance}`)
+            //
+            //     }
+            //     // if (diCrossingPoint) {
+            //     //     emitMessage(`${symbol} ${timeframe} DI crossing ${diCrossingPoint.crossing_up ? 'Up' : 'Down'} [${diCrossingPoint.point.adx_plus_di},${diCrossingPoint.point.adx_minus_di}] distance: ${diCrossingDistance}`)
+            //     // }
+            //     // if (adxCrossingPoint) {
+            //     //     emitMessage(`${symbol} ${timeframe} ADX crossing ${adxCrossingPoint.crossing_up ? 'Up' : 'Down'} [${adxValue}] distance: ${adxCrossingDistance}`)
+            //     // }
+            // }
+
+        }
+
+    }
+
+
+    function init() {
+        buildStrategy.specialData = buildStrategy.specialData || {};
+        buildStrategy.specialData[symbol] = buildStrategy.specialData[symbol] || {};
+    }
+
+    function getSpecialData({ symbol, timeframe }) {
+        return buildStrategy.specialData[symbol][timeframe] = buildStrategy.specialData[symbol][timeframe] || {};
+    }
+
+    _.extend(buildStrategy, { getSpecialData, });
+
 }
 
 function getCrossingStatus({ up, down, zero = 0 }) {
@@ -351,8 +374,16 @@ function getCrossingPoint({ up, down, points, zero }) {
 }
 
 
-function countCandle({ id, timeframe }) {
-    return Math.trunc((Date.now() / (timeframe * 60e3))) - id
+function countCandle({ crossingPoint, timeframe }) {
+    if (crossingPoint) {
+        const id = crossingPoint.point.id;
+        const count = Math.trunc((Date.now() / (timeframe * 60e3))) - id;
+        if (crossingPoint.crossing_down) {
+            return -count;
+        }
+        return count;
+    }
+    return -Infinity
 }
 
 // function estFiable({ symbol }) {

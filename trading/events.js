@@ -17,7 +17,7 @@ global.log = _.wrap(_.bind(logToFile, null, _, logFile),
     (log, txt, debug) => {
         log(txt);
         debug && debug(txt);
-        console.debug(txt);
+        // console.debug(txt);
     });
 
 global.log('m24 started with key ' + appKey);
