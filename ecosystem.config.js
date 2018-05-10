@@ -24,73 +24,73 @@ const apps = [
             NODE_ENV: 'production'
         }
     },
-    {
-        name: 'bot_eth_45',
-        script: 'app.js',
-        "exec_mode": "cluster",
-        cwd: 'trading',
-        "node_args": "--inspect=0.0.0.0:5859",
-        env: {
-            DEBUG: '*',
-            // DESC: 'BTC Target 0.6 Stop -1.5',
-            QUOTE_CUR: 'ETH', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
-            PORT: 12345,
-            MIN_COUNT: 2,
-            NO_STOP_LOSS: 'true',
-            STRATEGY: "ValKeys",
-            STOP_LOSS_PERCENT: -10,
-            SELL_LIMIT_PERCENT: 15,
-            QUOTE_CUR_QTY: .06
-        },
-        env_production: {
-            NODE_ENV: 'production'
-        }
-    },
-
-    {
-        name: 'bot_usdt_56',
-        script: 'app.js',
-        "exec_mode": "cluster",
-        cwd: 'trading',
-        "node_args": "--inspect=0.0.0.0:5858",
-        env: {
-            DEBUG: '*',
-            // DESC: 'USDT Target 1.1 Stop -2',
-            QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
-            PORT: 12356,
-            MIN_COUNT: 2,
-            STRATEGY: "ValKeys",
-            NO_STOP_LOSS: 'true',
-            STOP_LOSS_PERCENT: -10,
-            SELL_LIMIT_PERCENT: 15,
-            QUOTE_CUR_QTY: 100
-        },
-        env_production: {
-            NODE_ENV: 'production'
-        }
-    },
-    {
-        name: 'bot_bnb_55',
-        script: 'app.js',
-        "exec_mode": "cluster",
-        cwd: 'trading',
-        "node_args": "--inspect=0.0.0.0:5859",
-        env: {
-            DEBUG: '*',
-            // DESC: 'BTC Target 0.6 Stop -1.5',
-            QUOTE_CUR: 'BNB', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
-            PORT: 12355,
-            MIN_COUNT: 2,
-            NO_STOP_LOSS: 'true',
-            STRATEGY: "ValKeys",
-            STOP_LOSS_PERCENT: -10,
-            SELL_LIMIT_PERCENT: 15,
-            QUOTE_CUR_QTY: 20
-        },
-        env_production: {
-            NODE_ENV: 'production'
-        }
-    },
+    // {
+    //     name: 'bot_eth_45',
+    //     script: 'app.js',
+    //     "exec_mode": "cluster",
+    //     cwd: 'trading',
+    //     "node_args": "--inspect=0.0.0.0:5859",
+    //     env: {
+    //         DEBUG: '*',
+    //         // DESC: 'BTC Target 0.6 Stop -1.5',
+    //         QUOTE_CUR: 'ETH', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
+    //         PORT: 12345,
+    //         MIN_COUNT: 2,
+    //         NO_STOP_LOSS: 'true',
+    //         STRATEGY: "ValKeys",
+    //         STOP_LOSS_PERCENT: -10,
+    //         SELL_LIMIT_PERCENT: 15,
+    //         QUOTE_CUR_QTY: .06
+    //     },
+    //     env_production: {
+    //         NODE_ENV: 'production'
+    //     }
+    // },
+    //
+    // {
+    //     name: 'bot_usdt_56',
+    //     script: 'app.js',
+    //     "exec_mode": "cluster",
+    //     cwd: 'trading',
+    //     "node_args": "--inspect=0.0.0.0:5858",
+    //     env: {
+    //         DEBUG: '*',
+    //         // DESC: 'USDT Target 1.1 Stop -2',
+    //         QUOTE_CUR: 'USDT', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
+    //         PORT: 12356,
+    //         MIN_COUNT: 2,
+    //         STRATEGY: "ValKeys",
+    //         NO_STOP_LOSS: 'true',
+    //         STOP_LOSS_PERCENT: -10,
+    //         SELL_LIMIT_PERCENT: 15,
+    //         QUOTE_CUR_QTY: 100
+    //     },
+    //     env_production: {
+    //         NODE_ENV: 'production'
+    //     }
+    // },
+    // {
+    //     name: 'bot_bnb_55',
+    //     script: 'app.js',
+    //     "exec_mode": "cluster",
+    //     cwd: 'trading',
+    //     "node_args": "--inspect=0.0.0.0:5859",
+    //     env: {
+    //         DEBUG: '*',
+    //         // DESC: 'BTC Target 0.6 Stop -1.5',
+    //         QUOTE_CUR: 'BNB', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys',
+    //         PORT: 12355,
+    //         MIN_COUNT: 2,
+    //         NO_STOP_LOSS: 'true',
+    //         STRATEGY: "ValKeys",
+    //         STOP_LOSS_PERCENT: -10,
+    //         SELL_LIMIT_PERCENT: 15,
+    //         QUOTE_CUR_QTY: 20
+    //     },
+    //     env_production: {
+    //         NODE_ENV: 'production'
+    //     }
+    // },
 
 ].map(app => {
     app.env.DESC = `Quote: ${app.env.QUOTE_CUR} Target: ${app.env.SELL_LIMIT_PERCENT} stop: ${app.env.SELL_LIMIT_PERCENT}`;

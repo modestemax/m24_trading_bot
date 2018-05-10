@@ -43,6 +43,7 @@ const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE 
                 , "VWMA" + timeframeFilter
                 , "open" + timeframeFilter
                 , "change_from_open" + timeframeFilter
+                , "Volatility.D"
             ],
             "sort": { "sortBy": "change" + timeframeFilter, "sortOrder": "desc" },
             "options": { "lang": "en" },
@@ -81,6 +82,8 @@ const beautify = (data, timeframe) => {
                 adx_plus_di: d[11],
                 macd: d[15],
                 macd_signal: d[16],
+                rsi: d[12],
+                volatility: d[22],
                 indicators: {
                     // symbol: exchange.marketsById[d[0]].symbol,
                     // time:id* env.timeframesIntervals[timeframe],
@@ -162,7 +165,7 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
                     // setImmediate(() => appEmitter.emit('tv:signals' + long, { markets: beautifyData, timeframe }))
 
                     // beautifyData=_.pick(beautifyData,['AMB/BTC'])
-
+                    beautifyData = _(beautifyData).orderBy(['volatility', 'volume'], ['desc', 'desc']).mapKeys('symbol').value()
                     return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData, timeframe }))
                 }
                 err = jsonData.error;

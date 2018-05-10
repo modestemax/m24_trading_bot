@@ -108,11 +108,24 @@ async function checkSignal({ signal }) {
     const timeframes = [15, 60];
     backupLast3Points({ symbol, timeframes });
     buildStrategy({ symbol, timeframes })
-    if (isMacdCrossingUp({ symbol, timeframe: 15 })) {
-        if (isEma10TrendingUp({ symbol, timeframe: 60 })) {
+    const m15Data = buildStrategy.getSpecialData({ symbol, timeframe: 15 });
+    const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
+    const h1last = _.last(h1Data.points);
+    const m15last = _.last(m15Data.points);
+    if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
+        if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
+            emitMessage(`${symbol} OK ${m15last.close}`);
             return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
         }
     }
+
+    // if (isRsiBelow30({ symbol, timeframe: 5 })||isRsiBelow30({ symbol, timeframe: 15 })||isRsiBelow30({ symbol, timeframe: 60 })) {
+    //     if (isMacdCrossingUp({ symbol, timeframe: 15 })) {
+    //         if (isEma10TrendingUp({ symbol, timeframe: 60 })) {
+    //             return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    //         }
+    //     }
+    // }
 }
 
 
@@ -243,6 +256,14 @@ function isEma10TrendingUp({ symbol, timeframe }) {
     }
 }
 
+function isRsiBelow30({ symbol, timeframe }) {
+    const sData = buildStrategy.getSpecialData({ symbol, timeframe });
+    if (sData.rsiBelow30) {
+        emitMessage(`${symbol} ${timeframe} RSI Below 30 `);
+        return true
+    }
+}
+
 function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     init();
 
@@ -251,8 +272,8 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     function buildSpecialData(timeframe) {
         let specialData = getSpecialData({ symbol, timeframe });
 
-        // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
-        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
+        const points = backupLast3Points.getLast3Points({ symbol, timeframe });
+        // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
             specialData.points = points;
             const [first, prev, last] = points;
@@ -277,6 +298,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.macdCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                 specialData.macdAboveZero = last.macd > 0
+                specialData.macdBelowZero = last.macd < 0
                 specialData.macdSignalAboveZero = last.macd_signal > 0
             }
             {
@@ -304,6 +326,10 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.adxCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                 }
+            }
+            {
+                specialData.rsiAbove70 = last.rsi >= 70;
+                specialData.rsiBelow30 = last.rsi <= 30;
             }
 
             // {
