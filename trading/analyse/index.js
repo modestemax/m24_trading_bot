@@ -112,43 +112,43 @@ async function checkSignal({ signal }) {
     const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
     const h1last = _.last(h1Data.points);
     const m15last = _.last(m15Data.points);
-    // if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
-    //     if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
-    //         emitMessage(`${symbol} OK ${m15last.close}`);
-    //         return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
-    //     }
-    // }
-
-    /****************************max--------------------------*/
-    {
-        {
-            let long;
-            if (h1Data.stochasticRSIKAboveD && h1Data.momemtumTrendUp) {
-                if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) || (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
-                    long = true
-                }
-            }
-            if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) && (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
-                long = true
-            }
-            if (long) {
-                emitMessage(`${symbol} START ${m15last.close}`);
-                return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
-
-            }
-        }
-        {
-            let short;
-            if ((m15Data.stochasticKBelowD && m15Data.momemtumAboveZero) || (m15Data.stochasticRSICrossingHighRefDistance < 0)) {
-                short = true
-            }
-            if (short) {
-                emitMessage(`${symbol} STOP ${m15last.close}`);
-                appEmitter.emit('analyse:stop_trade:' + symbol, ({ trade: { price: m15last.close } }))
-            }
-
+    if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
+        if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
+            emitMessage(`${symbol} OK ${m15last.close}`);
+            return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
         }
     }
+
+    /****************************max--------------------------*/
+    // {
+    //     {
+    //         let long;
+    //         if (h1Data.stochasticRSIKAboveD && h1Data.momemtumTrendUp) {
+    //             if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) || (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
+    //                 long = true
+    //             }
+    //         }
+    //         if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) && (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
+    //             long = true
+    //         }
+    //         if (long) {
+    //             emitMessage(`${symbol} START ${m15last.close}`);
+    //             return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    //
+    //         }
+    //     }
+    //     {
+    //         let short;
+    //         if ((m15Data.stochasticKBelowD && m15Data.momemtumAboveZero) || (m15Data.stochasticRSICrossingHighRefDistance < 0)) {
+    //             short = true
+    //         }
+    //         if (short) {
+    //             emitMessage(`${symbol} STOP ${m15last.close}`);
+    //             appEmitter.emit('analyse:stop_trade:' + symbol, ({ trade: { price: m15last.close } }))
+    //         }
+    //
+    //     }
+    // }
 
     /*******************************************************/
 
