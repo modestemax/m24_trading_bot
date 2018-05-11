@@ -2,7 +2,7 @@ const apps = [
 
     // First application
     {
-        name: 'bot_btc_46',
+        name: 'bot_btc_max_45',
         script: 'app.js',
         "exec_mode": "cluster",
         cwd: 'trading',
@@ -11,11 +11,11 @@ const apps = [
             DEBUG: '*',
             // DESC: 'BTC Target 1.1 Stop -2',
             QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
-            PORT: 12346,
+            PORT: 12345,
             MIN_COUNT: 2,
             SIMUL_FIRST_ENTRY: '',
             NO_STOP_LOSS: 'true',
-            STRATEGY: "ValKeys",
+            STRATEGY: "M@x",
             STOP_LOSS_PERCENT: -10,
             SELL_LIMIT_PERCENT: 15,
             QUOTE_CUR_QTY: .006,
