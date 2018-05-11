@@ -17,8 +17,10 @@ const {
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME, START_TRADE_BUY_PERCENT } = env;
 
 const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
-const tradings = Model.Trade.open || {};
-const closedTrades = Model.Trade.closed || {};
+const tradings =  {};
+const closedTrades =   {};
+// const tradings = Model.Trade.open || {};
+// const closedTrades = Model.Trade.closed || {};
 _.keys(tradings).forEach(symbol => fetchTicker({ symbol }));
 
 
@@ -340,7 +342,7 @@ function logChange({ trade, ticker }) {
 function emit(event, trade) {
     trade && appEmitter.emit(event = 'trade:' + event, trade);
     debug('emit ' + event, trade && trade.symbol);
-    Model.SymbolsData.save({ open: tradings, closed: closedTrades });
+    // Model.SymbolsData.save({ open: tradings, closed: closedTrades });
 }
 
 function isGoingUp({ symbol, price }) {

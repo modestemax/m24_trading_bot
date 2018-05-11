@@ -10,7 +10,7 @@ require('./override');
             global.appKey = `${EXCHANGE}:${TIMEFRAME}:${QUOTE_CUR}:${BOT_ID}:`;
             require('./events');
 
-            await   require('./store');
+            // await   require('./store');
             await require('./env');
             global.exchange = await require('./exchange');
 

@@ -174,11 +174,11 @@ appEmitter.on('trade:new_trade', addTrade);
 appEmitter.on('trade:end_trade', delTrade);
 
 module.exports = (async () => {
-    let saved = await  SymbolsData.load({ starting: true });
-    // SymbolsData.saved =  {};
-    if (saved) {
-        // SymbolsData.saved = saved.data || {};
-        // Trade.open = saved.open || {};
-        // Trade.closed = saved.closed || {};
-    }
+    // let saved = await  SymbolsData.load({ starting: true });
+    // // SymbolsData.saved =  {};
+    // if (saved) {
+    //     // SymbolsData.saved = saved.data || {};
+    //     // Trade.open = saved.open || {};
+    //     // Trade.closed = saved.closed || {};
+    // }
 })();
