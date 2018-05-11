@@ -86,7 +86,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
                 //log trade
                 // trade.success = trade.buyPrice >
                 trade.started && (closedTrades[trade.id] = trade) && emit('ended', trade);
-                noFetchTicker({ symbol })
+                // noFetchTicker({ symbol })
             }
         }
 
@@ -123,7 +123,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
 
                     //for the bid to succeed or cancal it after some time
                     await waitOrCancelOrder(buyOrder);
-                    fetchTicker({ symbol });
+                    // fetchTicker({ symbol });
 
                     //get the stop loss price
                     stopPrice = await updatePrice({ price: buyPrice, percent: await  getStopLossPercent() });
@@ -283,7 +283,7 @@ async function checkSellState({ symbol }) {
 function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, stopPrice, maxWait }) {
     let sellOrder, trade, startTime = Date.now();
     const tickerListener = async ({ ticker }) => {
-        stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
+       if(trade){ stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
         const duration = (Date.now() - startTime);
         if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) /*|| duration >= maxWait*/) {
             trade.success = false;
@@ -302,17 +302,17 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, st
                 }
             }
         }
-        trade && logChange({ trade, ticker })
-    };
+        logChange({ trade, ticker })
+   } };
 
     addTickerListener();
 
     function addTickerListener() {
-        appEmitter.prependListener('exchange:ticker:' + symbol, tickerListener);
+        appEmitter.prependListener('signals:ticker:' + symbol, tickerListener);
     }
 
     function removeTickerListener() {
-        appEmitter.removeListener('exchange:ticker:' + symbol, tickerListener);
+        appEmitter.removeListener('signals:ticker:' + symbol, tickerListener);
     }
 
     async function tradeUpdater({ sellPrice, stopPrice: stop }) {

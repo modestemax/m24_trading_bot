@@ -112,12 +112,45 @@ async function checkSignal({ signal }) {
     const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
     const h1last = _.last(h1Data.points);
     const m15last = _.last(m15Data.points);
-    if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
-        if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
-            emitMessage(`${symbol} OK ${m15last.close}`);
-            return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    // if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
+    //     if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
+    //         emitMessage(`${symbol} OK ${m15last.close}`);
+    //         return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    //     }
+    // }
+
+    /****************************max--------------------------*/
+    {
+        {
+            let long;
+            if (h1Data.stochasticRSIKAboveD && h1Data.momemtumTrendUp) {
+                if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) || (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
+                    long = true
+                }
+            }
+            if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) && (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
+                long = true
+            }
+            if (long) {
+                emitMessage(`${symbol} START ${m15last.close}`);
+                return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+
+            }
+        }
+        {
+            let short;
+            if ((m15Data.stochasticKBelowD && m15Data.momemtumAboveZero) || (m15Data.stochasticRSICrossingHighRefDistance < 0)) {
+                short = true
+            }
+            if (short) {
+                emitMessage(`${symbol} STOP ${m15last.close}`);
+                appEmitter.emit('analyse:stop_trade:' + symbol, ({ trade: { price: m15last.close } }))
+            }
+
         }
     }
+
+    /*******************************************************/
 
     // if (isRsiBelow30({ symbol, timeframe: 5 })||isRsiBelow30({ symbol, timeframe: 15 })||isRsiBelow30({ symbol, timeframe: 60 })) {
     //     if (isMacdCrossingUp({ symbol, timeframe: 15 })) {
@@ -272,8 +305,8 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     function buildSpecialData(timeframe) {
         let specialData = getSpecialData({ symbol, timeframe });
 
-        const points = backupLast3Points.getLast3Points({ symbol, timeframe });
-        // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
+        // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
+        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
             specialData.points = points;
             const [first, prev, last] = points;
@@ -303,6 +336,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
             }
             {
                 const ADX_REF = 25;
+                first.adx_ref = prev.adx_ref = last.adx_ref = ADX_REF;
                 {
                     specialData.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
                     specialData.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
@@ -320,7 +354,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.adxAboveRef = last.adx > ADX_REF
                     specialData.adxTrendUp = isSorted([first.adx, prev.adx, last.adx,]);
                     specialData.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
-                    first.adx_ref = prev.adx_ref = last.adx_ref = ADX_REF;
+
                     let crossingPoint = getCrossingPoint({ up: 'adx', down: 'adx_ref', points });
                     crossingPoint = specialData.adxCrossingPoint = crossingPoint || specialData.adxCrossingPoint;
                     specialData.adxCrossingDistance = countCandle({ crossingPoint, timeframe });
@@ -331,7 +365,56 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.rsiAbove70 = last.rsi >= 70;
                 specialData.rsiBelow30 = last.rsi <= 30;
             }
+            {
+                const STOCHASTIC_LOW_REF = 20;
+                const STOCHASTIC_HIGH_REF = 80;
 
+                {
+                    first.stochasticLowRef = prev.stochasticLowRef = last.stochasticLowRef = STOCHASTIC_LOW_REF;
+                    first.stochasticHighRef = prev.stochasticHighRef = last.stochasticHighRef = STOCHASTIC_HIGH_REF;
+
+                    specialData.stochasticKAboveD = last.stochasticK > last.stochasticD
+                    specialData.stochasticKBelowD = last.stochasticK < last.stochasticD
+
+                    let crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticD', points });
+                    crossingPoint = specialData.stochasticCrossingPoint = crossingPoint || specialData.stochasticCrossingPoint;
+                    specialData.stochasticCrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                    crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticLowRef', points });
+                    crossingPoint = specialData.stochasticCrossingLowRefPoint = crossingPoint || specialData.stochasticCrossingLowRefPoint;
+                    specialData.stochasticCrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
+
+                    crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticHighRef', points });
+                    crossingPoint = specialData.stochasticCrossingHighRefPoint = crossingPoint || specialData.stochasticCrossingHighRefPoint;
+                    specialData.stochasticCrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
+                }
+                {
+                    first.stochasticRSILowRef = prev.stochasticRSILowRef = last.stochasticRSILowRef = STOCHASTIC_LOW_REF;
+                    first.stochasticRSIHighRef = prev.stochasticRSIHighRef = last.stochasticRSIHighRef = STOCHASTIC_HIGH_REF;
+
+                    specialData.stochasticRSIKAboveD = last.stochasticRSIK > last.stochasticRSID
+                    specialData.stochasticRSIKBelowD = last.stochasticRSIK < last.stochasticRSID
+
+                    let crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSID', points });
+                    crossingPoint = specialData.stochasticRSICrossingPoint = crossingPoint || specialData.stochasticRSICrossingPoint;
+                    specialData.stochasticRSICrossingDistance = countCandle({ crossingPoint, timeframe });
+
+                    crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSILowRef', points });
+                    crossingPoint = specialData.stochasticRSICrossingLowRefPoint = crossingPoint || specialData.stochasticRSICrossingLowRefPoint;
+                    specialData.stochasticRSICrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
+
+                    crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSIHighRef', points });
+                    crossingPoint = specialData.stochasticRSICrossingHighRefPoint = crossingPoint || specialData.stochasticRSICrossingHighRefPoint;
+                    specialData.stochasticRSICrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
+                }
+            }
+            {
+                specialData.momemtumAboveZero = last.momemtum > 0
+                specialData.momemtumBelowZero = last.momemtum < 0
+                specialData.minMomentum = last.momemtum > 0 ? 0 : _.min([specialData.minMomentum, last.momemtum])
+                specialData.maxMomentum = last.momemtum < 0 ? 0 : _.max([specialData.maxMomentum, last.momemtum])
+                specialData.momemtumTrendUp = specialData.minMomentum < last.momemtum && last.momemtum <= specialData.maxMomentum
+            }
             // {
             //     //DEBUG
             //     let {
@@ -411,7 +494,8 @@ function countCandle({ crossingPoint, timeframe }) {
         }
         return count;
     }
-    return -Infinity
+    // return -Infinity
+    return null
 }
 
 // function estFiable({ symbol }) {

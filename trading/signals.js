@@ -44,6 +44,11 @@ const params = ({ timeframe, tradingCurrency = QUOTE_CUR, exchangeId = EXCHANGE 
                 , "open" + timeframeFilter
                 , "change_from_open" + timeframeFilter
                 , "Volatility.D"
+                , "Stoch.K" + timeframeFilter
+                , "Stoch.D" + timeframeFilter
+                , "Stoch.RSI.K" + timeframeFilter
+                , "Stoch.RSI.D" + timeframeFilter
+                , "Mom" + timeframeFilter
             ],
             "sort": { "sortBy": "change" + timeframeFilter, "sortOrder": "desc" },
             "options": { "lang": "en" },
@@ -84,6 +89,11 @@ const beautify = (data, timeframe) => {
                 macd_signal: d[16],
                 rsi: d[12],
                 volatility: d[22],
+                stochasticK: d[23],
+                stochasticD: d[24],
+                stochasticRSIK: d[25],
+                stochasticRSID: d[26],
+                momemtum: d[27],
                 indicators: {
                     // symbol: exchange.marketsById[d[0]].symbol,
                     // time:id* env.timeframesIntervals[timeframe],
@@ -166,6 +176,14 @@ function getSignals({ options = params(), /* longTimeframe,*/ rate = 1e3 } = {})
 
                     // beautifyData=_.pick(beautifyData,['AMB/BTC'])
                     beautifyData = _(beautifyData).orderBy(['volatility', 'volume'], ['desc', 'desc']).mapKeys('symbol').value()
+                    if (timeframe == env.TIMEFRAME) {
+                        _.keys(beautifyData).forEach(symbol => {
+                            let ticker = beautifyData[symbol];
+                            ticker.price = ticker.close;
+                            ticker.last = ticker.close;
+                            appEmitter.emit('signals:ticker:' + symbol, ({ ticker }))
+                        })
+                    }
                     return setImmediate(() => appEmitter.emit('tv:signals', { markets: beautifyData, timeframe }))
                 }
                 err = jsonData.error;
