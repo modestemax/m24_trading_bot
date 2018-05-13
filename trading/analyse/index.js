@@ -314,11 +314,12 @@ function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
             } else if (prev.id === last.id) {
                 points.splice(1, 1);
                 points.push(signal);
-            } else if (last.id !== signal.id) {
+            } else if (last.id === signal.id) {
+                points.splice(2, 1, signal)
+            } else {
                 points.shift();
                 points.push(signal);
-            } else {
-                points.splice(2, 1, signal)
+
             }
         }
     }
