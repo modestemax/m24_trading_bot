@@ -102,57 +102,124 @@ async function analyse(markets) {
 //     buyTimeframes[symbol] [timeframe] = _.extend({ buyTimes: 0 }, buyTimeframes[symbol] [timeframe], signal);
 // }
 
+function stopLossBuy(signal) {
+    stopLossBuy.signal = signal;
+    stopLossBuy.symbols = stopLossBuy.symbols || {};
+    _.keys(stopLossBuy.symbols).forEach(symbol => stopLossBuy.symbols[symbol].tryAgain());
+
+    async function tryTrade({ symbol, price }) {
+        if (!stopLossBuy.symbols[symbol]) {
+            stopLossBuy.symbols[symbol] = {};
+            return stopLossBuy.symbols[symbol].promise = new Promise((resolve, reject) => {
+                stopLossBuy.symbols[symbol].resolve = function () {
+                    resolve();
+                    delete stopLossBuy.symbols[symbol]
+                };
+                stopLossBuy.symbols[symbol].reject = function () {
+                    reject();
+                    delete stopLossBuy.symbols[symbol]
+                };
+                stopLossBuy.symbols[symbol].tryAgain = function () {
+                    if (stopLossBuy.signal.close <= price) {
+                        stopLossBuy.symbols[symbol].resolve()
+                    }
+                };
+                stopLossBuy.symbols[symbol].tryAgain();
+            })
+        }
+        return stopLossBuy[symbol]
+    }
+
+    function cancel({ symbol }) {
+        if (stopLossBuy.symbols[symbol]) {
+            stopLossBuy.symbols[symbol].reject()
+        }
+    }
+
+    _.defaults(stopLossBuy, { tryTrade, cancel })
+}
 
 async function checkSignal({ signal }) {
     const { symbol } = signal;
-    const timeframes = [15, 60];
+    const timeframes = env.TIMEFRAMES;
     backupLast3Points({ symbol, timeframes });
-    buildStrategy({ symbol, timeframes })
+    buildStrategy({ symbol, timeframes });
+    stopLossBuy(signal);
+    const m5Data = buildStrategy.getSpecialData({ symbol, timeframe: 5 });
     const m15Data = buildStrategy.getSpecialData({ symbol, timeframe: 15 });
     const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
-    const h1last = _.last(h1Data.points);
-    const m15last = _.last(m15Data.points);
 
-   if(process.env.VAL01)
-    {if (h1Data.macdTrendUp && h1last.close > h1last.ema20) {
-        if (m15Data.macdAboveSignal && m15last.close > m15last.ema20 && m15Data.macdBelowZero) {
-            emitMessage(`${symbol} OK ${m15last.close}`);
-            return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    // return appEmitter.emit('analyse:try_trade', {
+    //     signalData: _.extend({}, signal, { /*close: prevClosePrice*/ }),
+    //     signals
+    // });
+
+    if (process.env.VAL01) {
+
+        if (h1Data.macdBelowZero && h1Data.macdAboveSignal > h1Data.ema10BelowPrice) {
+            if (m15Data.macdBelowZero && m15Data.macdTrendUp && m15Data.ema20BelowPrice) {
+                if (m5Data.macdBelowZero && m15Data.macdAboveSignal && m15Data.ema20BelowPrice) {
+                    try {
+                        let prevClosePrice = m15Data.points[1].close;
+                        await stopLossBuy.tryTrade({ symbol, price: prevClosePrice });
+                        emitMessage(`${symbol} START ${prevClosePrice}`);
+                        return appEmitter.emit('analyse:try_trade', {
+                            signalData: _.extend({}, signal, { close: prevClosePrice }),
+                            signals
+                        });
+                    } catch (e) {
+
+                    }
+                }
+            }
+        } else {
+            stopLossBuy.cancel({ symbol })
+        }
+
+
+        if (m15Data.ema20AbovePrice) {
+            if (m5Data.ema20AbovePrice && m5Data.macdBelowSignal) {
+                appEmitter.emit('analyse:stop_trade:' + symbol, ({ signal }))
+            }
         }
     }
-}
     /****************************max--------------------------*/
-   if(process.env.MAX01){
-       {
-           {
-               let long;
-               if (h1Data.stochasticRSIKAboveD && h1Data.momemtumTrendUp) {
-                   if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) || (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
-                       long = true
-                   }
-               }
-               if ((m15Data.stochasticK < 40 && m15Data.stochasticKAboveD && m15Data.momemtumBelowZero && m15Data.momemtumTrendUp) && (m15Data.stochasticRSICrossingLowRefDistance > 0)) {
-                   long = true
-               }
-               if (long) {
-                   emitMessage(`${symbol} START ${m15last.close}`);
-                   return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+    if (process.env.MAX01) {
+        {
 
-               }
-           }
-           {
-               let short;
-               if ((m15Data.stochasticKBelowD && m15Data.momemtumAboveZero) || (m15Data.stochasticRSICrossingHighRefDistance < 0)) {
-                   short = true
-               }
-               if (short) {
-                   emitMessage(`${symbol} STOP ${m15last.close}`);
-                   appEmitter.emit('analyse:stop_trade:' + symbol, ({ trade: { price: m15last.close } }))
-               }
+            {
+                let long;
+                if (h1Data.stochasticRSIKAboveD && h1Data.momemtumTrendUp) {
+                    if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
+                        && m5Data.momemtumCrossingZeroDistance <= -1 && m5Data.momemtumTrendUp) /*m15Data.momemtumBelowZero*/
+                        || (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
+                        long = true
+                    }
+                }
+                if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
+                    && m5Data.momemtumCrossingZeroDistance <= -1 && m5Data.momemtumTrendUp) /*m15Data.momentumBelowZero*/
+                    && (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
+                    long = true
+                }
+                if (long) {
+                    emitMessage(`${symbol} START ${m5Data.close}`);
+                    return appEmitter.emit('analyse:try_trade', { signalData: signal, signals });
+                }
+            }
+            {
+                let short;
+                if ((m5Data.stochasticKBelowD && /*m15Data.momentumAboveZero*/ m5Data.momentumCrossingZeroDistance >= 1)
+                    || (m5Data.stochasticRSICrossingHighRefDistance <= -1)) {
+                    short = true
+                }
+                if (short) {
+                    emitMessage(`${symbol} STOP ${signal.close}`);
+                    appEmitter.emit('analyse:stop_trade:' + symbol, ({ trade: { price: signal.close } }))
+                }
 
-           }
-       }
-   }
+            }
+        }
+    }
 
     /*******************************************************/
 
@@ -312,10 +379,15 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
         // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
         const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
-            specialData.points = points;
+
             const [first, prev, last] = points;
+            _.extend(specialData, { points }, last)
+            specialData.last = last;
             {
                 specialData.ema10Above20 = last.ema10 > last.ema20;
+                specialData.ema10BelowPrice = last.ema10 < last.close;
+                specialData.ema20AbovePrice = last.ema20 > last.close;
+                specialData.ema20BelowPrice = last.ema20 < last.close;
                 specialData.ema10TrendUp = isSorted([first.ema10, prev.ema10, last.ema10,]);
                 specialData.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
 
@@ -327,6 +399,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
             }
             {
                 specialData.macdAboveSignal = last.macd > last.macd_signal;
+                specialData.macdBelowSignal = last.macd < last.macd_signal;
                 specialData.macdTrendUp = isSorted([first.macd, prev.macd, last.macd,]);
                 specialData.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
 
@@ -413,11 +486,18 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 }
             }
             {
-                specialData.momemtumAboveZero = last.momemtum > 0
-                specialData.momemtumBelowZero = last.momemtum < 0
-                specialData.minMomentum = last.momemtum > 0 ? 0 : _.min([specialData.minMomentum, last.momemtum])
-                specialData.maxMomentum = last.momemtum < 0 ? 0 : _.max([specialData.maxMomentum, last.momemtum])
-                specialData.momemtumTrendUp = specialData.minMomentum < last.momemtum && last.momemtum <= specialData.maxMomentum
+                const MOMENTUM_MEDIAN = 0
+                first.momentumMedian = prev.momentumMedian = last.momentumMedian = MOMENTUM_MEDIAN;
+
+                specialData.momentumAboveZero = last.momentum > 0
+                specialData.momentumBelowZero = last.momentum < 0
+                specialData.minMomentum = last.momentum > 0 ? 0 : _.min([specialData.minMomentum, last.momentum])
+                specialData.maxMomentum = last.momentum < 0 ? 0 : _.max([specialData.maxMomentum, last.momentum])
+                specialData.momentumTrendUp = specialData.minMomentum < last.momentum && last.momentum <= specialData.maxMomentum
+                let crossingPoint = getCrossingPoint({ up: 'momentum', down: 'momentumMedian', points });
+                crossingPoint = specialData.momentumCrossingZeroPoint = crossingPoint || specialData.momentumCrossingPoint;
+                specialData.momentumCrossingZeroDistance = countCandle({ crossingPoint, timeframe });
+
             }
             // {
             //     //DEBUG
@@ -462,7 +542,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
         return buildStrategy.specialData[symbol][timeframe] = buildStrategy.specialData[symbol][timeframe] || {};
     }
 
-    _.extend(buildStrategy, { getSpecialData, });
+    _.defaults(buildStrategy, { getSpecialData, });
 
 }
 
@@ -492,7 +572,8 @@ function getCrossingPoint({ up, down, points, zero }) {
 function countCandle({ crossingPoint, timeframe }) {
     if (crossingPoint) {
         const id = crossingPoint.point.id;
-        const count = Math.trunc((Date.now() / (timeframe * 60e3))) - id;
+        const count = 1 + Math.trunc((Date.now() / (env.timeframesIntervals[timeframe]))) - id;
+
         if (crossingPoint.crossing_down) {
             return -count;
         }

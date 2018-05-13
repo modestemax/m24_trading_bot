@@ -93,7 +93,7 @@ const beautify = (data, timeframe) => {
                 stochasticD: d[24],
                 stochasticRSIK: d[25],
                 stochasticRSID: d[26],
-                momemtum: d[27],
+                momentum: d[27],
                 indicators: {
                     // symbol: exchange.marketsById[d[0]].symbol,
                     // time:id* env.timeframesIntervals[timeframe],
@@ -260,10 +260,8 @@ function getRate(timeframe) {
     switch (timeframe) {
         case  env.TIMEFRAME:
             return 1e3;
-        case 60:
-            return 5 * 60e3;
         default :
-            Infinity
+            return env.timeframesIntervals[timeframe] / 5
 
     }
 }

@@ -17,8 +17,8 @@ const {
 const { SELL_LIMIT_PERCENT, MAX_WAIT_TRADE_TIME, MAX_WAIT_BUY_TIME, START_TRADE_BUY_PERCENT } = env;
 
 const MIN_GAIN_TO_CONTINUE_TRADE = 0.5;
-const tradings =  {};
-const closedTrades =   {};
+const tradings = {};
+const closedTrades = {};
 // const tradings = Model.Trade.open || {};
 // const closedTrades = Model.Trade.closed || {};
 _.keys(tradings).forEach(symbol => fetchTicker({ symbol }));
@@ -56,7 +56,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
         if (trade && (trade.updateTrade || trade.simulation)) {
             return updateTrade();
         }
-        else if (!trade) {
+        else if (!trade && _.keys(tradings).length < 5) {
             //one trade at once
             trade = tradings[symbol] = {
                 id: _.uniqueId(symbol),
@@ -133,6 +133,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
                     //check the sell in user data socket
                     let sellState = checkSellState({ symbol });
 
+                    listenToSellSignal({ symbol, amount });
+
                     // cancel sell order and sell in market price ->stop loss
                     let getTradeUpdater = sellIfPriceIsGoingDownOrTakingTooMuchTime({
                         symbol,
@@ -169,7 +171,7 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
                     // return;
                 }
             } catch (e) {
-             emitException(e)
+                emitException(e)
                 throw e;
             }
 
@@ -282,30 +284,40 @@ async function checkSellState({ symbol }) {
     })
 }
 
+function listenToSellSignal({ symbol, amount }) {
+    appEmitter.once('analyse:stop_trade:' + symbol, ({ signal }) => {
+        exchange.createLimitSellOrder(symbol, amount, signal.close);
+        // exchange.createMarketSellOrder(symbol, amount);
+    });
+}
+
 function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, stopPrice, maxWait }) {
     let sellOrder, trade, startTime = Date.now();
+
     const tickerListener = async ({ ticker }) => {
-       if(trade){ stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
-        const duration = (Date.now() - startTime);
-        if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) /*|| duration >= maxWait*/) {
-            trade.success = false;
-            removeTickerListener();
-            sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
-            exchange.createMarketSellOrder(symbol, amount);
-        } else {
-            //todo remove this, it is for testing
-            if (!env.PRODUCTION) {
-                // let signal = signals[env.TIMEFRAME][symbol];
-                // if (signal.rating < 0) {
-                if (ticker.last >= trade.sellPrice) {
-                    trade.success = true;
-                    trade.price = ticker.last;
-                    appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+        if (trade) {
+            stopPrice = process.env.NO_STOP_LOSS ? -Infinity : stopPrice;
+            const duration = (Date.now() - startTime);
+            if ((ticker.last <= stopPrice /*&& duration >= getTimeframeDuration()*/) /*|| duration >= maxWait*/) {
+                trade.success = false;
+                removeTickerListener();
+                sellOrder && await  exchange.cancelOrder(sellOrder.id, symbol);
+                exchange.createMarketSellOrder(symbol, amount);
+            } else {
+                //todo remove this, it is for testing
+                if (!env.PRODUCTION && process.env.EXIT_ON_TARGET) {
+                    // let signal = signals[env.TIMEFRAME][symbol];
+                    // if (signal.rating < 0) {
+                    if (ticker.last >= trade.sellPrice) {
+                        trade.success = true;
+                        trade.price = ticker.last;
+                        appEmitter.emit('exchange:sell_ok:' + trade.symbol, ({ trade }));
+                    }
                 }
             }
+            logChange({ trade, ticker })
         }
-        logChange({ trade, ticker })
-   } };
+    };
 
     addTickerListener();
 
@@ -332,11 +344,13 @@ function sellIfPriceIsGoingDownOrTakingTooMuchTime({ signals, symbol, amount, st
 }
 
 function logChange({ trade, ticker }) {
-    trade.lastPrice = ticker.last;
-    trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
-    trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
-    trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
-    emit('changed', trade);
+    if (trade.lastPrice !== ticker.last) {
+        trade.lastPrice = ticker.last;
+        trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
+        trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
+        trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
+        emit('changed', trade);
+    }
 }
 
 function emit(event, trade) {

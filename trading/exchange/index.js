@@ -123,19 +123,71 @@ async function loadExchange() {
 
     await exchange.loadMarkets();
     overrideExchange(exchange);
-    const internal = require(`./${exchangeId}`)(exchange);
+    // const internal = require(`./${exchangeId}`)(exchange);
+    const internal = getInternal(exchange)
     debug('market loaded for ' + EXCHANGE);
     return { exchange, internal };
 }
 
 function overrideExchange(exchange) {
-    exchange.createStopLimitBuyOrder = async function (symbol, amount,  limitPrice, stopPrice, options) {
+    exchange.createStopLimitBuyOrder = async function (symbol, amount, limitPrice, stopPrice, options) {
         return exchange.createOrder(symbol, 'STOP_LOSS_LIMIT', 'buy', amount, void 0, _.extend({
             stopPrice,
             price: limitPrice,
         }, options));
     }
 
+}
+
+function getInternal(exchange) {
+    exchange.cancelOrder = _.wrap(exchange.cancelOrder, async (cancelOrder, ...args) => {
+        if (env.PRODUCTION) {
+            return cancelOrder.apply(this, args)
+        } else {
+            return {}
+        }
+    });
+    exchange.createMarketSellOrder = _.wrap(exchange.createMarketSellOrder, async (createMarketSellOrder, ...args) => {
+        if (env.PRODUCTION) {
+            return createMarketSellOrder.apply(this, args)
+        } else {
+            let [symbol, amount, price] = args;
+            let trade = { price, amount, symbol }
+            appEmitter.emit('exchange:sell_ok:' + symbol, { symbol, trade })
+            return {}
+        }
+    })
+    exchange.createLimitSellOrder = _.wrap(exchange.createMarketSellOrder, async (createLimitSellOrder, ...args) => {
+        if (env.PRODUCTION) {
+            return createLimitSellOrder.apply(this, args)
+        } else {
+            let [symbol, amount, price] = args;
+            let trade = { price, amount, symbol }
+            appEmitter.emit('exchange:sell_ok:' + symbol, { symbol, trade })
+            return {}
+        }
+    })
+    exchange.createLimitSellOrder = _.wrap(exchange.createLimitSellOrder, async (createLimitSellOrder, ...args) => {
+        if (env.PRODUCTION) {
+            return createLimitSellOrder.apply(this, args)
+        } else {
+            return {}
+        }
+    })
+    exchange.createStopLimitBuyOrder = _.wrap(exchange.createStopLimitBuyOrder, async (createStopLimitBuyOrder, ...args) => {
+        if (env.PRODUCTION) {
+            return createStopLimitBuyOrder.apply(this, args)
+        } else {
+            // debugger
+            let [symbol, amount, price] = args;
+            let trade = { symbol, amount, price };
+            appEmitter.emit('exchange:buy_ok:' + symbol, { symbol, trade })
+            return trade
+        }
+    })
+    return {
+        exchangeEmitter: appEmitter,
+    }
 }
 
 // module.exports.loadExchange = async () => exchangePromise;

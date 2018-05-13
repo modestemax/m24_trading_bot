@@ -42,7 +42,7 @@ module.exports = Model.Settings.load().then(async settings => {
             // TRADING_STRATEGY:'TRAILLING_STOP_LOSS',
             TRADING_STRATEGY: 'SELL_LIMIT',
             SELL_LIMIT_PERCENT: 1.1,
-            MAX_WAIT_BUY_TIME: 60 * 1e3, //1 min
+            MAX_WAIT_BUY_TIME: 10*60 * 1e3, //10 min
             MAX_WAIT_TRADE_TIME: 3600 * 1e3, //1 hour
             STOP_LOSS_PERCENT: -1,
             TRADE_RATIO: 40 / 100,
@@ -56,13 +56,7 @@ module.exports = Model.Settings.load().then(async settings => {
         SECRET: api.secret
     });
 
-    global.env.TIMEFRAMES = [
-        // 60 * 24,
-        // 240,
-        60,
-        15,
-        // 5,
-    ];
+    global.env.TIMEFRAMES = process.env.TIMEFRAMES.split(',')
 
     global.env.timeframesIntervals = {
         5: 5 * 60e3,

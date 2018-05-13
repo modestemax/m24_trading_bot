@@ -6,19 +6,21 @@ const apps = [
         script: 'app.js',
         "exec_mode": "cluster",
         cwd: 'trading',
-        "node_args": "--inspect=0.0.0.0:5858",
+        // "node_args": "--inspect=0.0.0.0:5858",
         env: {
             DEBUG: '*',
             // DESC: 'BTC Target 1.1 Stop -2',
-            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'tv02',
+            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'v0', VAL01: 'true',
             PORT: 12346,
             MIN_COUNT: 2,
             SIMUL_FIRST_ENTRY: '',
             NO_STOP_LOSS: 'true',
+            EXIT_ON_TARGET: '',
             STRATEGY: "ValKeys",
             STOP_LOSS_PERCENT: -10,
             SELL_LIMIT_PERCENT: 1.1,
             QUOTE_CUR_QTY: .006,
+            TIMEFRAMES: '5,15,60'
         },
         env_production: {
             NODE_ENV: 'production'
@@ -94,7 +96,7 @@ const apps = [
 
 ].map(app => {
     app.env.DESC = `Quote: ${app.env.QUOTE_CUR} Target: ${app.env.SELL_LIMIT_PERCENT} stop: ${app.env.SELL_LIMIT_PERCENT}`;
-    app.env.DESC += ' Trade based on ' + (app.env.STRATEGY )
+    app.env.DESC += ' Trade based on ' + (app.env.STRATEGY)
     return app;
 });
 
@@ -127,8 +129,8 @@ module.exports = {
             ref: 'origin/master',
             repo: ' https://github.com/modestemax/m24_trading_bot.git',
             path: '/home/ubuntu/bot/dev',
-            '1post-deploy': 'pm2 delete ecosystem.config.js && pm2 reload ecosystem.config.js --env dev',
-            'post-deploy': 'pm2 reload ecosystem.config.js --env dev',
+            'post-deploy': 'pm2 delete ecosystem.config.js && pm2 reload ecosystem.config.js --env dev',
+            // 'post-deploy': 'pm2 reload ecosystem.config.js --env dev',
             env: {
                 NODE_ENV: 'dev'
             }
