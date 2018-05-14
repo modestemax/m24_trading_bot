@@ -70,7 +70,7 @@
           { key: 'gainOrLoss', formatter: fixed2, sortable: true },
           { key: 'maxGain', formatter: fixed2, sortable: true },
           { key: 'target', formatter: fixed2, sortable: true },
-          { key: 'tradeDuration', formatter: (v, k, item) => moment.duration(Date.now() - item.time).humanize() },
+          { key: 'tradeDuration', formatter: (v, k, item) => moment.duration(item.lastChangeTime - item.time).humanize() },
           // {
           //   key: 'update',
           // formatter: update => update ? `+${update}` : '',

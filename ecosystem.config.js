@@ -10,14 +10,38 @@ const apps = [
         env: {
             DEBUG: '*',
             // DESC: 'BTC Target 1.1 Stop -2',
-            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'v0', VAL01: 'true',
+            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 15, API_KEY: 'keys', BOT_ID: 'v1', VAL01: 'true',
             PORT: 12346,
             MIN_COUNT: 2,
             SIMUL_FIRST_ENTRY: '',
             NO_STOP_LOSS: 'true',
             EXIT_ON_TARGET: '',
             STRATEGY: "ValKeys",
-            STOP_LOSS_PERCENT: -10,
+            STOP_LOSS_PERCENT: -2,
+            SELL_LIMIT_PERCENT: 1.1,
+            QUOTE_CUR_QTY: .006,
+            TIMEFRAMES: '5,15,60'
+        },
+        env_production: {
+            NODE_ENV: 'production'
+        }
+    }, {
+        name: 'bot_btc_max_45',
+        script: 'app.js',
+        "exec_mode": "cluster",
+        cwd: 'trading',
+        // "node_args": "--inspect=0.0.0.0:5858",
+        env: {
+            DEBUG: '*',
+            // DESC: 'BTC Target 1.1 Stop -2',
+            QUOTE_CUR: 'BTC', EXCHANGE: 'binance', TIMEFRAME: 5, API_KEY: 'keys', BOT_ID: 'm1', MAX01: 'true',
+            PORT: 12345,
+            MIN_COUNT: 2,
+            SIMUL_FIRST_ENTRY: '',
+            NO_STOP_LOSS: 'true',
+            EXIT_ON_TARGET: '',
+            STRATEGY: "Max",
+            STOP_LOSS_PERCENT: -2,
             SELL_LIMIT_PERCENT: 1.1,
             QUOTE_CUR_QTY: .006,
             TIMEFRAMES: '5,15,60'

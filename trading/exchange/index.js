@@ -157,7 +157,7 @@ function getInternal(exchange) {
             return {}
         }
     })
-    exchange.createLimitSellOrder = _.wrap(exchange.createMarketSellOrder, async (createLimitSellOrder, ...args) => {
+    exchange.createLimitSellOrder = _.wrap(exchange.createLimitSellOrder, async (createLimitSellOrder, ...args) => {
         if (env.PRODUCTION) {
             return createLimitSellOrder.apply(this, args)
         } else {
@@ -167,13 +167,7 @@ function getInternal(exchange) {
             return {}
         }
     })
-    exchange.createLimitSellOrder = _.wrap(exchange.createLimitSellOrder, async (createLimitSellOrder, ...args) => {
-        if (env.PRODUCTION) {
-            return createLimitSellOrder.apply(this, args)
-        } else {
-            return {}
-        }
-    })
+
     exchange.createStopLimitBuyOrder = _.wrap(exchange.createStopLimitBuyOrder, async (createStopLimitBuyOrder, ...args) => {
         if (env.PRODUCTION) {
             return createStopLimitBuyOrder.apply(this, args)

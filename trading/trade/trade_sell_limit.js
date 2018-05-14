@@ -145,7 +145,8 @@ appEmitter.prependListener('analyse:try_trade', async ({ signalData, signals }) 
                     });
 
                     //place the sell order
-                    let sellOrder = await exchange.createLimitSellOrder(symbol, amount, sellPrice);
+                    let sellOrder = process.env.EXIT_ON_TARGET && await exchange.createLimitSellOrder(symbol, amount, sellPrice);
+
                     let updateTrade = getTradeUpdater({ sellOrder, sellState, trade });
 
                     _.extend(trade, {
@@ -286,6 +287,7 @@ async function checkSellState({ symbol }) {
 
 function listenToSellSignal({ symbol, amount }) {
     appEmitter.once('analyse:stop_trade:' + symbol, ({ signal }) => {
+        emitMessage(`${symbol} STOP ${signal.close}`);
         exchange.createLimitSellOrder(symbol, amount, signal.close);
         // exchange.createMarketSellOrder(symbol, amount);
     });
@@ -349,6 +351,7 @@ function logChange({ trade, ticker }) {
         trade.gainOrLoss = getChangePercent(trade.buyPrice, ticker.last);
         trade.maxGain = _.max([trade.maxGain, trade.gainOrLoss]);
         trade.minGain = _.min([trade.minGain, trade.gainOrLoss]);
+        trade.lastChangeTime = Date.now();
         emit('changed', trade);
     }
 }
