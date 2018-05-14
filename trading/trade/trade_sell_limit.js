@@ -27,6 +27,7 @@ _.keys(tradings).forEach(symbol => fetchTicker({ symbol }));
 module.exports.openTrades = tradings;
 module.exports.closedTrades = closedTrades;
 
+
 appEmitter.on('tv:signals', async ({ markets, timeframe }) => {
     if (timeframe == env.TIMEFRAME) {
         _.forEach(_.keys(tradings), symbol => tradings[symbol].rating = markets[symbol].rating)

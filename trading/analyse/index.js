@@ -4,7 +4,7 @@ const isSorted = require('is-sorted');
 const Promise = require('bluebird');
 const { getSignalResult } = require('../analyse/analyser');
 let { settingsByIndicators: indicatorSettings } = require('./indicators');
-
+const { openTrades } = require('../trade')
 // const trader = require('../trade');
 const { fetchDepth, fetch24HTrend, fetchLongTrend } = require('../utils')();
 const TIMEFRAMES = env.TIMEFRAMES;
@@ -182,13 +182,16 @@ async function checkSignal({ signal }) {
         {
 
             {
-                if (h1Data.stochasticRSIKAboveD && h1Data.momentumTrendUp) {
-                    if ((m15Data.stochasticRSIKAboveD && m15Data.stochasticRSIKBelowHighRef/* && m15Data.momentumTrendUp*/)) {
+                if (/*h1Data.macdBelowZero &&*/ h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.ema10Above20) {
+
+                    if (h1Data.stochasticRSIKAboveD || h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
+                        // if ((m15Data.stochasticRSIKAboveD /* && m15Data.momentumTrendUp*/)) {
                         if ((m5Data.stochasticRSICrossingLowRefDistance === 1 && m5Data.first.stochasticRSIK < buildStrategy.STOCHASTIC_LOW_REF)) {
                             prevClosePrice = m5Data.prev.close;
                             long = true
                         }
                     }
+                    // }
                     /*  if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
                         && m5Data.momentumCrossingZeroDistance <= -1 && m5Data.momentumTrendUp) /!*m15Data.momentumBelowZero*!/
                         || (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
@@ -203,13 +206,27 @@ async function checkSignal({ signal }) {
 
             }
             {
-                if (m5Data.stochasticRSICrossingHighRefDistance === -1 && m5Data.first.stochasticRSIK > buildStrategy.STOCHASTIC_HIGH_REF) {
+                if (m5Data.stochasticRSICrossingHighRefDistance === -1 /*&& m5Data.first.stochasticRSIK > buildStrategy.STOCHASTIC_HIGH_REF*/) {
                     short = true
                 }
-                if (m15Data.stochasticRSIKAboveLowRef && (m15Data.stochasticRSIKBelowD || m15Data.stochasticRSIKAboveHighRef)) {
-                    if (m5Data.stochasticRSIKInBands && m5Data.stochasticRSICrossingDistance <= -1) {
+                if (m15Data.stochasticRSIKAboveLowRef && m15Data.momentumTrendDown && (m15Data.stochasticRSIKBelowD || m15Data.stochasticRSIKAboveHighRef)) {
+                    if (m5Data.stochasticRSIKInBands && m5Data.momentumTrendDown && m5Data.stochasticRSICrossingDistance < -1) {
                         short = true
                     }
+                }
+
+                if (symbol in openTrades) {
+                    let trade = openTrades[symbol];
+                    if (trade.gainOrLoss > .5) {
+                        trade.winning = true;
+                    }
+                    if (trade.winning) {
+                        let loss = getGain({ high: trade.gainOrLoss, low: trade.maxGain });
+                        if (loss < -40 && trade.gainOrLoss > .1) {
+                            short = true
+                        }
+                    }
+
                 }
                 /*   if ((m5Data.stochasticKBelowD && /!*m15Data.momentumAboveZero*!/ m5Data.momentumCrossingZeroDistance >= 1)
                                     || (m5Data.stochasticRSICrossingHighRefDistance <= -1)) {
@@ -303,8 +320,8 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     function buildSpecialData(timeframe) {
         let specialData = getSpecialData({ symbol, timeframe });
 
-        // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
-        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
+        const points = backupLast3Points.getLast3Points({ symbol, timeframe });
+        // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
 
             const [first, prev, last] = points;
@@ -406,6 +423,8 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.stochasticRSIKAboveLowRef = last.stochasticRSIK > STOCHASTIC_LOW_REF
                     specialData.stochasticRSIKBelowLowRef = last.stochasticRSIK < STOCHASTIC_LOW_REF
                     specialData.stochasticRSIKInBands = specialData.stochasticRSIKBelowHighRef && specialData.stochasticRSIKAboveLowRef
+                    specialData.stochasticRSIKTrendUp = isSorted([first.stochasticRSIK, prev.stochasticRSIK, last.stochasticRSIK,]);
+                    specialData.stochasticRSIDTrendUp = isSorted([first.stochasticRSID, prev.stochasticRSID, last.stochasticRSID,]);
 
                     let crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSID', points });
                     crossingPoint = specialData.stochasticRSICrossingPoint = crossingPoint || specialData.stochasticRSICrossingPoint;

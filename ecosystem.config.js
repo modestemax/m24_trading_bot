@@ -153,7 +153,7 @@ module.exports = {
             ref: 'origin/master',
             repo: ' https://github.com/modestemax/m24_trading_bot.git',
             path: '/home/ubuntu/bot/dev',
-            'post-deploy': 'pm2 delete ecosystem.config.js && pm2 reload ecosystem.config.js --env dev',
+            // 'post-deploy': 'pm2 delete ecosystem.config.js && pm2 reload ecosystem.config.js --env dev',
             // 'post-deploy': 'pm2 reload ecosystem.config.js --env dev',
             env: {
                 NODE_ENV: 'dev'
