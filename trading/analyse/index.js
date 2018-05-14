@@ -159,7 +159,7 @@ async function checkSignal({ signal }) {
     let prevClosePrice;
     if (process.env.VAL01) {
 
-        if (/*h1Data.macdBelowZero &&*/ h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.prev.close > h1Data.prev.ema10) {
+        if (h1Data.macdBelowZero && h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.prev.close > h1Data.prev.ema10) {
             if (m15Data.macdBelowZero && m15Data.macdTrendUp && m15Data.ema20BelowPrice && m15Data.prev.close > m15Data.prev.ema20) {
                 if (m5Data.macdBelowZero && m5Data.macdAboveSignal && m5Data.ema20BelowPrice && m5Data.prev.close > m5Data.prev.ema20) {
                     prevClosePrice = m15Data.prev.close;

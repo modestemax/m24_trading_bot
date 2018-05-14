@@ -155,6 +155,7 @@ module.exports = {
             path: '/home/ubuntu/bot/dev',
             // 'post-deploy': 'pm2 delete ecosystem.config.js && pm2 reload ecosystem.config.js --env dev',
             // 'post-deploy': 'pm2 reload ecosystem.config.js --env dev',
+            'post-deploy': 'pm2 restart bot_btc_val_46',
             env: {
                 NODE_ENV: 'dev'
             }
