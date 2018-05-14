@@ -303,8 +303,8 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     function buildSpecialData(timeframe) {
         let specialData = getSpecialData({ symbol, timeframe });
 
-        const points = backupLast3Points.getLast3Points({ symbol, timeframe });
-        // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
+        // const points = backupLast3Points.getLast3Points({ symbol, timeframe });
+        const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
         if (points && points.length > 2) {
 
             const [first, prev, last] = points;
