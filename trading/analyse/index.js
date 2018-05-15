@@ -139,7 +139,7 @@ function stopLossBuy(signal) {
     _.defaults(stopLossBuy, { tryTrade, cancel })
 }
 
-function trailingStop({ symbol }) {
+function trailingStop({ symbol, target, tradeMaxDuration, minLoss }) {
     let short;
     if (symbol in openTrades) {
         let trade = openTrades[symbol];
@@ -151,6 +151,15 @@ function trailingStop({ symbol }) {
             if (loss < -40 && trade.gainOrLoss > .1) {
                 short = true
             }
+        }
+        if (trade.gainOrLoss >= target) {
+            short = true;
+        }
+        if (Date.now() - trade.time >= tradeMaxDuration) {
+            short = true;
+        }
+        if (trade.gainOrLoss <= minLoss) {
+            short = true;
         }
 
     }
@@ -248,7 +257,12 @@ async function checkSignal({ signal }) {
             long = true;
             prevClosePrice = viewTrend.trend[symbol].startPrice;
         }
-        short = trailingStop({ symbol });
+        short = trailingStop({
+            symbol,
+            target: env.SELL_LIMIT_PERCENT,
+            tradeMaxDuration: env.MAX_WAIT_TRADE_TIME,
+            minLoss: env.STOP_LOSS_PERCENT
+        });
     }
 
     {
