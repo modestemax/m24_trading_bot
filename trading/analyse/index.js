@@ -139,9 +139,28 @@ function stopLossBuy(signal) {
     _.defaults(stopLossBuy, { tryTrade, cancel })
 }
 
+function trailingStop({ symbol }) {
+    let short;
+    if (symbol in openTrades) {
+        let trade = openTrades[symbol];
+        if (trade.gainOrLoss > .5) {
+            trade.winning = true;
+        }
+        if (trade.winning) {
+            let loss = getGain({ high: trade.gainOrLoss, low: trade.maxGain });
+            if (loss < -40 && trade.gainOrLoss > .1) {
+                short = true
+            }
+        }
+
+    }
+    return short;
+}
+
 async function checkSignal({ signal }) {
     const { symbol } = signal;
     const timeframes = env.TIMEFRAMES;
+    viewTrend({ signal })
     backupLast3Points({ symbol, timeframes });
     buildStrategy({ symbol, timeframes });
     stopLossBuy(signal);
@@ -182,12 +201,11 @@ async function checkSignal({ signal }) {
         {
 
             {
-                if (/*h1Data.macdBelowZero &&*/ h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.ema10Above20) {
-
-                    if (h1Data.stochasticRSIKAboveD || h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
+                if (h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.ema10Above20) {
+                    if (h1Data.stochasticRSIKAboveD && h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
                         // if ((m15Data.stochasticRSIKAboveD /* && m15Data.momentumTrendUp*/)) {
                         if ((m5Data.stochasticRSICrossingLowRefDistance === 1 && m5Data.first.stochasticRSIK < buildStrategy.STOCHASTIC_LOW_REF)) {
-                            prevClosePrice = m5Data.prev.close;
+                            prevClosePrice = m5Data.prev.close + m5Data.prev.close * (-0.5 / 100);
                             long = true
                         }
                     }
@@ -214,20 +232,7 @@ async function checkSignal({ signal }) {
                         short = true
                     }
                 }
-
-                if (symbol in openTrades) {
-                    let trade = openTrades[symbol];
-                    if (trade.gainOrLoss > .5) {
-                        trade.winning = true;
-                    }
-                    if (trade.winning) {
-                        let loss = getGain({ high: trade.gainOrLoss, low: trade.maxGain });
-                        if (loss < -40 && trade.gainOrLoss > .1) {
-                            short = true
-                        }
-                    }
-
-                }
+                short = short || trailingStop({ symbol });
                 /*   if ((m5Data.stochasticKBelowD && /!*m15Data.momentumAboveZero*!/ m5Data.momentumCrossingZeroDistance >= 1)
                                     || (m5Data.stochasticRSICrossingHighRefDistance <= -1)) {
                                     short = true
@@ -237,10 +242,20 @@ async function checkSignal({ signal }) {
         }
     }
 
+    /****************************pumping******************************/
+    if (process.env.MAX02) {
+        if (viewTrend.trend[symbol].pumping) {
+            long = true;
+            prevClosePrice = viewTrend.trend[symbol].startPrice;
+        }
+        short = trailingStop({ symbol });
+    }
+
     {
         if (long) {
             try {
-                await stopLossBuy.tryTrade({ symbol, price: prevClosePrice });
+                await
+                    stopLossBuy.tryTrade({ symbol, price: prevClosePrice });
                 emitMessage(`${symbol} START ${prevClosePrice}`);
                 return appEmitter.emit('analyse:try_trade', {
                     signalData: _.extend({}, signal, { close: prevClosePrice }),
@@ -257,6 +272,34 @@ async function checkSignal({ signal }) {
             appEmitter.emit('analyse:stop_trade:' + symbol, ({ signal }))
         }
     }
+}
+
+function viewTrend({ signal }) {
+    const CUSTOM_TIMEFRAME = 60 * 1e3;
+
+    const { symbol, close } = signal;
+    viewTrend.trend = viewTrend.trend || {}
+    const trend = viewTrend.trend[symbol] = viewTrend.trend[symbol] || {}
+    if (!trend.started) {
+        trend.started = true;
+        trend.startTime = Date.now();
+        trend.startPrice = close;
+        trend.changeDown = 0;
+    } else {
+        trend.change = getGain({ high: close, low: trend.startPrice });
+        trend.duration = (Date.now() - trend.startTime);
+        trend.pumping = false;
+        if (trend.change < 0) {
+            trend.changeDown += trend.change
+            delete trend.started;
+        } else if (trend.change >= 1 && trend.duration < CUSTOM_TIMEFRAME) {
+            emitMessage(`${symbol} Pumping`)
+            trend.pumping = true;
+        } else if (trend.duration > CUSTOM_TIMEFRAME) {
+            delete trend.started;
+        }
+    }
+
 }
 
 
