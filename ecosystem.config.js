@@ -65,6 +65,7 @@ const apps = [
             STRATEGY: "HFT",
             STOP_LOSS_PERCENT: -0.5,
             SELL_LIMIT_PERCENT: 2,
+            MAX_WAIT_TRADE_TIME: 5 * 60e3,
             QUOTE_CUR_QTY: .006,
             TIMEFRAMES: '5'
         },
