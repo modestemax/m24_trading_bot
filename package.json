@@ -20,6 +20,7 @@
   "homepage": "https://github.com/modestemax/m24_trading_bot#readme",
   "dependencies": {
     "format-error": "^1.0.0",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "technicalindicators": "^1.1.11"
   }
 }

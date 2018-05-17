@@ -103,31 +103,33 @@ async function analyse(markets) {
 // }
 
 function stopLossBuy(signal) {
-    stopLossBuy.signal = signal;
     stopLossBuy.symbols = stopLossBuy.symbols || {};
-    _.keys(stopLossBuy.symbols).forEach(symbol => stopLossBuy.symbols[symbol].tryAgain());
+    const { close, symbol } = signal;
+    // _.keys(stopLossBuy.symbols).forEach(symbol => stopLossBuy.symbols[symbol].tryAgain());
+    stopLossBuy.symbols[symbol] && stopLossBuy.symbols[symbol].tryAgain({ close });
 
-    async function tryTrade({ symbol, price }) {
+    async function tryTrade({ symbol, price, close }) {
         if (!stopLossBuy.symbols[symbol]) {
             stopLossBuy.symbols[symbol] = {};
             return stopLossBuy.symbols[symbol].promise = new Promise((resolve, reject) => {
                 stopLossBuy.symbols[symbol].resolve = function () {
                     resolve();
-                    delete stopLossBuy.symbols[symbol]
+                    emitMessage(symbol + ' Trade Accepted')
+
                 };
                 stopLossBuy.symbols[symbol].reject = function () {
                     reject();
-                    delete stopLossBuy.symbols[symbol]
+                    emitMessage(symbol + ' Trade Rejected')
                 };
-                stopLossBuy.symbols[symbol].tryAgain = function () {
-                    if (stopLossBuy.signal.close <= price) {
+                stopLossBuy.symbols[symbol].tryAgain = function ({ close }) {
+                    if (close <= price) {
                         stopLossBuy.symbols[symbol].resolve()
                     }
                 };
-                stopLossBuy.symbols[symbol].tryAgain();
-            })
+                stopLossBuy.symbols[symbol].tryAgain({ close });
+            }).finally(() => delete stopLossBuy.symbols[symbol])
         }
-        return stopLossBuy[symbol]
+        return stopLossBuy.symbols[symbol].promise;
     }
 
     function cancel({ symbol }) {
@@ -152,7 +154,7 @@ function trailingStop({ symbol, target, tradeMaxDuration, minLoss }) {
                 short = true
             }
         }
-        if (trade.gainOrLoss >= target) {
+        if (trade.gainOrLoss <= target && trade.maxGain > target) {
             short = true;
         }
         if (Date.now() - trade.time >= tradeMaxDuration) {
@@ -166,31 +168,58 @@ function trailingStop({ symbol, target, tradeMaxDuration, minLoss }) {
     return short;
 }
 
+function tick(signal) {
+    const TICK_COUNT = 30;
+    const { close: last, symbol } = signal
+    tick.symbols = tick.symbols || {}
+    const points = tick.symbols[symbol] = tick.symbols[symbol] || { ticks: [newTick()] };
+    {
+        let tick = _.last(points.ticks)
+        if (tick.close !== last) {
+            if (tick.count < TICK_COUNT) {
+                tick.count++;
+                let { high, close, low } = tick;
+                close = last;
+                high = _.max([high, last]);
+                low = _.min([low, last]);
+                _.extend(tick, { high, close, low });
+
+            } else {
+                points.ticks.push(newTick())
+            }
+        }
+    }
+
+    function newTick() {
+        return { open: last, high: last, close: last, low: last, count: 1, startTime: Date.now() }
+    }
+
+    global.symbolsTicks = tick;
+}
+
 async function checkSignal({ signal }) {
     const { symbol } = signal;
     const timeframes = env.TIMEFRAMES;
-    viewTrend({ signal })
+    stopLossBuy(signal);
+    tick(signal)
+    let long;
+    let short;
+    let bid;
+    // if (process.env.MAX01 || process.env.VAL01) {
+    //using indicators
     backupLast3Points({ symbol, timeframes });
     buildStrategy({ symbol, timeframes });
-    stopLossBuy(signal);
     const m5Data = buildStrategy.getSpecialData({ symbol, timeframe: 5 });
     const m15Data = buildStrategy.getSpecialData({ symbol, timeframe: 15 });
     const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
 
-    // return appEmitter.emit('analyse:try_trade', {
-    //     signalData: _.extend({}, signal, { /*close: prevClosePrice*/ }),
-    //     signals
-    // });
 
-    let long;
-    let short;
-    let prevClosePrice;
     if (process.env.VAL01) {
 
         if (h1Data.macdBelowZero && h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.prev.close > h1Data.prev.ema10) {
             if (m15Data.macdBelowZero && m15Data.macdTrendUp && m15Data.ema20BelowPrice && m15Data.prev.close > m15Data.prev.ema20) {
                 if (m5Data.macdBelowZero && m5Data.macdAboveSignal && m5Data.ema20BelowPrice && m5Data.prev.close > m5Data.prev.ema20) {
-                    prevClosePrice = m15Data.prev.close;
+                    bid = m15Data.prev.close;
                     long = true;
                 }
             }
@@ -214,7 +243,7 @@ async function checkSignal({ signal }) {
                     if (h1Data.stochasticRSIKAboveD && h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
                         // if ((m15Data.stochasticRSIKAboveD /* && m15Data.momentumTrendUp*/)) {
                         if ((m5Data.stochasticRSICrossingLowRefDistance === 1 && m5Data.first.stochasticRSIK < buildStrategy.STOCHASTIC_LOW_REF)) {
-                            prevClosePrice = m5Data.prev.close + m5Data.prev.close * (-0.5 / 100);
+                            bid = m5Data.prev.close + m5Data.prev.close * (-0.5 / 100);
                             long = true
                         }
                     }
@@ -250,35 +279,68 @@ async function checkSignal({ signal }) {
             }
         }
     }
+    if (process.env.MAX03) {
+        {
 
-    /****************************pumping******************************/
-    if (process.env.MAX02) {
-        if (viewTrend.trend[symbol].pumping) {
-            long = true;
-            prevClosePrice = viewTrend.trend[symbol].startPrice;
+            {
+                if ((m5Data.emaCrossingDistance > 1 && m5Data.ema10BelowPrice && m15Data.ema10Above20 && m5Data.last.rsi > 60)) {
+                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                    long = true
+                }
+            }
         }
-        short = trailingStop({
-            symbol,
-            target: env.SELL_LIMIT_PERCENT,
-            tradeMaxDuration: env.MAX_WAIT_TRADE_TIME,
-            minLoss: env.STOP_LOSS_PERCENT
-        });
+    }
+
+    // }
+    /****************************pumping******************************/
+
+    {
+        //using trend
+        viewTrend({ signal })
+
+        if (process.env.MAX02) {
+            // if (viewTrend.trend[symbol].pumping) {
+            const pumpers = viewTrend.listPumpers();
+            if (symbol in pumpers) {
+
+                if (pumpers[symbol].pumping) {
+                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                    long = true
+                }
+            }
+        }
+        if (process.env.MAX04) {
+            // if (viewTrend.trend[symbol].pumping) {
+            const pumpers = viewTrend.listPumpers();
+            if (symbol in pumpers) {
+                if (m5Data.rsiAbove70) {
+                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                    long = true
+                }
+            }
+        }
     }
 
     {
         if (long) {
             try {
-                await
-                    stopLossBuy.tryTrade({ symbol, price: prevClosePrice });
-                emitMessage(`${symbol} START ${prevClosePrice}`);
+                bid && await    stopLossBuy.tryTrade({ symbol, close: signal.close, price: bid });
+                bid = bid || signal.close;
+                emitMessage(`${symbol} START ${bid}`);
                 return appEmitter.emit('analyse:try_trade', {
-                    signalData: _.extend({}, signal, { close: prevClosePrice }),
+                    signalData: _.extend({}, signal, { close: bid }),
                     signals
                 });
             } catch (e) {
 
             }
         } else {
+            short = trailingStop({
+                symbol,
+                target: env.SELL_LIMIT_PERCENT,
+                tradeMaxDuration: env.MAX_WAIT_TRADE_TIME,
+                minLoss: env.STOP_LOSS_PERCENT
+            });
             stopLossBuy.cancel({ symbol })
         }
 
@@ -289,30 +351,76 @@ async function checkSignal({ signal }) {
 }
 
 function viewTrend({ signal }) {
-    const CUSTOM_TIMEFRAME = 60 * 1e3;
+    const CUSTOM_TIMEFRAME = (60 * 1e3) / 1;
+    const PUMP_PERCENT = 1 / 1;
+    const PIP = PUMP_PERCENT / CUSTOM_TIMEFRAME;
 
     const { symbol, close } = signal;
     viewTrend.trend = viewTrend.trend || {}
-    const trend = viewTrend.trend[symbol] = viewTrend.trend[symbol] || {}
+    const trend = viewTrend.trend[symbol] = viewTrend.trend[symbol] || { symbol }
+    trend.pumping = false;
     if (!trend.started) {
         trend.started = true;
         trend.startTime = Date.now();
         trend.startPrice = close;
-        trend.changeDown = 0;
+        trend.spread = 0;
+        trend.tick = 0;
     } else {
-        trend.change = getGain({ high: close, low: trend.startPrice });
-        trend.duration = (Date.now() - trend.startTime);
-        trend.pumping = false;
-        if (trend.change < 0) {
-            trend.changeDown += trend.change
-            delete trend.started;
-        } else if (trend.change >= 1 && trend.duration < CUSTOM_TIMEFRAME) {
-            emitMessage(`${symbol} Pumping`)
-            trend.pumping = true;
-        } else if (trend.duration > CUSTOM_TIMEFRAME) {
-            delete trend.started;
+        let change = getGain({ high: close, low: trend.startPrice });
+        trend.spread = _.min([trend.spread, change - trend.change])
+        if (trend.change !== change) {
+            trend.change = change
+            trend.maxChange = _.max([trend.change, trend.maxChange])
+            trend.tick++
+
+            trend.duration = (Date.now() - trend.startTime);
+            {//version 02
+                if (trend.change < 0) {
+                    trend.started = false;
+                } else {
+                    if (trend.change >= 5 && trend.tick > 20) {
+                        if (trend.maxChange - trend.change > 2) {
+                            trend.started = false;
+                        } else {
+                            trend.pumping = true;
+                        }
+                    }
+                }
+            }
+            {//version 01
+                // if (trend.change < 0) {
+                //     trend.started = false;
+                // } else if (trend.change >= PUMP_PERCENT && trend.duration < CUSTOM_TIMEFRAME) {
+                //     trend.pumping = true;
+                // } else if (trend.change >= PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
+                //     let duration2 = trend.duration - CUSTOM_TIMEFRAME;
+                //     let change2 = trend.change - PUMP_PERCENT;
+                //     if (change2 > PIP * duration2) {
+                //         trend.pumping = true //still pumping stopped
+                //     } else {
+                //         trend.started = false;
+                //     }
+                // } else if (trend.change < PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
+                //     trend.started = false;
+                // }
+            }
         }
     }
+    trend.change > .5 && emitMessage(`${symbol}  ${trend.change.toFixed(2)}% ${(trend.duration / 60e3).toFixed(2)} minutes ${trend.tick} tick ${trend.pumping ? 'pumper' : ''}`)
+
+    function listPumpers() {
+
+        let pumpers = _.keys(viewTrend.trend).reduce((pumpers, symbol) => {
+            let trend = viewTrend.trend[symbol];
+            if ((trend.pumping || trend.change > 2) && trend.tick > 20) {
+                pumpers[symbol] = viewTrend.trend[symbol]
+            }
+            return pumpers;
+        }, {});
+        return pumpers;
+    }
+
+    _.defaults(viewTrend, { listPumpers });
 
 }
 
@@ -366,7 +474,7 @@ function backupLast3Points({ symbol, timeframes = [5, 15, 60] }) {
         }
     }
 
-    _.extend(backupLast3Points, { getLast3Points, getLast3UniqPoints });
+    _.defaults(backupLast3Points, { getLast3Points, getLast3UniqPoints });
 }
 
 function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
