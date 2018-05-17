@@ -344,7 +344,7 @@ async function checkSignal({ signal }) {
 
         if (process.env.MAX02) {
 
-            if (viewTrend.trend[symbol].pumping) {
+            if (viewTrend.trend[symbol].pumping && m5Data.rsiAbove70) {
                 bid = _.min([m5Data.last.open, m5Data.last.close]);
                 long = true
             }
@@ -549,11 +549,11 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.ema20TrendUp = isSorted([first.ema20, prev.ema20, last.ema20,]);
 
                 let crossingPoint = getCrossingPoint({ up: 'ema10', down: 'ema20', points, });
-                crossingPoint = specialData.emaCrossingPoint = crossingPoint || specialData.emaCrossingPoint;
+                crossingPoint = specialData.emaCrossingPoint = crossingPoint //|| specialData.emaCrossingPoint;
                 specialData.emaCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                 crossingPoint = getCrossingPoint({ up: 'close', down: 'ema10', points, });
-                crossingPoint = specialData.priceCroissingEma10Point = crossingPoint || specialData.priceCroissingEma10Point;
+                crossingPoint = specialData.priceCroissingEma10Point = crossingPoint //|| specialData.priceCroissingEma10Point;
                 specialData.priceCroissingEma10Distance = countCandle({ crossingPoint, timeframe });
 
                 specialData.emaDistance = getGain({ high: last.ema10, low: last.ema20 });
@@ -566,7 +566,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.macdSignalTrendUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
 
                 let crossingPoint = getCrossingPoint({ up: 'macd', down: 'macd_signal', points });
-                crossingPoint = specialData.macdCrossingPoint = crossingPoint || specialData.macdCrossingPoint;
+                crossingPoint = specialData.macdCrossingPoint = crossingPoint //|| specialData.macdCrossingPoint;
                 specialData.macdCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                 specialData.macdAboveZero = last.macd > 0
@@ -582,7 +582,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.diPlusTrendUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
                     specialData.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
                     let crossingPoint = getCrossingPoint({ up: 'adx_plus_di', down: 'macd_signal', points });
-                    crossingPoint = specialData.diCrossingPoint = crossingPoint || specialData.diCrossingPoint;
+                    crossingPoint = specialData.diCrossingPoint = crossingPoint //|| specialData.diCrossingPoint;
                     specialData.diCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                     specialData.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
@@ -596,7 +596,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
 
                     let crossingPoint = getCrossingPoint({ up: 'adx', down: 'adx_ref', points });
-                    crossingPoint = specialData.adxCrossingPoint = crossingPoint || specialData.adxCrossingPoint;
+                    crossingPoint = specialData.adxCrossingPoint = crossingPoint //|| specialData.adxCrossingPoint;
                     specialData.adxCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                 }
@@ -612,11 +612,11 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
 
                 specialData.maxRsi = last.rsi < 70 ? null : _.max([last.rsi, specialData.maxRsi]);
                 let crossingPoint = getCrossingPoint({ up: 'rsi', down: 'point60', points });
-                crossingPoint = specialData.rsiCrossing60Point = crossingPoint || specialData.rsiCrossing60Point;
+                crossingPoint = specialData.rsiCrossing60Point = crossingPoint //|| specialData.rsiCrossing60Point;
                 specialData.rsiCrossing60Distance = countCandle({ crossingPoint, timeframe });
 
                 crossingPoint = getCrossingPoint({ up: 'rsi', down: 'rsiHighRef', points });
-                crossingPoint = specialData.rsiCrossingHighRefPoint = crossingPoint || specialData.rsiCrossingHighRefPoint;
+                crossingPoint = specialData.rsiCrossingHighRefPoint = crossingPoint //|| specialData.rsiCrossingHighRefPoint;
                 specialData.rsiCrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
 
                 specialData.rsiEstAGauche = (specialData.rsiCrossing60Distance > 0 && last.rsi <= 70
@@ -638,15 +638,15 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.stochasticKBelowD = last.stochasticK < last.stochasticD
 
                     let crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticD', points });
-                    crossingPoint = specialData.stochasticCrossingPoint = crossingPoint || specialData.stochasticCrossingPoint;
+                    crossingPoint = specialData.stochasticCrossingPoint = crossingPoint //|| specialData.stochasticCrossingPoint;
                     specialData.stochasticCrossingDistance = countCandle({ crossingPoint, timeframe });
 
                     crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticLowRef', points });
-                    crossingPoint = specialData.stochasticCrossingLowRefPoint = crossingPoint || specialData.stochasticCrossingLowRefPoint;
+                    crossingPoint = specialData.stochasticCrossingLowRefPoint = crossingPoint //|| specialData.stochasticCrossingLowRefPoint;
                     specialData.stochasticCrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
 
                     crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticHighRef', points });
-                    crossingPoint = specialData.stochasticCrossingHighRefPoint = crossingPoint || specialData.stochasticCrossingHighRefPoint;
+                    crossingPoint = specialData.stochasticCrossingHighRefPoint = crossingPoint //|| specialData.stochasticCrossingHighRefPoint;
                     specialData.stochasticCrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
                 }
                 {
@@ -665,15 +665,15 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                     specialData.stochasticRSIDTrendUp = isSorted([first.stochasticRSID, prev.stochasticRSID, last.stochasticRSID,]);
 
                     let crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSID', points });
-                    crossingPoint = specialData.stochasticRSICrossingPoint = crossingPoint || specialData.stochasticRSICrossingPoint;
+                    crossingPoint = specialData.stochasticRSICrossingPoint = crossingPoint //|| specialData.stochasticRSICrossingPoint;
                     specialData.stochasticRSICrossingDistance = countCandle({ crossingPoint, timeframe });
 
                     crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSILowRef', points });
-                    crossingPoint = specialData.stochasticRSICrossingLowRefPoint = crossingPoint || specialData.stochasticRSICrossingLowRefPoint;
+                    crossingPoint = specialData.stochasticRSICrossingLowRefPoint = crossingPoint //|| specialData.stochasticRSICrossingLowRefPoint;
                     specialData.stochasticRSICrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
 
                     crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSIHighRef', points });
-                    crossingPoint = specialData.stochasticRSICrossingHighRefPoint = crossingPoint || specialData.stochasticRSICrossingHighRefPoint;
+                    crossingPoint = specialData.stochasticRSICrossingHighRefPoint = crossingPoint //|| specialData.stochasticRSICrossingHighRefPoint;
                     specialData.stochasticRSICrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
                 }
             }
@@ -688,7 +688,7 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.momentumTrendUp = prev.momentum < last.momentum
                 specialData.momentumTrendDown = prev.momentum > last.momentum
                 let crossingPoint = getCrossingPoint({ up: 'momentum', down: 'momentumMedian', points });
-                crossingPoint = specialData.momentumCrossingZeroPoint = crossingPoint || specialData.momentumCrossingPoint;
+                crossingPoint = specialData.momentumCrossingZeroPoint = crossingPoint //|| specialData.momentumCrossingPoint;
                 specialData.momentumCrossingZeroDistance = countCandle({ crossingPoint, timeframe });
 
             }
@@ -733,7 +733,10 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
     }
 
     function getSpecialData({ symbol, timeframe }) {
-        return buildStrategy.specialData[symbol][timeframe] = buildStrategy.specialData[symbol][timeframe] || {};
+        return buildStrategy.specialData[symbol][timeframe] = buildStrategy.specialData[symbol][timeframe] || {
+            symbol,
+            timeframe
+        };
     }
 
     _.defaults(buildStrategy, { getSpecialData, });
