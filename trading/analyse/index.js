@@ -203,110 +203,150 @@ async function checkSignal({ signal }) {
     stopLossBuy(signal);
     tick(signal)
     let long;
-    let short;
+    let short, skipShort;
     let bid;
-    // if (process.env.MAX01 || process.env.VAL01) {
-    //using indicators
+
+    viewTrend({ signal })
+
     backupLast3Points({ symbol, timeframes });
     buildStrategy({ symbol, timeframes });
     const m5Data = buildStrategy.getSpecialData({ symbol, timeframe: 5 });
     const m15Data = buildStrategy.getSpecialData({ symbol, timeframe: 15 });
     const h1Data = buildStrategy.getSpecialData({ symbol, timeframe: 60 });
 
+    {
+        //using indicators
 
-    if (process.env.VAL01) {
+        if (process.env.VAL01) {
 
-        if (h1Data.macdBelowZero && h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.prev.close > h1Data.prev.ema10) {
-            if (m15Data.macdBelowZero && m15Data.macdTrendUp && m15Data.ema20BelowPrice && m15Data.prev.close > m15Data.prev.ema20) {
-                if (m5Data.macdBelowZero && m5Data.macdAboveSignal && m5Data.ema20BelowPrice && m5Data.prev.close > m5Data.prev.ema20) {
-                    bid = m15Data.prev.close;
-                    long = true;
-                }
-            }
-        }
-
-
-        if (true || h1Data.ema10AbovePrice && h1Data.macdTrendDown && h1Data.prev.close < h1Data.prev.ema10) {
-            if (m15Data.ema20AbovePrice && m15Data.macdBelowSignal && m15Data.macdTrendDown && m15Data.prev.close < m15Data.prev.ema20) {
-                if (m5Data.ema20AbovePrice && m5Data.macdBelowSignal && m5Data.macdTrendDown) {
-                    short = true;
-                }
-            }
-        }
-    }
-    /****************************max--------------------------*/
-    if (process.env.MAX01) {
-        {
-
-            {
-                if (h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.ema10Above20) {
-                    if (h1Data.stochasticRSIKAboveD && h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
-                        // if ((m15Data.stochasticRSIKAboveD /* && m15Data.momentumTrendUp*/)) {
-                        if ((m5Data.stochasticRSICrossingLowRefDistance === 1 && m5Data.first.stochasticRSIK < buildStrategy.STOCHASTIC_LOW_REF)) {
-                            bid = m5Data.prev.close + m5Data.prev.close * (-0.5 / 100);
-                            long = true
-                        }
+            if (h1Data.macdBelowZero && h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.prev.close > h1Data.prev.ema10) {
+                if (m15Data.macdBelowZero && m15Data.macdTrendUp && m15Data.ema20BelowPrice && m15Data.prev.close > m15Data.prev.ema20) {
+                    if (m5Data.macdBelowZero && m5Data.macdAboveSignal && m5Data.ema20BelowPrice && m5Data.prev.close > m5Data.prev.ema20) {
+                        bid = m15Data.prev.close;
+                        long = true;
                     }
-                    // }
-                    /*  if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
-                        && m5Data.momentumCrossingZeroDistance <= -1 && m5Data.momentumTrendUp) /!*m15Data.momentumBelowZero*!/
-                        || (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
-                        long = true
-                    }*/
                 }
-                // if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
-                //     && m5Data.momentumCrossingZeroDistance <= -1 && m5Data.momentumTrendUp) /*m15Data.momentumBelowZero*/
-                //     && (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
-                //     long = true
-                // }
-
             }
-            {
-                if (m5Data.stochasticRSICrossingHighRefDistance === -1 /*&& m5Data.first.stochasticRSIK > buildStrategy.STOCHASTIC_HIGH_REF*/) {
-                    short = true
+
+
+            if (true || h1Data.ema10AbovePrice && h1Data.macdTrendDown && h1Data.prev.close < h1Data.prev.ema10) {
+                if (m15Data.ema20AbovePrice && m15Data.macdBelowSignal && m15Data.macdTrendDown && m15Data.prev.close < m15Data.prev.ema20) {
+                    if (m5Data.ema20AbovePrice && m5Data.macdBelowSignal && m5Data.macdTrendDown) {
+                        short = true;
+                    }
                 }
-                if (m15Data.stochasticRSIKAboveLowRef && m15Data.momentumTrendDown && (m15Data.stochasticRSIKBelowD || m15Data.stochasticRSIKAboveHighRef)) {
-                    if (m5Data.stochasticRSIKInBands && m5Data.momentumTrendDown && m5Data.stochasticRSICrossingDistance < -1) {
+            }
+        }
+        /****************************max--------------------------*/
+        if (process.env.MAX01) {
+            {
+
+                {
+                    if (h1Data.macdAboveSignal && h1Data.ema10BelowPrice && h1Data.ema10Above20) {
+                        if (h1Data.stochasticRSIKAboveD && h1Data.momentumTrendUp /*&& h1Data.stochasticRSIKTrendUp&& h1Data.stochasticRSIDTrendUp*/) {
+                            // if ((m15Data.stochasticRSIKAboveD /* && m15Data.momentumTrendUp*/)) {
+                            if ((m5Data.stochasticRSICrossingLowRefDistance === 1 && m5Data.first.stochasticRSIK < buildStrategy.STOCHASTIC_LOW_REF)) {
+                                bid = m5Data.prev.close + m5Data.prev.close * (-0.5 / 100);
+                                long = true
+                            }
+                        }
+                        // }
+                        /*  if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
+                            && m5Data.momentumCrossingZeroDistance <= -1 && m5Data.momentumTrendUp) /!*m15Data.momentumBelowZero*!/
+                            || (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
+                            long = true
+                        }*/
+                    }
+                    // if ((m5Data.stochasticK < 40 && m5Data.stochasticKAboveD
+                    //     && m5Data.momentumCrossingZeroDistance <= -1 && m5Data.momentumTrendUp) /*m15Data.momentumBelowZero*/
+                    //     && (m5Data.stochasticRSICrossingLowRefDistance = 1)) {
+                    //     long = true
+                    // }
+
+                }
+                {
+                    if (m5Data.stochasticRSICrossingHighRefDistance === -1 /*&& m5Data.first.stochasticRSIK > buildStrategy.STOCHASTIC_HIGH_REF*/) {
                         short = true
                     }
-                }
-                short = short || trailingStop({ symbol });
-                /*   if ((m5Data.stochasticKBelowD && /!*m15Data.momentumAboveZero*!/ m5Data.momentumCrossingZeroDistance >= 1)
-                                    || (m5Data.stochasticRSICrossingHighRefDistance <= -1)) {
-                                    short = true
-                                }*/
+                    if (m15Data.stochasticRSIKAboveLowRef && m15Data.momentumTrendDown && (m15Data.stochasticRSIKBelowD || m15Data.stochasticRSIKAboveHighRef)) {
+                        if (m5Data.stochasticRSIKInBands && m5Data.momentumTrendDown && m5Data.stochasticRSICrossingDistance < -1) {
+                            short = true
+                        }
+                    }
+                    short = short || trailingStop({ symbol });
+                    /*   if ((m5Data.stochasticKBelowD && /!*m15Data.momentumAboveZero*!/ m5Data.momentumCrossingZeroDistance >= 1)
+                                        || (m5Data.stochasticRSICrossingHighRefDistance <= -1)) {
+                                        short = true
+                                    }*/
 
+                }
             }
         }
-    }
-    if (process.env.MAX03) {
-        {
-
+        if (process.env.MAX03) {
             {
-                if ((m5Data.emaCrossingDistance > 1 && m5Data.ema10BelowPrice && m15Data.ema10Above20 && m5Data.last.rsi > 60)) {
-                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
-                    long = true
+
+                {
+                    if (
+                        (m5Data.emaCrossingDistance > 1 && m5Data.ema10BelowPrice && m15Data.ema10Above20
+                            && m5Data.last.rsi > 60 && m5Data.last.rsi < 80 && m5Data.rsiEstAGauche
+                            && (!m5Data.priceCroissingEma10Point || m5Data.priceCroissingEma10Point > 5)
+                        )
+                    ) {
+                        // bid = _.min([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                        // bid = signal.open;
+                        bid = _.min([m5Data.last.open, m5Data.last.close]);
+                        long = true
+                    }
+
+                    if (
+                        (m15Data.emaCrossingDistance > 1 && m15Data.ema10BelowPrice
+                            && m15Data.rsiCrossingHighRefDistance > 1 && h1Data.rsiTrendUp
+                            && (!m15Data.priceCroissingEma10Point || m15Data.priceCroissingEma10Point > 5)
+                        )
+                    ) {
+                        // bid = _.min([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                        bid = _.min([m5Data.last.open, m5Data.last.close]);
+                        long = true
+                    }
+                }
+                {
+                    if (m5Data.ema10Above20 && m5Data.ema20BelowPrice) {
+                        skipShort = true
+                    }
+                }
+            }
+        }
+
+        if (process.env.MAX05) {
+            {
+
+                {
+                    if ((m5Data.rsiCrossingHighRefDistance = 1)) {
+                        // bid = _.min([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                        // bid = signal.open;
+                        bid = _.min([m5Data.last.open, m5Data.last.close]);
+                        long = true
+                    }
+                }
+                {
+                    if (m5Data.ema10Above20 && m5Data.rsiAbove70) {
+                        skipShort = true
+                    }
                 }
             }
         }
     }
-
     // }
     /****************************pumping******************************/
 
     {
         //using trend
-        viewTrend({ signal })
 
         if (process.env.MAX02) {
-            // if (viewTrend.trend[symbol].pumping) {
-            const pumpers = viewTrend.listPumpers();
-            if (symbol in pumpers) {
 
-                if (pumpers[symbol].pumping) {
-                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
-                    long = true
-                }
+            if (viewTrend.trend[symbol].pumping) {
+                bid = _.min([m5Data.last.open, m5Data.last.close]);
+                long = true
             }
         }
         if (process.env.MAX04) {
@@ -314,7 +354,8 @@ async function checkSignal({ signal }) {
             const pumpers = viewTrend.listPumpers();
             if (symbol in pumpers) {
                 if (m5Data.rsiAbove70) {
-                    bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                    // bid = _.max([m5Data.prev.close, m5Data.last.close * (1 - Math.abs(viewTrend.trend[symbol].spread))]);
+                    bid = _.min([m5Data.last.open, m5Data.last.close]);
                     long = true
                 }
             }
@@ -335,12 +376,12 @@ async function checkSignal({ signal }) {
 
             }
         } else {
-            short = trailingStop({
+            short = !skipShort && (short || trailingStop({
                 symbol,
                 target: env.SELL_LIMIT_PERCENT,
                 tradeMaxDuration: env.MAX_WAIT_TRADE_TIME,
                 minLoss: env.STOP_LOSS_PERCENT
-            });
+            }));
             stopLossBuy.cancel({ symbol })
         }
 
@@ -371,42 +412,49 @@ function viewTrend({ signal }) {
         if (trend.change !== change) {
             trend.change = change
             trend.maxChange = _.max([trend.change, trend.maxChange])
+            trend.maxLoss = trend.maxChange - trend.change;
             trend.tick++
 
             trend.duration = (Date.now() - trend.startTime);
             {//version 02
-                if (trend.change < 0) {
-                    trend.started = false;
-                } else {
-                    if (trend.change >= 5 && trend.tick > 20) {
-                        if (trend.maxChange - trend.change > 2) {
-                            trend.started = false;
-                        } else {
+                if (process.env.PUMP === 'v2') {
+                    if (trend.change < 0) {
+                        trend.started = false;
+                    } else {
+                        if (trend.change >= 5 && trend.tick > 20) {
                             trend.pumping = true;
+                        }
+                        if (trend.maxLoss > 2) {
+                            trend.started = false;
                         }
                     }
                 }
             }
             {//version 01
-                // if (trend.change < 0) {
-                //     trend.started = false;
-                // } else if (trend.change >= PUMP_PERCENT && trend.duration < CUSTOM_TIMEFRAME) {
-                //     trend.pumping = true;
-                // } else if (trend.change >= PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
-                //     let duration2 = trend.duration - CUSTOM_TIMEFRAME;
-                //     let change2 = trend.change - PUMP_PERCENT;
-                //     if (change2 > PIP * duration2) {
-                //         trend.pumping = true //still pumping stopped
-                //     } else {
-                //         trend.started = false;
-                //     }
-                // } else if (trend.change < PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
-                //     trend.started = false;
-                // }
+
+                if (process.env.PUMP === 'v0') {
+                    if (trend.change < 0) {
+                        trend.started = false;
+                    } else if (trend.maxLoss > 1) {
+                        trend.started = false;
+                    } else if (trend.change >= PUMP_PERCENT && trend.duration < CUSTOM_TIMEFRAME) {
+                        trend.pumping = true;
+                    } else if (trend.change >= PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
+                        let duration2 = trend.duration - CUSTOM_TIMEFRAME;
+                        let change2 = trend.change - PUMP_PERCENT;
+                        if (change2 > PIP * duration2) {
+                            trend.pumping = true //still pumping stopped
+                        } else {
+                            trend.started = false;
+                        }
+                    } else if (trend.change < PUMP_PERCENT && trend.duration > CUSTOM_TIMEFRAME) {
+                        trend.started = false;
+                    }
+                }
             }
         }
     }
-    trend.change > .5 && emitMessage(`${symbol}  ${trend.change.toFixed(2)}% ${(trend.duration / 60e3).toFixed(2)} minutes ${trend.tick} tick ${trend.pumping ? 'pumper' : ''}`)
+    trend.change > 1 && emitMessage(`${symbol}  ${trend.change.toFixed(2)}% ${(trend.duration / 60e3).toFixed(2)} minutes ${trend.tick} tick ${trend.pumping ? 'pumper' : ''}`)
 
     function listPumpers() {
 
@@ -504,6 +552,10 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 crossingPoint = specialData.emaCrossingPoint = crossingPoint || specialData.emaCrossingPoint;
                 specialData.emaCrossingDistance = countCandle({ crossingPoint, timeframe });
 
+                crossingPoint = getCrossingPoint({ up: 'close', down: 'ema10', points, });
+                crossingPoint = specialData.priceCroissingEma10Point = crossingPoint || specialData.priceCroissingEma10Point;
+                specialData.priceCroissingEma10Distance = countCandle({ crossingPoint, timeframe });
+
                 specialData.emaDistance = getGain({ high: last.ema10, low: last.ema20 });
             }
             {
@@ -550,8 +602,29 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 }
             }
             {
+                const RSi_HIGH_REF = 70;
+                const POINT_60 = 60;
+                first.rsiHighRef = prev.rsiHighRef = last.rsiHighRef = RSi_HIGH_REF;
+                first.point60 = prev.point60 = last.point60 = POINT_60;
+
                 specialData.rsiAbove70 = last.rsi >= 70;
                 specialData.rsiBelow30 = last.rsi <= 30;
+
+                specialData.maxRsi = last.rsi < 70 ? null : _.max([last.rsi, specialData.maxRsi]);
+                let crossingPoint = getCrossingPoint({ up: 'rsi', down: 'point60', points });
+                crossingPoint = specialData.rsiCrossing60Point = crossingPoint || specialData.rsiCrossing60Point;
+                specialData.rsiCrossing60Distance = countCandle({ crossingPoint, timeframe });
+
+                crossingPoint = getCrossingPoint({ up: 'rsi', down: 'rsiHighRef', points });
+                crossingPoint = specialData.rsiCrossingHighRefPoint = crossingPoint || specialData.rsiCrossingHighRefPoint;
+                specialData.rsiCrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
+
+                specialData.rsiEstAGauche = (specialData.rsiCrossing60Distance > 0 && last.rsi <= 70
+                    && (!specialData.rsiCrossingHighRefDistance || specialData.rsiCrossingHighRefDistance > 0)
+                ) || (last.rsi > 70 && last.rsi === specialData.maxRsi);
+
+                specialData.rsiTrendUp = isSorted([first.rsiTrendUp, prev.rsiTrendUp, last.rsiTrendUp,]);
+
             }
             {
                 const STOCHASTIC_LOW_REF = 20;
@@ -619,34 +692,35 @@ function buildStrategy({ symbol, timeframes = [5, 15, 60] }) {
                 specialData.momentumCrossingZeroDistance = countCandle({ crossingPoint, timeframe });
 
             }
-            // {
-            //     //DEBUG
-            //     let {
-            //         ema10Above20, emaDistance, emaCrossingPoint, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
-            //         macdCrossingPoint, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
-            //         diCrossingPoint, diCrossingDistance, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
-            //         adxAboveRef, adxTrendUp, absenceDePique, adxEcart, adxValue, adxCrossingPoint, adxCrossingDistance
-            //     } = specialData;
-            //     if (ema10TrendUp) {
-            //         emitMessage(`${symbol} ${timeframe} ema 10 Trending Up `)
-            //     }
-            //     if (macdTrendUp) {
-            //         emitMessage(`${symbol} ${timeframe} macd Trending Up `)
-            //     }
-            //     // if (emaCrossingPoint) {
-            //     //     emitMessage(`${symbol} ${timeframe} ema crossing ${emaCrossingPoint.crossing_up ? 'Up' : 'Down'} [${emaCrossingPoint.point.ema10},${emaCrossingPoint.point.ema20}] distance: ${emaCrossingDistance}`)
-            //     // }
-            //     if (macdCrossingPoint) {
-            //         emitMessage(`${symbol} ${timeframe} macd crossing ${macdCrossingPoint.crossing_up ? 'Up' : 'Down'} [${macdCrossingPoint.point.macd},${macdCrossingPoint.point.macd_signal}] distance: ${macdCrossingDistance}`)
-            //
-            //     }
-            //     // if (diCrossingPoint) {
-            //     //     emitMessage(`${symbol} ${timeframe} DI crossing ${diCrossingPoint.crossing_up ? 'Up' : 'Down'} [${diCrossingPoint.point.adx_plus_di},${diCrossingPoint.point.adx_minus_di}] distance: ${diCrossingDistance}`)
-            //     // }
-            //     // if (adxCrossingPoint) {
-            //     //     emitMessage(`${symbol} ${timeframe} ADX crossing ${adxCrossingPoint.crossing_up ? 'Up' : 'Down'} [${adxValue}] distance: ${adxCrossingDistance}`)
-            //     // }
-            // }
+            {
+                //DEBUG
+                let {
+                    ema10Above20, emaDistance, emaCrossingPoint, ema10TrendUp, ema20TrendUp, emaCrossingDistance,
+                    macdCrossingPoint, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalTrendUp, macdTrendUp, macdCrossingDistance,
+                    diCrossingPoint, diCrossingDistance, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusTrendUp,
+                    adxAboveRef, adxTrendUp, absenceDePique, adxEcart, adxValue, adxCrossingPoint, adxCrossingDistance,
+                    rsiEstAGauche, rsiCrossing60Distance
+                } = specialData;
+                //     if (ema10TrendUp) {
+                //         emitMessage(`${symbol} ${timeframe} ema 10 Trending Up `)
+                //     }
+                //     if (macdTrendUp) {
+                //         emitMessage(`${symbol} ${timeframe} macd Trending Up `)
+                //     }
+                //     // if (emaCrossingPoint) {
+                //     //     emitMessage(`${symbol} ${timeframe} ema crossing ${emaCrossingPoint.crossing_up ? 'Up' : 'Down'} [${emaCrossingPoint.point.ema10},${emaCrossingPoint.point.ema20}] distance: ${emaCrossingDistance}`)
+                //     // }
+                //     if (macdCrossingPoint) {
+                //         emitMessage(`${symbol} ${timeframe} macd crossing ${macdCrossingPoint.crossing_up ? 'Up' : 'Down'} [${macdCrossingPoint.point.macd},${macdCrossingPoint.point.macd_signal}] distance: ${macdCrossingDistance}`)
+                //
+                //     }
+                //     // if (diCrossingPoint) {
+                //     //     emitMessage(`${symbol} ${timeframe} DI crossing ${diCrossingPoint.crossing_up ? 'Up' : 'Down'} [${diCrossingPoint.point.adx_plus_di},${diCrossingPoint.point.adx_minus_di}] distance: ${diCrossingDistance}`)
+                //     // }
+                // if (rsiEstAGauche) {
+                //     emitMessage(`${symbol} ${timeframe} rsiEstAGauche ${rsiCrossing60Distance}`)
+                // }
+            }
 
         }
 
