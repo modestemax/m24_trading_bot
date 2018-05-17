@@ -346,6 +346,7 @@ async function checkSignal({ signal }) {
 
             if (viewTrend.trend[symbol].pumping && m5Data.rsiAbove70) {
                 bid = _.min([m5Data.last.open, m5Data.last.close]);
+                bid = _.min([bid, m5Data.last.close * (1 - 1 / 100)]);
                 long = true
             }
         }
