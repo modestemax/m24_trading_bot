@@ -366,7 +366,7 @@ async function checkSignal({ signal }) {
     {
         if (long) {
             try {
-                bid && await    stopLossBuy.tryTrade({ symbol, close: signal.close, price: bid });
+                bid && await stopLossBuy.tryTrade({ symbol, close: signal.close, price: bid });
                 bid = bid || signal.close;
                 emitMessage(`${symbol} START ${bid}`);
                 return appEmitter.emit('analyse:try_trade', {
@@ -419,14 +419,15 @@ function viewTrend({ signal }) {
             trend.duration = (Date.now() - trend.startTime);
             {//version 02
                 if (process.env.PUMP === 'v2') {
-                    if (trend.change < 0) {
+                    /*if (trend.change < 0) {
                         trend.started = false;
-                    } else {
+                    } else*/
+                    {
                         if (trend.change >= 5 && trend.tick > 20) {
                             trend.pumping = true;
                         }
                         if (trend.maxLoss > 2) {
-                            trend.started = false;
+                            trend.pumping = false;
                         }
                     }
                 }
