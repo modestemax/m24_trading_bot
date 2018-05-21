@@ -11,14 +11,16 @@ const apps = [
     },
     {
         name: 'MAX02',
+        active: false,
         env: {
-            PUMP: 'v0',
+            // PUMP: 'v0',
             PORT: 12312,
             STRATEGY: "Pumping v0 1% 1min",
         },
     },
     {
         name: 'MAX03',
+        active: false,
         env: {
             PORT: 12313,
             STRATEGY: "EMA + RSI",
@@ -26,6 +28,7 @@ const apps = [
     },
     {
         name: 'MAX04',
+        active: false,
         env: {
             PUMP: 'v2',
             PORT: 12314,

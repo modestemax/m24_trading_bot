@@ -1,6 +1,6 @@
 const apps = require('./pm2.apps')
 
-console.log(apps)
+// console.log(apps)
 
 module.exports = {
     /**

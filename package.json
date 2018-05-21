@@ -21,6 +21,8 @@
   "dependencies": {
     "format-error": "^1.0.0",
     "mkdirp": "^0.5.1",
-    "technicalindicators": "^1.1.11"
+    "pmx": "^1.6.4",
+    "technicalindicators": "^1.1.11",
+    "trend": "^0.3.0"
   }
 }
