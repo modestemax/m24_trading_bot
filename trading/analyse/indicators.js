@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const sorted = require('is-sorted')
-const { getChangePercent, updatePrice } = require('../utils')();
+// const { getChangePercent, updatePrice } = require('../utils')();
 
 
 function reset(array, minCount) {

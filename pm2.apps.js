@@ -6,7 +6,7 @@ const apps = [
         active: false,
         env: {
             PORT: 12311,
-            STRATEGY: "STOCHASTIC RSI",
+            STRATEGY_DESC: "STOCHASTIC RSI",
         },
     },
     {
@@ -15,7 +15,7 @@ const apps = [
         env: {
             // PUMP: 'v0',
             PORT: 12312,
-            STRATEGY: "Pumping v0 1% 1min",
+            STRATEGY_DESC: "Pumping v0 1% 1min",
         },
     },
     {
@@ -23,7 +23,7 @@ const apps = [
         active: false,
         env: {
             PORT: 12313,
-            STRATEGY: "EMA + RSI",
+            STRATEGY_DESC: "EMA + RSI",
         },
     },
     {
@@ -32,14 +32,14 @@ const apps = [
         env: {
             PUMP: 'v2',
             PORT: 12314,
-            STRATEGY: "Pumping v2 + RSI",
+            STRATEGY_DESC: "Pumping v2 + RSI",
         },
     },
     {
         name: 'MAX05',
         env: {
             PORT: 12315,
-            STRATEGY: "RSI",
+            STRATEGY_DESC: "RSI",
         },
     },
 
@@ -51,6 +51,7 @@ const apps = [
             cwd: 'trading',
             env: {
                 [app.name]: true,
+                STRATEGY: app.name,
                 DEBUG: '*',
                 QUOTE_CUR: 'BTC',
                 EXCHANGE: 'binance',
@@ -69,7 +70,7 @@ const apps = [
     return _.defaultsDeep(app, {
         env: {
             DESC: `Name: ${app.name} Quote: ${app.env.QUOTE_CUR} Target: ${app.env.SELL_LIMIT_PERCENT} stop: ${app.env.SELL_LIMIT_PERCENT} 
-                Trade based on ${app.env.STRATEGY}`
+                Trade based on ${app.env.STRATEGY_DESC}`
         }
     })
 });
@@ -94,7 +95,7 @@ module.exports = apps;
 //         SIMUL_FIRST_ENTRY: '',
 //         NO_STOP_LOSS: 'true',
 //         EXIT_ON_TARGET: '',
-//         STRATEGY: "ValKeys",
+//         STRATEGY_DESC: "ValKeys",
 //         STOP_LOSS_PERCENT: -2,
 //         SELL_LIMIT_PERCENT: 1.1,
 //         QUOTE_CUR_QTY: .006,
