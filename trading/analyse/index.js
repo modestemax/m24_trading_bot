@@ -207,9 +207,9 @@ module.exports = function ({ env, appEmitter }) {
         let short, skipShort;
         let bid;
 
-        viewTrend({ signal })
+        // viewTrend({ signal })
 
-        backupLast3Points({ symbolId, timeframes });
+        backupLastPoints({ symbolId, timeframes });
         buildStrategy({ symbolId, timeframes });
         const m5Data = buildStrategy.getSpecialData({ symbolId, timeframe: 5 });
         const m15Data = buildStrategy.getSpecialData({ symbolId, timeframe: 15 });
@@ -496,7 +496,7 @@ module.exports = function ({ env, appEmitter }) {
             const points = getLastPoints({ symbolId, timeframe });
             const pivot = getPivotPoint({ symbolId, timeframe });
             let signal = signals[timeframe][symbolId];
-            if (1 || pivot.id && pivot.id !== signal.id) {
+            if (pivot.id || pivot.id && pivot.id !== signal.id) {//todo (pivot.id ||) is for testing
                 points.push(_.extend({}, pivot));
                 points.splice(0, points.length - count);
             }
@@ -516,9 +516,6 @@ module.exports = function ({ env, appEmitter }) {
             return backupLastPoints.tendances [symbolId] [timeframe] = backupLastPoints.tendances [symbolId] [timeframe] || [];
         }
 
-        function getPivot({ symbolId, timeframe }) {
-            return backupLastPoints.pivot [symbolId] [timeframe] = backupLastPoints.tendances [symbolId] [timeframe] || [];
-        }
 
         function getPivotPoint({ symbolId, timeframe }) {
             return backupLastPoints.pivot [symbolId] [timeframe] = backupLastPoints.pivot [symbolId] [timeframe] || {};
@@ -532,29 +529,30 @@ module.exports = function ({ env, appEmitter }) {
 //     }
 // }
 
-        _.defaults(backupLastPoints, { getLastPoints, getPivot });
+        _.defaults(backupLastPoints, { getLastPoints, getPivotPoint });
     }
 
     function buildStrategy({ symbolId, timeframes = [5, 15, 60], trendingQuote = 3 / 4 }) {
         init();
 
-        _.forEach(timeframes, () => {
-            const data = buildSpecialData();
-            appEmitter('analyse:newData', data)
+        _.forEach(timeframes, (timeframe) => {
+            const data = buildSpecialData(timeframe);
+            data && appEmitter.emit('analyse:newData', data)
         });
 
         function buildSpecialData(timeframe) {
             const specialData = getSpecialData({ symbolId, timeframe });
 
             const points = backupLastPoints.getLastPoints({ symbolId, timeframe });
-            const pivot = backupLastPoints.getPivot({ symbolId, timeframe });
+            const pivot = backupLastPoints.getPivotPoint({ symbolId, timeframe });
             // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
-            if (points && points.length > 2) {
+            const [last] = points.slice(-1);
+            if (last) {
 
-                const [first, prev, last] = points.slice(-3);
-                _.extend(specialData, { points, first, prev, last });
-                if (timeframe == 5) {
-                    _.range(1, 12).forEach(i => _.extend(specialData, { [`last${i * 5}mChange`]: _(points).slice(-i).sumBy('change').value() }))
+
+                _.extend(specialData, { points, candle: last });
+                if (+timeframe === 5) {
+                    _.range(0, 12).forEach(i => (++i, _.extend(specialData, { [`last${i * 5}mChange`]: _(points).slice(-i).sumBy('changeFromOpen') })))
                 }
                 {
                     _.extend(specialData, {
@@ -763,9 +761,10 @@ module.exports = function ({ env, appEmitter }) {
                     // }
                 }
 
+                return specialData;
             }
 
-            return specialData;
+
         }
 
 
@@ -806,6 +805,7 @@ module.exports = function ({ env, appEmitter }) {
 
 
     function getCrossingPoint({ indicatorUp, indicatorDown, points, indicatorDownValue, timeframe, zero }) {
+        let iDown = _.capitalize(indicatorDown)
         if (points.length >= 2) {
             let [prevPoint, lastPoint] = points.slice(-2);
             let { crossingDown, crossingUp } = getCrossingStatus({
@@ -814,39 +814,29 @@ module.exports = function ({ env, appEmitter }) {
                 zero
             });
             if (crossingUp || crossingDown) {
+
                 return _.extend({
-                    [`${indicatorUp}IsCrossing`]: true,
-                    [`${indicatorDown}IsCrossing`]: true,
-                    [`${indicatorUp}IsCrossingUp`]: crossingUp,
-                    [`${indicatorUp}IsCrossingDown`]: crossingDown,
-                    crossingPoint: lastPoint,
-                    [`${indicatorUp}_${indicatorDown}CrossingDistance`]: countCandle({
-                        candle: lastPoint,
-                        timeframe,
-                        direction: crossingUp
-                    })
+                    [`${indicatorUp}IsCrossing${iDown}`]: true,
+                    [`${indicatorUp}IsCrossingUp${iDown}`]: crossingUp,
+                    [`${indicatorUp}IsCrossingDown${iDown}`]: crossingDown,
+                    [`${indicatorUp}${iDown}CrossingDistance`]: countCandle({ candle: lastPoint, timeframe, crossingUp })
                 });
             } else {
                 return getCrossingPoint({ indicatorUp, indicatorDown, points: _.initial(points), zero })
             }
         }
         return {
-            [`${indicatorUp}IsCrossing`]: false,
-            [`${indicatorDown}IsCrossing`]: false,
-            [`${indicatorUp}IsCrossingUp`]: null,
-            [`${indicatorUp}IsCrossingDown`]: null,
-            crossingPoint: null,
-            emaCrossingDistance: 0
+            [`${indicatorUp}IsCrossing${iDown}`]: false,
         };
     }
 
 
-    function countCandle({ candle, timeframe, direction }) {
+    function countCandle({ candle, timeframe, crossingUp }) {
         if (candle) {
             const id = candle.id;
             const count = 1 + Math.trunc((Date.now() / (timeframesIntervals[timeframe]))) - id;
 
-            return direction ? count : -count;
+            return crossingUp ? count : -count;
         }
         return null
     }

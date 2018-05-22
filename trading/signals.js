@@ -61,7 +61,6 @@ module.exports = function ({ env, appEmitter }) {
 
     const beautify = (data, timeframe) => {
         return _(data).map(({ d }) => {
-                let candleColor;
                 let id = Math.trunc(Date.now() / timeframesIntervals[timeframe]);
                 return {
                     timeframe,
@@ -70,8 +69,8 @@ module.exports = function ({ env, appEmitter }) {
                     time: new Date(id * timeframesIntervals[timeframe]),
                     id,
                     close: d[1],
-                    changePercent: +d[2].toFixed(2),
-                    changeFromOpen: +d[21].toFixed(2),
+                    changePercent: +d[2],//.toFixed(2),
+                    changeFromOpen: +d[21],//.toFixed(2),
                     high: d[3],
                     low: d[4],
                     volume: d[5],
@@ -84,10 +83,10 @@ module.exports = function ({ env, appEmitter }) {
                     ema10: d[13],
                     ema20: d[14],
                     adx: d[9],
-                    adx_minus_di: d[10],
-                    adx_plus_di: d[11],
+                    minusDi: d[10],
+                    plusDi: d[11],
                     macd: d[15],
-                    macd_signal: d[16],
+                    macdSignal: d[16],
                     rsi: d[12],
                     volatility: d[22],
                     stochasticK: d[23],
@@ -95,13 +94,11 @@ module.exports = function ({ env, appEmitter }) {
                     stochasticRSIK: d[25],
                     stochasticRSID: d[26],
                     momentum: d[27],
-                    change_from_open: d[21],
-                    aroon_up: d[17],
-                    aroon_down: d[18],
+                    aroonUp: d[17],
+                    aroonDown: d[18],
                     vwma: d[19],
                     open: d[20],
-                    candleColor: candleColor = d[21],
-                    green: candleColor > 0
+                    green: d[21] > 0
                 };
 
                 function signal(int) {
@@ -218,12 +215,14 @@ module.exports = function ({ env, appEmitter }) {
             //get signal max 1 time per second
             const throttledGetSignals = _.throttle(() => getSignals({ options: params({ timeframe }) }), 10e3);
 
-            throttledGetSignals();
+        setInterval(throttledGetSignals, 1e3)
 
-            setTimeout(() => {
-                throttledGetSignals();
-                setInterval(throttledGetSignals, getRate(timeframe))
-            }, getStartTime(timeframe))
+            // throttledGetSignals();
+            //
+            // setTimeout(() => {
+            //     throttledGetSignals();
+            //     setInterval(throttledGetSignals, getRate(timeframe))
+            // }, getStartTime(timeframe))
         }
     );
 
