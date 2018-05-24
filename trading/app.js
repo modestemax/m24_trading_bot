@@ -15,7 +15,7 @@ require('./override');
             global.exchange = await require('./exchange');
 
             require('./utils')(global.exchange);
-            require('./signals');
+            require('./indicators-builder/signals');
             require('./analyse');
             require('./trade');
             require('./pub_sub');

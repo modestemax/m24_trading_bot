@@ -215,14 +215,14 @@ module.exports = function ({ env, appEmitter }) {
             //get signal max 1 time per second
             const throttledGetSignals = _.throttle(() => getSignals({ options: params({ timeframe }) }), 10e3);
 
-        setInterval(throttledGetSignals, 1e3)
+        // setInterval(throttledGetSignals, 1e3)
 
-            // throttledGetSignals();
-            //
-            // setTimeout(() => {
-            //     throttledGetSignals();
-            //     setInterval(throttledGetSignals, getRate(timeframe))
-            // }, getStartTime(timeframe))
+            throttledGetSignals();
+
+            setTimeout(() => {
+                throttledGetSignals();
+                setInterval(throttledGetSignals, getRate(timeframe))
+            }, getStartTime(timeframe))
         }
     );
 

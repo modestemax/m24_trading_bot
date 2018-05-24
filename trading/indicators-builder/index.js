@@ -4,11 +4,9 @@ const formatError = require('format-error').format;
 
 const env = {
     PRODUCTION: !!process.env.PRODUCTION,
-    TIMEFRAME: process.env.TIMEFRAME || 5,
     TIMEFRAMES: (process.env.TIMEFRAMES || '5,15,60').split(','),
     QUOTE_CUR: process.env.QUOTE_CUR || 'BTC',
     EXCHANGE: process.env.EXCHANGE || 'binance',
-    STRATEGY: process.env.STRATEGY || 'MAX05',
     timeframesIntervals: {
         5: 5 * 60e3,
         15: 15 * 60e3,
@@ -43,6 +41,6 @@ const appEmitter = new class extends (require('events')) {
 }();
 
 
-require('../indicators-builder/signals')({ env, appEmitter });
-require('../analyse')({ env, appEmitter });
-require('../indicators-builder/saveIndicator')({ env, appEmitter });
+require('./signals')({ env, appEmitter });
+require('./builder')({ env, appEmitter });
+require('./saveIndicator')({ env, appEmitter });

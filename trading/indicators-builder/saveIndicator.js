@@ -15,7 +15,7 @@ module.exports = function ({ env, appEmitter }) {
 
         const prevTime = new Date((id - 1) * timeframesIntervals[timeframe]);
         const [prevKey, key] = [prevTime, time].map(time => {
-            const timeKey = `${time.getDate()}/${time.getMonth()} ${time.getHours()}h${time.getMinutes()}`;
+            const timeKey = `${time.getDate()}/${time.getMonth()+1}:${time.getHours()}h${time.getMinutes()}`;
             return `${EXCHANGE}:${symbolId}:${timeKey}:m${timeframe}`;
         });
 

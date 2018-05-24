@@ -488,7 +488,7 @@ module.exports = function ({ env, appEmitter }) {
         return (high - low) / Math.abs(low) * 100;
     }
 
-    function backupLastPoints({ count = 10, symbolId, timeframes = [5, 15, 60] }) {
+    function backupLastPoints({ count = 12, symbolId, timeframes = [5, 15, 60] }) {
         init();
         _.forEach(timeframes, savePoints);
 
@@ -496,7 +496,7 @@ module.exports = function ({ env, appEmitter }) {
             const points = getLastPoints({ symbolId, timeframe });
             const pivot = getPivotPoint({ symbolId, timeframe });
             let signal = signals[timeframe][symbolId];
-            if (pivot.id || pivot.id && pivot.id !== signal.id) {//todo (pivot.id ||) is for testing
+            if (/*pivot.id || */pivot.id && pivot.id !== signal.id) {//todo (pivot.id ||) is for testing
                 points.push(_.extend({}, pivot));
                 points.splice(0, points.length - count);
             }
@@ -546,7 +546,8 @@ module.exports = function ({ env, appEmitter }) {
             const points = backupLastPoints.getLastPoints({ symbolId, timeframe });
             const pivot = backupLastPoints.getPivotPoint({ symbolId, timeframe });
             // const points = backupLast3Points.getLast3UniqPoints({ symbol, timeframe, uniqCount: timeframe < 60 ? 3 : 2 });
-            const [last] = points.slice(-1);
+            // const [last] = points.slice(-1);
+            const last = _.last(points);
             if (last) {
 
 
@@ -554,7 +555,18 @@ module.exports = function ({ env, appEmitter }) {
                 if (+timeframe === 5) {
                     _.range(0, 12).forEach(i => (++i, _.extend(specialData, { [`last${i * 5}mChange`]: _(points).slice(-i).sumBy('changeFromOpen') })))
                 }
-                {
+
+                ema();
+                rsi();
+                macd();
+                adx();
+                stochastic();
+                stochasticRSI();
+                momentum();
+
+
+
+                function ema() {
                     _.extend(specialData, {
                             ema10Above20: last.ema10 > last.ema20,
                             ema10BelowPrice: last.ema10 < last.close,
@@ -571,15 +583,15 @@ module.exports = function ({ env, appEmitter }) {
 
                 }
 
-                {
+                function rsi() {
                     const RSi_HIGH_REF = 70;
                     const RSi_LOW_REF = 30;
-
+                    _.defaults(buildStrategy, { RSi_HIGH_REF, RSi_LOW_REF });
                     _.extend(specialData, {
-                            rsiAboveHighRef: last.rsi >= RSi_HIGH_REF,
+                            rsiAboveHighRef: last.rsi > RSi_HIGH_REF,
                             rsiBelowHighRef: last.rsi < RSi_HIGH_REF,
                             rsiAboveLowRef: last.rsi > RSi_LOW_REF,
-                            rsiBelowLowRef: last.rsi <= RSi_LOW_REF,
+                            rsiBelowLowRef: last.rsi < RSi_LOW_REF,
                             maxRsi: last.rsi < RSi_HIGH_REF ? null : _.max([last.rsi, specialData.maxRsi]),
                         },
                         getTrendStatus({ trendingQuote, indicator: 'rsi', points }),
@@ -607,158 +619,126 @@ module.exports = function ({ env, appEmitter }) {
 
                 }
 
-                {
+                function macd() {
 
                     _.extend(specialData, {
-                            macdAboveSignal: last.macd > last.macd_signal,
-                            macdBelowSignal: last.macd < last.macd_signal,
+                            macdAboveSignal: last.macd > last.macdSignal,
+                            macdBelowSignal: last.macd < last.macdSignal,
                             macdAboveZero: last.macd > 0,
                             macdBelowZero: last.macd < 0,
-                            macdSignalAboveZero: last.macd_signal > 0,
+                            macdSignalAboveZero: last.macdSignal > 0,
                         },
                         getTrendStatus({ trendingQuote, indicator: 'macd', points }),
-                        getTrendStatus({ trendingQuote, indicator: 'macd_signal', points }),
-                        getCrossingPoint({ indicatorUp: 'macd', indicatorDown: 'macd_signal', points }),
+                        getTrendStatus({ trendingQuote, indicator: 'macdSignal', points }),
+                        getCrossingPoint({ indicatorUp: 'macd', indicatorDown: 'macdSignal', points }),
                     );
 
-
-                    specialData.macdAboveSignal = last.macd > last.macd_signal;
-                    specialData.macdBelowSignal = last.macd < last.macd_signal;
-                    specialData.macdIsTrendingUp = isSorted([first.macd, prev.macd, last.macd,]);
-                    specialData.macdTrendDown = isSorted([first.macd, prev.macd, last.macd,].reverse());
-                    specialData.macdSignalIsTrendingUp = isSorted([first.macd_signal, prev.macd_signal, last.macd_signal,]);
-
-                    let crossingPoint = getCrossingPoint({ up: 'macd', down: 'macd_signal', points });
-                    crossingPoint = specialData.macdCrossingPoint = crossingPoint //|| specialData.macdCrossingPoint;
-                    specialData.macdCrossingDistance = countCandle({ crossingPoint, timeframe });
-
-                    specialData.macdAboveZero = last.macd > 0
-                    specialData.macdBelowZero = last.macd < 0
-                    specialData.macdSignalAboveZero = last.macd_signal > 0
                 }
-                {
+
+                function adx() {
                     const ADX_REF = 25;
                     _.defaults(buildStrategy, { ADX_REF });
-                    first.adx_ref = prev.adx_ref = last.adx_ref = ADX_REF;
-                    {
-                        specialData.diPlusAboveMinus = last.adx_plus_di > last.adx_minus_di;
-                        specialData.diPlusIsTrendingUp = isSorted([first.adx_plus_di, prev.adx_plus_di, last.adx_plus_di,]);
-                        specialData.diMinusTrendDown = isSorted([first.adx_minus_di, prev.adx_minus_di, last.adx_minus_di,].reverse());
-                        let crossingPoint = getCrossingPoint({ up: 'adx_plus_di', down: 'macd_signal', points });
-                        crossingPoint = specialData.diCrossingPoint = crossingPoint //|| specialData.diCrossingPoint;
-                        specialData.diCrossingDistance = countCandle({ crossingPoint, timeframe });
+                    _.extend(specialData, {
+                            plusDiAboveMinusDi: last.plusDi > last.minusDi,
+                            plusDiAboveAdxRef: last.plusDi > ADX_REF,
+                            minusDiBelowAdxRef: last.plusDi < ADX_REF,
+                            plusDiAboveAdx: last.plusDi > last.adx,
+                            diDistance: last.plusDi - last.minusDi,
+                        },
+                        getTrendStatus({ trendingQuote, indicator: 'plusDi', points }),
+                        getTrendStatus({ trendingQuote, indicator: 'minusDi', points }),
+                        getCrossingPoint({ indicatorUp: 'plusDi', indicatorDown: 'minusDi', points }),
+                    );
 
-                        specialData.diPlusAboveAdxRef = last.adx_plus_di > ADX_REF
-                        specialData.diMinusBelowAdxRef = last.adx_minus_di < ADX_REF
-                        specialData.diDistance = last.adx_plus_di - last.adx_minus_di;
-                    }
-                    {
-                        specialData.adxValue = last.adx
-                        specialData.adxAboveRef = last.adx > ADX_REF
-                        specialData.adxIsTrendingUp = isSorted([first.adx, prev.adx, last.adx,]);
-                        specialData.adxEcart = _.min([last.adx - prev.adx, prev.adx - first.adx]);
-
-                        let crossingPoint = getCrossingPoint({ up: 'adx', down: 'adx_ref', points });
-                        crossingPoint = specialData.adxCrossingPoint = crossingPoint //|| specialData.adxCrossingPoint;
-                        specialData.adxCrossingDistance = countCandle({ crossingPoint, timeframe });
-
-                    }
+                    _.extend(specialData, {
+                            adxAboveRef: last.adx > ADX_REF,
+                            minusDiBelowAdxRef: last.plusDi < ADX_REF,
+                            plusDiAboveAdx: last.plusDi > last.adx,
+                            diDistance: last.plusDi - last.minusDi,
+                        },
+                        getTrendStatus({ trendingQuote, indicator: 'adx', points }),
+                        getCrossingPoint({ indicatorUp: 'adx', indicatorDown: 'adxRef', points, indicatorDownValue: ADX_REF }),
+                    );
                 }
 
-                {
+                function stochastic() {
                     const STOCHASTIC_LOW_REF = 20;
                     const STOCHASTIC_HIGH_REF = 80;
                     _.defaults(buildStrategy, { STOCHASTIC_LOW_REF, STOCHASTIC_HIGH_REF });
-                    {
-                        first.stochasticLowRef = prev.stochasticLowRef = last.stochasticLowRef = STOCHASTIC_LOW_REF;
-                        first.stochasticHighRef = prev.stochasticHighRef = last.stochasticHighRef = STOCHASTIC_HIGH_REF;
-
-                        specialData.stochasticKAboveD = last.stochasticK > last.stochasticD
-                        specialData.stochasticKBelowD = last.stochasticK < last.stochasticD
-
-                        let crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticD', points });
-                        crossingPoint = specialData.stochasticCrossingPoint = crossingPoint //|| specialData.stochasticCrossingPoint;
-                        specialData.stochasticCrossingDistance = countCandle({ crossingPoint, timeframe });
-
-                        crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticLowRef', points });
-                        crossingPoint = specialData.stochasticCrossingLowRefPoint = crossingPoint //|| specialData.stochasticCrossingLowRefPoint;
-                        specialData.stochasticCrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
-
-                        crossingPoint = getCrossingPoint({ up: 'stochasticK', down: 'stochasticHighRef', points });
-                        crossingPoint = specialData.stochasticCrossingHighRefPoint = crossingPoint //|| specialData.stochasticCrossingHighRefPoint;
-                        specialData.stochasticCrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
-                    }
-                    {
-                        first.stochasticRSILowRef = prev.stochasticRSILowRef = last.stochasticRSILowRef = STOCHASTIC_LOW_REF;
-                        first.stochasticRSIHighRef = prev.stochasticRSIHighRef = last.stochasticRSIHighRef = STOCHASTIC_HIGH_REF;
-
-                        specialData.stochasticRSIKAboveD = last.stochasticRSIK > last.stochasticRSID
-                        specialData.stochasticRSIKBelowD = last.stochasticRSIK < last.stochasticRSID
-                        specialData.stochasticRSIDistance = Math.abs(last.stochasticRSIK - last.stochasticRSID)
-                        specialData.stochasticRSIKAboveHighRef = last.stochasticRSIK > STOCHASTIC_HIGH_REF
-                        specialData.stochasticRSIKBelowHighRef = last.stochasticRSIK < STOCHASTIC_HIGH_REF
-                        specialData.stochasticRSIKAboveLowRef = last.stochasticRSIK > STOCHASTIC_LOW_REF
-                        specialData.stochasticRSIKBelowLowRef = last.stochasticRSIK < STOCHASTIC_LOW_REF
-                        specialData.stochasticRSIKInBands = specialData.stochasticRSIKBelowHighRef && specialData.stochasticRSIKAboveLowRef
-                        specialData.stochasticRSIKIsTrendingUp = isSorted([first.stochasticRSIK, prev.stochasticRSIK, last.stochasticRSIK,]);
-                        specialData.stochasticRSIDIsTrendingUp = isSorted([first.stochasticRSID, prev.stochasticRSID, last.stochasticRSID,]);
-
-                        let crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSID', points });
-                        crossingPoint = specialData.stochasticRSICrossingPoint = crossingPoint //|| specialData.stochasticRSICrossingPoint;
-                        specialData.stochasticRSICrossingDistance = countCandle({ crossingPoint, timeframe });
-
-                        crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSILowRef', points });
-                        crossingPoint = specialData.stochasticRSICrossingLowRefPoint = crossingPoint //|| specialData.stochasticRSICrossingLowRefPoint;
-                        specialData.stochasticRSICrossingLowRefDistance = countCandle({ crossingPoint, timeframe });
-
-                        crossingPoint = getCrossingPoint({ up: 'stochasticRSIK', down: 'stochasticRSIHighRef', points });
-                        crossingPoint = specialData.stochasticRSICrossingHighRefPoint = crossingPoint //|| specialData.stochasticRSICrossingHighRefPoint;
-                        specialData.stochasticRSICrossingHighRefDistance = countCandle({ crossingPoint, timeframe });
-                    }
+                    _.extend(specialData, {
+                            stochasticKAboveD: last.stochasticK > last.stochasticD,
+                            stochasticKBelowD: last.stochasticK < last.stochasticD,
+                            stochasticKAboveHighRef: last.stochasticK > STOCHASTIC_HIGH_REF,
+                            stochasticKBelowHighRef: last.stochasticK < STOCHASTIC_HIGH_REF,
+                            stochasticKAboveLowRef: last.stochasticK > STOCHASTIC_LOW_REF,
+                            stochasticKBelowLowRef: last.stochasticK < STOCHASTIC_LOW_REF,
+                        },
+                        getTrendStatus({ trendingQuote, indicator: 'stochasticK', points }),
+                        getTrendStatus({ trendingQuote, indicator: 'stochasticD', points }),
+                        getCrossingPoint({ indicatorUp: 'stochasticK', indicatorDown: 'stochasticD', points }),
+                        getCrossingPoint({
+                            indicatorUp: 'stochasticK',
+                            indicatorDown: 'highRef',
+                            points,
+                            indicatorDownValue: STOCHASTIC_HIGH_REF
+                        }),
+                        getCrossingPoint({
+                            indicatorUp: 'stochasticK',
+                            indicatorDown: 'lowRef',
+                            points,
+                            indicatorDownValue: STOCHASTIC_LOW_REF
+                        }),
+                    );
                 }
-                {
+
+                function stochasticRSI() {
+                    const STOCHASTICRSI_LOW_REF = 20;
+                    const STOCHASTICRSI_HIGH_REF = 80;
+                    _.defaults(buildStrategy, { STOCHASTICRSI_LOW_REF, STOCHASTICRSI_HIGH_REF });
+                    _.extend(specialData, {
+                            stochasticRSIKAboveD: last.stochasticRSIK > last.stochasticRSID,
+                            stochasticRSIKBelowD: last.stochasticRSIK < last.stochasticRSID,
+                            stochasticRSIKAboveHighRef: last.stochasticRSIK > STOCHASTICRSI_HIGH_REF,
+                            stochasticRSIKBelowHighRef: last.stochasticRSIK < STOCHASTICRSI_HIGH_REF,
+                            stochasticRSIKAboveLowRef: last.stochasticRSIK > STOCHASTICRSI_LOW_REF,
+                            stochasticRSIKBelowLowRef: last.stochasticRSIK < STOCHASTICRSI_LOW_REF,
+
+                        },
+                        getTrendStatus({ trendingQuote, indicator: 'stochasticRSIK', points }),
+                        getTrendStatus({ trendingQuote, indicator: 'stochasticRSID', points }),
+                        getCrossingPoint({ indicatorUp: 'stochasticRSIK', indicatorDown: 'stochasticRSID', points }),
+                        getCrossingPoint({
+                            indicatorUp: 'stochasticRSIK',
+                            indicatorDown: 'highRef',
+                            points,
+                            indicatorDownValue: STOCHASTICRSI_HIGH_REF
+                        }),
+                        getCrossingPoint({
+                            indicatorUp: 'stochasticRSIK',
+                            indicatorDown: 'lowRef',
+                            points,
+                            indicatorDownValue: STOCHASTICRSI_LOW_REF
+                        }),
+                    );
+                }
+
+
+                function momentum() {
                     const MOMENTUM_MEDIAN = 0
-                    first.momentumMedian = prev.momentumMedian = last.momentumMedian = MOMENTUM_MEDIAN;
-
-                    specialData.momentumAboveZero = last.momentum > 0
-                    specialData.momentumBelowZero = last.momentum < 0
-                    // specialData.minMomentum = last.momentum > 0 ? 0 : _.min([specialData.minMomentum, last.momentum])
-                    // specialData.maxMomentum = last.momentum < 0 ? 0 : _.max([specialData.maxMomentum, last.momentum])
-                    specialData.momentumIsTrendingUp = prev.momentum < last.momentum
-                    specialData.momentumTrendDown = prev.momentum > last.momentum
-                    let crossingPoint = getCrossingPoint({ up: 'momentum', down: 'momentumMedian', points });
-                    crossingPoint = specialData.momentumCrossingZeroPoint = crossingPoint //|| specialData.momentumCrossingPoint;
-                    specialData.momentumCrossingZeroDistance = countCandle({ crossingPoint, timeframe });
-
-                }
-                {
-                    //DEBUG
-                    let {
-                        ema10Above20, emaDistance, emaCrossingPoint, ema10IsTrendingUp, ema20IsTrendingUp, emaCrossingDistance,
-                        macdCrossingPoint, macdAboveSignal, macdAboveZero, macdSignalAboveZero, macdSignalIsTrendingUp, macdIsTrendingUp, macdCrossingDistance,
-                        diCrossingPoint, diCrossingDistance, diDistance, diMinusBelowAdxRef, diMinusTrendDown, diPlusAboveAdxRef, diPlusAboveMinus, diPlusIsTrendingUp,
-                        adxAboveRef, adxIsTrendingUp, absenceDePique, adxEcart, adxValue, adxCrossingPoint, adxCrossingDistance,
-                        rsiEstAGauche, rsiCrossing60Distance
-                    } = specialData;
-                    //     if (ema10IsTrendingUp) {
-                    //         emitMessage(`${symbol} ${timeframe} ema 10 Trending Up `)
-                    //     }
-                    //     if (macdIsTrendingUp) {
-                    //         emitMessage(`${symbol} ${timeframe} macd Trending Up `)
-                    //     }
-                    //     // if (emaCrossingPoint) {
-                    //     //     emitMessage(`${symbol} ${timeframe} ema crossing ${emaCrossingPoint.crossing_up ? 'Up' : 'Down'} [${emaCrossingPoint.point.ema10},${emaCrossingPoint.point.ema20}] distance: ${emaCrossingDistance}`)
-                    //     // }
-                    //     if (macdCrossingPoint) {
-                    //         emitMessage(`${symbol} ${timeframe} macd crossing ${macdCrossingPoint.crossing_up ? 'Up' : 'Down'} [${macdCrossingPoint.point.macd},${macdCrossingPoint.point.macd_signal}] distance: ${macdCrossingDistance}`)
-                    //
-                    //     }
-                    //     // if (diCrossingPoint) {
-                    //     //     emitMessage(`${symbol} ${timeframe} DI crossing ${diCrossingPoint.crossing_up ? 'Up' : 'Down'} [${diCrossingPoint.point.adx_plus_di},${diCrossingPoint.point.adx_minus_di}] distance: ${diCrossingDistance}`)
-                    //     // }
-                    // if (rsiEstAGauche) {
-                    //     emitMessage(`${symbol} ${timeframe} rsiEstAGauche ${rsiCrossing60Distance}`)
-                    // }
+                    _.defaults(buildStrategy, { MOMENTUM_MEDIAN, });
+                    _.extend(specialData, {
+                            momentumAboveZero: last.momentum > 0,
+                            momentumBelowZero: last.momentum < 0,
+                        },
+                        getTrendStatus({ trendingQuote, indicator: 'momentum', points }),
+                        getCrossingPoint({ indicatorUp: 'rsi', indicatorDown: 'point60', points, indicatorDownValue: 60 }),
+                        getCrossingPoint({
+                            indicatorUp: 'momentum',
+                            indicatorDown: 'median',
+                            points,
+                            indicatorDownValue: MOMENTUM_MEDIAN
+                        }),
+                    );
                 }
 
                 return specialData;
@@ -774,10 +754,8 @@ module.exports = function ({ env, appEmitter }) {
         }
 
         function getSpecialData({ symbolId, timeframe }) {
-            return buildStrategy.specialData[symbolId][timeframe] = buildStrategy.specialData[symbolId][timeframe] || {
-                symbolId,
-                timeframe
-            };
+            return buildStrategy.specialData[symbolId][timeframe] =
+                buildStrategy.specialData[symbolId][timeframe] || { symbolId, timeframe };
         }
 
         _.defaults(buildStrategy, { getSpecialData, });
@@ -785,8 +763,8 @@ module.exports = function ({ env, appEmitter }) {
     }
 
     function getTrendStatus({ trendingQuote, indicator, points, reversed = false }) {
-        let max = _.maxBy(points, indicator);
-        let min = _.minBy(points, indicator);
+        let max = _.maxBy(points, indicator)[indicator];
+        let min = _.minBy(points, indicator)[indicator];
         let avgMinimum = max * trendingQuote + min * (1 - trendingQuote);
         let trendRes = trend(_.map(points, indicator), { avgMinimum, reversed });
         return { [`${indicator}Trend`]: trendRes, [`${indicator}IsTrendingUp`]: trendRes > 1 }
